@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My submissions</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+        }
+
+        .header {
+            background: #0f6c7b;
+            color: white;
+            padding: 20px 40px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            text-align: left;
+            background: #f0f3f5;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #0f6c7b;
+            color: white;
+            padding: 10px 14px;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>My submissions</h1>
+</div>
+
+<div class="container">
+
+    <a href="/submit/" class="btn">Submit new paper</a>
+
+    {% if submissions %}
+        <table>
+            <tr>
+                <th>Title</th>
+                <th>Conference</th>
+                <th>Status</th>
+                <th>Submitted</th>
+                <th>File</th>
+            </tr>
+
+            {% for submission in submissions %}
+                <tr>
+                    <td>{{ submission.title }}</td>
+                    <td>{{ submission.conference.title_en }}</td>
+                    <td>{{ submission.get_status_display }}</td>
+                    <td>{{ submission.created_at }}</td>
+                    <td>
+                        {% if submission.full_paper_file %}
+                            <a href="{{ submission.full_paper_file.url }}">Download</a>
+                        {% elif submission.abstract_file %}
+                            <a href="{{ submission.abstract_file.url }}">Download</a>
+                        {% else %}
+                            No file
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <p>You have not submitted any papers yet.</p>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

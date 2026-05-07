@@ -1,0 +1,79 @@
+from django.contrib import admin
+from django.urls import path
+from django.conf import settings
+from django.conf.urls.static import static
+from django.contrib.auth import views as auth_views
+
+from conferences.views import (
+    home,
+    register,
+    conference_overview,
+    edit_conference_overview,
+    conference_settings,
+    submit_paper,
+    important_information,
+    add_info_card,
+    edit_info_card,
+    delete_info_card,
+    conference_topics,
+    add_conference_topic,
+    edit_conference_topic,
+    delete_conference_topic,
+    assign_papers,
+    conference_submissions,
+    conference_people,
+    my_reviews,
+    review_submission,
+    submission_result,
+    manager_dashboard,
+    make_decision,
+    judge_dashboard,
+    my_submissions,
+    delete_submission,
+    reviewer_dashboard,
+)
+
+urlpatterns = [
+    path("admin/", admin.site.urls),
+    path("", home, name="home"),
+
+    path("login/", auth_views.LoginView.as_view(
+        template_name="conferences/login.html"
+    ), name="login"),
+
+    path("logout/", auth_views.LogoutView.as_view(), name="logout"),
+    path("register/", register, name="register"),
+
+    path("dashboard/", manager_dashboard, name="dashboard"),
+    path("judge-dashboard/", judge_dashboard, name="judge_dashboard"),
+    path("reviewer-dashboard/", reviewer_dashboard, name="reviewer_dashboard"),
+
+    path("my-reviews/", my_reviews, name="my_reviews"),
+    path("my-submissions/", my_submissions, name="my_submissions"),
+
+    path("submission/<int:submission_id>/review/", review_submission, name="review_submission"),
+    path("submission/<int:submission_id>/result/", submission_result, name="submission_result"),
+    path("submission/<int:submission_id>/decision/", make_decision, name="make_decision"),
+    path("submission/<int:submission_id>/delete/", delete_submission, name="delete_submission"),
+
+    path("conference/<slug:slug>/overview/", conference_overview, name="conference_overview"),
+    path("conference/<slug:slug>/edit-overview/", edit_conference_overview, name="edit_conference_overview"),
+    path("conference/<slug:slug>/settings/", conference_settings, name="conference_settings"),
+
+    path("conference/<slug:slug>/important-information/", important_information, name="important_information"),
+    path("conference/<slug:slug>/important-information/add/", add_info_card, name="add_info_card"),
+    path("important-information/<int:card_id>/edit/", edit_info_card, name="edit_info_card"),
+    path("important-information/<int:card_id>/delete/", delete_info_card, name="delete_info_card"),
+
+    path("conference/<slug:slug>/topics/", conference_topics, name="conference_topics"),
+    path("conference/<slug:slug>/topics/add/", add_conference_topic, name="add_conference_topic"),
+    path("topics/<int:topic_id>/edit/", edit_conference_topic, name="edit_conference_topic"),
+    path("topics/<int:topic_id>/delete/", delete_conference_topic, name="delete_conference_topic"),
+
+    path("conference/<slug:slug>/submit/", submit_paper, name="submit_paper"),
+    path("conference/<slug:slug>/assign/", assign_papers, name="assign_papers"),
+    path("conference/<slug:slug>/submissions/", conference_submissions, name="conference_submissions"),
+    path("conference/<slug:slug>/people/", conference_people, name="conference_people"),
+]
+
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

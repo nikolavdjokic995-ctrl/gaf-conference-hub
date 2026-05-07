@@ -1,0 +1,12 @@
+<h1>Edit conference overview</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">Save changes</button>
+</form>
+
+<p>
+    <a href="{% url 'conference_overview' conference.slug %}">Back to conference page</a>
+</p>

@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reviewer Topics | {{ conference.title_en }}</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        .topbar {
+            background: #14532d;
+            color: white;
+            padding: 22px 45px;
+            font-size: 26px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 45px auto;
+            background: white;
+            padding: 35px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #14532d;
+        }
+
+        .subtitle {
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        .topic-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 14px;
+            background: #ffffff;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+
+        .topic-card input {
+            margin-top: 4px;
+            transform: scale(1.2);
+        }
+
+        .topic-code {
+            font-weight: bold;
+            color: #14532d;
+        }
+
+        .topic-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 6px;
+        }
+
+        .topic-description {
+            color: #555;
+            line-height: 1.5;
+        }
+
+        .save-btn {
+            margin-top: 20px;
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-left: 15px;
+            color: #2563eb;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .empty {
+            padding: 22px;
+            background: #f9fafb;
+            border-radius: 12px;
+            color: #555;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    GAF Conference Hub
+</div>
+
+<div class="container">
+
+    <h1>Reviewer topic expertise</h1>
+
+    <div class="subtitle">
+        Select the topics you are comfortable reviewing for
+        <strong>{{ conference.title_en }}</strong>.
+    </div>
+
+    {% if topics %}
+        <form method="post">
+            {% csrf_token %}
+
+            {% for topic in topics %}
+                <label class="topic-card">
+                    <input type="checkbox"
+                           name="topics"
+                           value="{{ topic.id }}"
+                           {% if topic.id in selected_topics %}checked{% endif %}>
+
+                    <div>
+                        <div class="topic-code">
+                            {{ topic.code }}
+                        </div>
+
+                        <div class="topic-title">
+                            {{ topic.title }}
+                        </div>
+
+                        {% if topic.description %}
+                            <div class="topic-description">
+                                {{ topic.description }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </label>
+            {% endfor %}
+
+            <button class="save-btn" type="submit">
+                Save topics
+            </button>
+
+            <a class="back-link"
+               href="{% url 'conference_overview' conference.slug %}">
+                Back to conference
+            </a>
+        </form>
+    {% else %}
+        <div class="empty">
+            There are no enabled topics for this conference.
+        </div>
+    {% endif %}
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,355 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ conference.title_en }}</title>
+
+    <style>
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial,sans-serif;
+            background:#f4f4f4;
+            color:white;
+        }
+
+        .hero{
+            position:relative;
+            min-height:82vh;
+            background:
+                linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+                url("{% static 'conferences/images/hero.jpg' %}");
+            background-size:cover;
+            background-position:center;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .navbar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:28px 45px;
+        }
+
+        .logo-text{
+            font-size:28px;
+            font-weight:700;
+        }
+
+        .nav-links{
+            display:flex;
+            align-items:center;
+            gap:28px;
+        }
+
+        .nav-links a{
+            color:white;
+            text-decoration:none;
+            font-weight:600;
+        }
+
+        .nav-links span{
+            font-weight:500;
+        }
+
+        .logout-btn{
+            background:none;
+            border:none;
+            color:white;
+            cursor:pointer;
+            font-size:16px;
+            font-weight:600;
+        }
+
+        .hero-content{
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            text-align:center;
+            margin-top:80px;
+            padding:20px;
+        }
+
+        .conference-logo{
+            width:220px;
+            max-width:100%;
+            margin-bottom:25px;
+        }
+
+        .hero-content h1{
+            font-size:78px;
+            font-weight:800;
+            margin-bottom:18px;
+        }
+
+        .hero-content p{
+            font-size:22px;
+            margin-bottom:40px;
+        }
+
+        .hero-buttons{
+            display:flex;
+            flex-wrap:wrap;
+            justify-content:center;
+            gap:18px;
+        }
+
+        .hero-btn{
+            padding:16px 34px;
+            border:2px solid white;
+            border-radius:18px;
+            color:white;
+            text-decoration:none;
+            font-weight:700;
+            font-size:18px;
+            transition:0.25s;
+            background:transparent;
+        }
+
+        .hero-btn:hover{
+            background:white;
+            color:black;
+        }
+
+        .hero-btn.active{
+            background:#22c55e;
+            border-color:#22c55e;
+            color:white;
+        }
+
+        .overview-section{
+            max-width:1200px;
+            margin:-80px auto 60px;
+            background:white;
+            border-radius:26px;
+            padding:40px;
+            position:relative;
+            z-index:5;
+            color:#111827;
+            box-shadow:0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .overview-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+            gap:26px;
+        }
+
+        .overview-card{
+            background:#f9fafb;
+            border-radius:20px;
+            padding:28px;
+        }
+
+        .overview-card h3{
+            margin-bottom:18px;
+            color:#065f46;
+            font-size:20px;
+        }
+
+        .overview-card p{
+            line-height:1.6;
+            color:#111827;
+        }
+
+        @media(max-width:900px){
+
+            .navbar{
+                flex-direction:column;
+                gap:18px;
+            }
+
+            .nav-links{
+                flex-wrap:wrap;
+                justify-content:center;
+            }
+
+            .hero-content h1{
+                font-size:48px;
+            }
+
+            .hero-buttons{
+                flex-direction:column;
+            }
+
+            .hero-btn{
+                width:100%;
+                max-width:320px;
+                text-align:center;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<section class="hero">
+
+    <div class="navbar">
+
+        <div class="logo-text">
+            GAF Conference Hub
+        </div>
+
+        <div class="nav-links">
+
+            {% if user.is_authenticated %}
+
+                <span>
+                    Welcome, {{ user.username }}
+                </span>
+
+                <a href="{% url 'conference_overview' conference.slug %}">
+                    Home
+                </a>
+
+                <a href="{% url 'my_submissions' %}">
+                    My submissions
+                </a>
+
+                {% if is_reviewer %}
+                    <a href="{% url 'my_reviews' %}">
+                        My Reviews
+                    </a>
+                {% endif %}
+
+                {% if is_judge %}
+                    <a href="{% url 'judge_dashboard' %}">
+                        Judge Dashboard
+                    </a>
+                {% endif %}
+
+                <form method="post"
+                      action="{% url 'logout' %}"
+                      style="display:inline;">
+                    {% csrf_token %}
+
+                    <button class="logout-btn">
+                        Logout
+                    </button>
+                </form>
+
+            {% else %}
+
+                <a href="{% url 'login' %}">
+                    Login
+                </a>
+
+                <a href="{% url 'register' %}">
+                    Register
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <div class="hero-content">
+
+        <img
+            src="{% static 'conferences/images/logo.png' %}"
+            class="conference-logo"
+            alt="Green Building Conference 2026"
+        >
+
+        <h1>
+            {{ conference.title_en }}
+        </h1>
+
+        <p>
+            {{ conference.location }}
+            •
+            {{ conference.start_date }}
+            —
+            {{ conference.end_date }}
+        </p>
+
+        <div class="hero-buttons">
+
+            <a class="hero-btn active"
+               href="{% url 'conference_overview' conference.slug %}">
+                Overview
+            </a>
+
+            <a class="hero-btn"
+               href="{% url 'important_information' conference.slug %}">
+                Important Information
+            </a>
+
+            <a class="hero-btn"
+               href="{% url 'submit_paper' conference.slug %}">
+                Submit Paper
+            </a>
+
+            {% if is_manager or is_judge %}
+
+                <a class="hero-btn"
+                   href="{% url 'conference_submissions' conference.slug %}">
+                    Manage Submissions
+                </a>
+
+                <a class="hero-btn"
+                   href="{% url 'conference_people' conference.slug %}">
+                    People Management
+                </a>
+
+                {% if is_manager %}
+                    <a class="hero-btn"
+                       href="{% url 'conference_settings' conference.slug %}">
+                        Conference Settings
+                    </a>
+                {% endif %}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</section>
+
+<section class="overview-section">
+
+    <div class="overview-grid">
+
+        <div class="overview-card">
+            <h3>📍 Location</h3>
+            <p>{{ conference.location }}</p>
+        </div>
+
+        <div class="overview-card">
+            <h3>🗓️ Conference Dates</h3>
+            <p>
+                {{ conference.start_date }}
+                —
+                {{ conference.end_date }}
+            </p>
+        </div>
+
+        <div class="overview-card">
+            <h3>💼 Organizer</h3>
+            <p>{{ conference.organizer }}</p>
+        </div>
+
+        <div class="overview-card">
+            <h3>✉️ Contact</h3>
+            <p>{{ conference.contact_email }}</p>
+        </div>
+
+    </div>
+
+</section>
+
+</body>
+</html>

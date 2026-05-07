@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GAF Conference Hub</title>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            margin: 0;
+        }
+
+        .header {
+            background: #2d5c88;
+            color: white;
+            padding: 25px 40px;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 30px auto;
+            padding: 0 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 24px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.08);
+        }
+
+        .btn {
+            display: inline-block;
+            margin-right: 10px;
+            margin-top: 10px;
+            padding: 10px 14px;
+            background: #2d5c88;
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn.secondary {
+            background: #666;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="header">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+            <h1 style="margin:0;">GAF Conference Hub</h1>
+            <p style="margin:5px 0 0;">
+                Official platform for submission, review and decision management
+            </p>
+        </div>
+
+        <div>
+            {% if user.is_authenticated %}
+                <span style="margin-right:10px;">
+                    Welcome, <strong>{{ user.username }}</strong>
+                </span>
+
+                <form method="post" action="/logout/" style="display:inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn secondary">Logout</button>
+                </form>
+            {% else %}
+                <a href="/login/" class="btn">Login</a>
+                <a href="/register/" class="btn secondary">Register</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="container">
+
+    <div class="card">
+        <h2>Available conferences</h2>
+
+        {% for conference in conferences %}
+            <h3>{{ conference.title_en }}</h3>
+            <p>{{ conference.description_en }}</p>
+
+            <a class="btn" href="/conference/{{ conference.slug }}/overview/">View conference</a>
+
+            {% if user.is_authenticated %}
+
+                {% if is_reviewer %}
+                    <a class="btn secondary" href="/my-reviews/">My reviews</a>
+                {% endif %}
+
+                {% if is_judge %}
+                    <a class="btn secondary" href="/judge-dashboard/">Judge dashboard</a>
+                {% endif %}
+
+                {% if is_manager %}
+                    <a class="btn secondary" href="/dashboard/">Manager dashboard</a>
+                    <a class="btn secondary" href="/conference/{{ conference.slug }}/assign/">Assign papers</a>
+                {% endif %}
+
+            {% endif %}
+
+            <hr>
+
+        {% empty %}
+            <p>No conferences available.</p>
+        {% endfor %}
+    </div>
+
+</div>
+
+</body>
+</html>

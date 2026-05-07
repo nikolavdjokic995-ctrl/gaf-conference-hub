@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review | {{ submission.title }}</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        .topbar {
+            background: #14532d;
+            color: white;
+            padding: 22px 45px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 980px;
+            margin: 45px auto;
+            background: white;
+            padding: 38px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+        }
+
+        h1, h2 {
+            color: #14532d;
+        }
+
+        .paper-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 18px;
+            margin-bottom: 28px;
+            line-height: 1.7;
+        }
+
+        .review-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 35px;
+        }
+
+        .review-table th {
+            background: #ecfdf5;
+            color: #14532d;
+            padding: 12px;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .review-table td {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 14px 10px;
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        .review-table td:first-child {
+            text-align: left;
+            font-weight: bold;
+            color: #111827;
+            width: 38%;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 150px;
+            padding: 12px;
+            border-radius: 9px;
+            border: 1px solid #d1d5db;
+            box-sizing: border-box;
+            font-size: 15px;
+            margin-bottom: 30px;
+        }
+
+        input[type="radio"] {
+            width: auto;
+            transform: scale(1.15);
+        }
+
+        .section-note {
+            color: #555;
+            margin-top: -8px;
+            margin-bottom: 18px;
+            line-height: 1.5;
+        }
+
+        .btn {
+            background: #16a34a;
+            color: white;
+            border: none;
+            padding: 13px 22px;
+            border-radius: 9px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #15803d;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-left: 14px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .radio-list {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 30px;
+        }
+
+        .radio-item {
+            display: inline-flex;
+            gap: 8px;
+            align-items: center;
+            color: #14532d;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    GAF Conference Hub
+</div>
+
+<div class="container">
+
+    <h1>Review submission</h1>
+
+    <div class="paper-box">
+        <strong>Paper:</strong> {{ submission.title }}<br>
+
+        <strong>First author:</strong> {{ submission.first_author }}<br>
+
+        {% if submission.coauthors %}
+            <strong>Co-authors:</strong> {{ submission.coauthors|linebreaksbr }}<br>
+        {% endif %}
+
+        {% if submission.topic %}
+            <strong>Topic:</strong>
+            {{ submission.topic.code }} — {{ submission.topic.title }}<br>
+        {% endif %}
+
+        {% if submission.full_paper_file %}
+            <strong>File:</strong>
+            <a href="{{ submission.full_paper_file.url }}" target="_blank">
+                Download paper
+            </a>
+        {% endif %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        <h2>Recommendations for Authors</h2>
+
+        <div class="section-note">
+            These recommendations may be shown to authors. Please provide details in the comments for authors box below.
+        </div>
+
+        <table class="review-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Yes</th>
+                    <th>Can be improved</th>
+                    <th>Must be improved</th>
+                    <th>Not applicable</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>Content context</td>
+                    {% for radio in form.content_context %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Research design</td>
+                    {% for radio in form.research_design %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Arguments and discussion</td>
+                    {% for radio in form.arguments_discussion %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Results clearly presented</td>
+                    {% for radio in form.results_presented %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>References adequate</td>
+                    {% for radio in form.references_adequate %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Conclusions supported</td>
+                    {% for radio in form.conclusions_supported %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Quality of English Language</h2>
+
+        <div class="radio-list">
+            {% for radio in form.english_quality %}
+                <label class="radio-item">
+                    {{ radio.tag }}
+                    {{ radio.choice_label }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <h2>Comments for Authors</h2>
+        {{ form.comments_for_authors }}
+
+        <h2>Recommendations for Editors</h2>
+
+        <div class="section-note">
+            These comments will not be shown to authors.
+        </div>
+
+        <table class="review-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>Yes</th>
+                    <th>No</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>Conflict of interest</td>
+                    {% for radio in form.conflict_of_interest %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Plagiarism detected</td>
+                    {% for radio in form.plagiarism_detected %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Inappropriate self-citations</td>
+                    {% for radio in form.inappropriate_self_citations %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Ethical concerns</td>
+                    {% for radio in form.ethical_concerns %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Ratings</h2>
+
+        <table class="review-table">
+            <thead>
+                <tr>
+                    <th></th>
+                    <th>High</th>
+                    <th>Average</th>
+                    <th>Low</th>
+                    <th>No answer</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                <tr>
+                    <td>Originality</td>
+                    {% for radio in form.originality %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Contribution to scholarship</td>
+                    {% for radio in form.contribution %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Structure and clarity</td>
+                    {% for radio in form.structure_clarity %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Logical coherence / academic soundness</td>
+                    {% for radio in form.logical_coherence %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Engagement with sources and recent scholarship</td>
+                    {% for radio in form.engagement_sources %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    <td>Overall merit</td>
+                    {% for radio in form.overall_merit %}
+                        <td>{{ radio.tag }}</td>
+                    {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>References</h2>
+
+        <div class="radio-list">
+            <strong>Are references appropriate and relevant?</strong>
+
+            {% for radio in form.references_relevant %}
+                <label class="radio-item">
+                    {{ radio.tag }}
+                    {{ radio.choice_label }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <h2>Comments for Editors</h2>
+        {{ form.comments_for_editors }}
+
+        <h2>Overall Recommendation</h2>
+
+        <div class="radio-list">
+            {% for radio in form.overall_recommendation %}
+                <label class="radio-item">
+                    {{ radio.tag }}
+                    {{ radio.choice_label }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <h2>Final Notification</h2>
+
+        <div class="radio-list">
+            <strong>Would you like to be notified about the final decision?</strong>
+
+            {% for radio in form.wants_final_notification %}
+                <label class="radio-item">
+                    {{ radio.tag }}
+                    {{ radio.choice_label }}
+                </label>
+            {% endfor %}
+        </div>
+
+        <button class="btn" type="submit">
+            Submit review
+        </button>
+
+        <a class="back-link" href="/my-reviews/">
+            Back to my reviews
+        </a>
+
+    </form>
+
+</div>
+
+</body>
+</html>

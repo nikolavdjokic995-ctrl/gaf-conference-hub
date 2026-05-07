@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Create account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+        }
+
+        .header {
+            background: #1c7a8c;
+            color: white;
+            padding: 15px 30px;
+            font-size: 22px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 500px;
+            margin: 40px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        h2 {
+            margin-top: 0;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+
+        .btn {
+            margin-top: 20px;
+            width: 100%;
+            padding: 12px;
+            background: #1c7a8c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        .btn:hover {
+            background: #155d6b;
+        }
+
+        .login-link {
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .login-link a {
+            color: #1c7a8c;
+            text-decoration: none;
+        }
+
+        .errorlist {
+            color: red;
+            margin: 5px 0;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="header">
+    GAF Conference Hub
+</div>
+
+<div class="container">
+    <h2>Create account</h2>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {{ form.non_field_errors }}
+
+        <label>Username</label>
+        {{ form.username }}
+
+        <label>First name</label>
+        {{ form.first_name }}
+
+        <label>Last name</label>
+        {{ form.last_name }}
+
+        <label>Email</label>
+        {{ form.email }}
+
+        <label>Password</label>
+        {{ form.password1 }}
+
+        <label>Confirm password</label>
+        {{ form.password2 }}
+
+        <button class="btn" type="submit">Register</button>
+    </form>
+
+    <div class="login-link">
+        Already have an account?
+        <a href="/login/">Login</a>
+    </div>
+</div>
+
+</body>
+</html>

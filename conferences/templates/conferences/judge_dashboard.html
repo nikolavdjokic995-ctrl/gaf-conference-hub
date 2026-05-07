@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Judge Dashboard</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+        }
+
+        .topbar {
+            background: #14532d;
+            color: white;
+            padding: 22px 45px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1250px;
+            margin: 45px auto;
+            background: white;
+            padding: 38px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #14532d;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #555;
+            margin-bottom: 30px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 28px;
+        }
+
+        .filter-btn {
+            background: white;
+            border: 2px solid #14532d;
+            color: #14532d;
+            padding: 10px 18px;
+            border-radius: 10px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        .filter-btn:hover {
+            background: #14532d;
+            color: white;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+            border-radius: 14px;
+        }
+
+        th {
+            background: #14532d;
+            color: white;
+            padding: 16px;
+            text-align: left;
+            font-size: 15px;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid #e5e7eb;
+            vertical-align: middle;
+        }
+
+        tr:hover {
+            background: #f9fafb;
+        }
+
+        .paper-title {
+            font-weight: bold;
+            color: #14532d;
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .author {
+            color: #555;
+            font-size: 14px;
+        }
+
+        .score-badge {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-weight: bold;
+        }
+
+        .review-count {
+            font-weight: bold;
+            color: #1f2937;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 7px 12px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        .status-under {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .status-accepted {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-revision {
+            background: #dbeafe;
+            color: #1d4ed8;
+        }
+
+        .status-rejected {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 9px;
+            font-weight: bold;
+            transition: 0.2s;
+            font-size: 14px;
+        }
+
+        .btn-view {
+            background: #374151;
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: #1f2937;
+        }
+
+        .btn-decision {
+            background: #16a34a;
+            color: white;
+        }
+
+        .btn-decision:hover {
+            background: #15803d;
+        }
+
+        .empty {
+            padding: 35px;
+            text-align: center;
+            color: #666;
+            background: #f9fafb;
+            border-radius: 12px;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    GAF Conference Hub
+</div>
+
+<div class="container">
+
+    <h1>Judge Dashboard</h1>
+
+    <div class="subtitle">
+        Review all conference submissions, reviewer feedback and final decisions.
+    </div>
+
+    <div class="filters">
+        <a class="filter-btn" href="/judge-dashboard/?status=all">
+            All papers
+        </a>
+
+        <a class="filter-btn" href="/judge-dashboard/?status=under_review">
+            Under review
+        </a>
+
+        <a class="filter-btn" href="/judge-dashboard/?status=accepted">
+            Accepted
+        </a>
+
+        <a class="filter-btn" href="/judge-dashboard/?status=revision_required">
+            Revision required
+        </a>
+
+        <a class="filter-btn" href="/judge-dashboard/?status=rejected">
+            Rejected
+        </a>
+    </div>
+
+    {% if data %}
+
+    <table>
+
+        <tr>
+            <th>Paper</th>
+            <th>Conference</th>
+            <th>Recommendations</th>
+            <th>Reviews</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+
+        {% for item in data %}
+
+        <tr>
+
+            <td>
+                <div class="paper-title">
+                    {{ item.submission.title }}
+                </div>
+
+                <div class="author">
+                    {{ item.submission.first_author }}
+                </div>
+            </td>
+
+            <td>
+                {{ item.submission.conference.title_en }}
+            </td>
+
+            <td>
+                <span class="score-badge">
+                    {{ item.avg_score|default:"-" }}
+                </span>
+            </td>
+
+            <td>
+                <span class="review-count">
+                    {{ item.review_count }}
+                </span>
+            </td>
+
+            <td>
+
+                {% if item.status == "accepted" %}
+                    <span class="status status-accepted">
+                        Accepted
+                    </span>
+
+                {% elif item.status == "revision_required" %}
+                    <span class="status status-revision">
+                        Revision required
+                    </span>
+
+                {% elif item.status == "rejected" %}
+                    <span class="status status-rejected">
+                        Rejected
+                    </span>
+
+                {% else %}
+                    <span class="status status-under">
+                        Under review
+                    </span>
+                {% endif %}
+
+            </td>
+
+            <td>
+
+                <div class="actions">
+
+                    <a class="btn btn-view"
+                       href="/submission/{{ item.submission.id }}/result/">
+                        View reviews
+                    </a>
+
+                    <a class="btn btn-decision"
+                       href="/submission/{{ item.submission.id }}/decision/">
+                        Final decision
+                    </a>
+
+                </div>
+
+            </td>
+
+        </tr>
+
+        {% endfor %}
+
+    </table>
+
+    {% else %}
+
+        <div class="empty">
+            No submissions found.
+        </div>
+
+    {% endif %}
+
+</div>
+<a style="
+display:inline-block;
+margin-top:25px;
+color:#2563eb;
+font-weight:bold;
+text-decoration:none;
+"
+href="/conference/green-building-2026/overview/">
+    ← Back to conference
+</a>
+</body>
+</html>
