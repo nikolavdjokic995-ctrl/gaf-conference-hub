@@ -2,6 +2,9 @@ from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 
+from django_countries.fields import CountryField
+from django_countries.widgets import CountrySelectWidget
+
 from .models import (
     Submission,
     Review,
@@ -26,38 +29,18 @@ class RegisterForm(UserCreationForm):
         ("MA", "MA"),
     ]
 
-    COUNTRY_CHOICES = [
-        ("", "Select country"),
-        ("Serbia", "Serbia"),
-        ("Bosnia and Herzegovina", "Bosnia and Herzegovina"),
-        ("Montenegro", "Montenegro"),
-        ("Croatia", "Croatia"),
-        ("North Macedonia", "North Macedonia"),
-        ("Slovenia", "Slovenia"),
-        ("Germany", "Germany"),
-        ("Austria", "Austria"),
-        ("Italy", "Italy"),
-        ("France", "France"),
-        ("United Kingdom", "United Kingdom"),
-        ("United States", "United States"),
-        ("Other", "Other"),
-    ]
-
     title = forms.ChoiceField(choices=TITLE_CHOICES)
-
     first_name = forms.CharField(max_length=100)
-
     last_name = forms.CharField(max_length=100)
-
     email = forms.EmailField()
-
     affiliation = forms.CharField(max_length=255)
 
-    country = forms.ChoiceField(choices=COUNTRY_CHOICES)
+    country = CountryField().formfield(
+        widget=CountrySelectWidget()
+    )
 
     class Meta:
         model = User
-
         fields = [
             "username",
             "title",
@@ -69,6 +52,7 @@ class RegisterForm(UserCreationForm):
             "password1",
             "password2",
         ]
+
 
 class SubmissionForm(forms.ModelForm):
     class Meta:
