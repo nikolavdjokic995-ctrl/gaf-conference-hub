@@ -146,23 +146,34 @@ def assign_papers(request, slug):
     if not can_assign:
         return redirect("/")
 
-    all_reviewers = ConferenceRole.objects.filter(
+    submissions = Submission.objects.filter(
+        conference=conference
+    ).select_related(
+        "author",
+        "topic"
+    ).prefetch_related(
+        "review_assignments__reviewer"
+    )
+
+    reviewers = ConferenceRole.objects.filter(
         conference=conference,
         role__in=["content_reviewer", "layout_reviewer"]
     ).select_related("user").prefetch_related("topics")
 
     if request.method == "POST":
+        submission_id = request.POST.get("submission_id")
+        reviewer_role_id = request.POST.get("reviewer_role_id")
+
         submission = get_object_or_404(
             Submission,
-            id=request.POST.get("submission_id"),
+            id=submission_id,
             conference=conference
         )
 
         reviewer_role = get_object_or_404(
             ConferenceRole,
-            id=request.POST.get("reviewer_role_id"),
-            conference=conference,
-            role__in=["content_reviewer", "layout_reviewer"]
+            id=reviewer_role_id,
+            conference=conference
         )
 
         ReviewAssignment.objects.get_or_create(
@@ -176,26 +187,17 @@ def assign_papers(request, slug):
 
         return redirect("assign_papers", slug=conference.slug)
 
-    submissions = Submission.objects.filter(
-        conference=conference
-    ).select_related("author", "topic").prefetch_related(
-        "review_assignments__reviewer"
-    ).order_by("-created_at")
-
     submission_data = []
 
     for submission in submissions:
-        if submission.topic:
-            suggested_reviewers = all_reviewers.filter(
-                topics=submission.topic
-            )
-        else:
-            suggested_reviewers = all_reviewers.none()
+        suggested_reviewers = reviewers.filter(
+            topics=submission.topic
+        ) if submission.topic else reviewers.none()
 
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
-            "all_reviewers": all_reviewers,
+            "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
         })
 
@@ -203,17 +205,6 @@ def assign_papers(request, slug):
         "conference": conference,
         "submission_data": submission_data,
     })
-
-@login_required
-def my_reviews(request):
-    assignments = ReviewAssignment.objects.filter(
-        reviewer=request.user
-    ).select_related("submission", "submission__conference", "submission__topic")
-
-    return render(request, "conferences/my_reviews.html", {
-        "assignments": assignments
-    })
-
 
 @login_required
 def review_submission(request, submission_id):
@@ -252,7 +243,6 @@ def review_submission(request, submission_id):
         "form": form,
         "submission": submission,
     })
-
 
 @login_required
 def submission_result(request, submission_id):
@@ -456,8 +446,8 @@ def add_info_card(request, slug):
 
     if not is_manager:
         return redirect("/")
-    
-       if request.method == "POST":
+
+    if request.method == "POST":
         form = ConferenceInfoCardForm(request.POST, request.FILES)
 
         if form.is_valid():
@@ -472,7 +462,6 @@ def add_info_card(request, slug):
         "form": form,
         "conference": conference,
     })
-
 
 @login_required
 def edit_info_card(request, card_id):
