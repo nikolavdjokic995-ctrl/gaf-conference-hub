@@ -108,13 +108,13 @@
 
             {% if is_manager %}
                 <div style="margin-top:20px;">
-                    <a href="{% url 'edit_info_card' conference.slug card.id %}">
+                    <a href="{% url 'edit_info_card' card.id %}">
                         Edit
                     </a>
 
                     |
 
-                    <a href="{% url 'delete_info_card' conference.slug card.id %}">
+                    <a href="{% url 'delete_info_card' card.id %}">
                         Delete
                     </a>
                 </div>
