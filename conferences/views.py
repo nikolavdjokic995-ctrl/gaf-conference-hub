@@ -423,7 +423,10 @@ def important_information(request, slug):
         conference=conference,
         enabled=True
     ).order_by("order")
-
+    topics = ConferenceTopic.objects.filter(
+        conference=conference,
+        enabled=True
+    ).order_by("order", "code")
     is_manager = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
