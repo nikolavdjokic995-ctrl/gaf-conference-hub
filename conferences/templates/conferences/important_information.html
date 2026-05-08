@@ -1,132 +1,134 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Important Information</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-        }
+{% extends "conferences/base.html" %}
 
-        .topbar {
-            background: #14532d;
-            color: white;
-            padding: 22px 45px;
-            font-size: 28px;
-            font-weight: bold;
-        }
+{% block content %}
 
-        .container {
-            max-width: 1050px;
-            margin: 45px auto;
-            background: white;
-            padding: 38px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
-        }
+<div class="container" style="max-width: 1000px; margin: 40px auto; background: white; padding: 40px; border-radius: 20px;">
 
-        h1 {
-            color: #14532d;
-            margin-top: 0;
-        }
+    <h1 style="color:#0d5c2f; margin-bottom:20px;">
+        Important Information
+    </h1>
 
-        .card {
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 18px;
-            background: #ffffff;
-        }
-
-        .card h2 {
-            margin-top: 0;
-            color: #14532d;
-        }
-
-        .empty {
-            padding: 25px;
-            background: #f9fafb;
-            border-radius: 12px;
-            color: #555;
-        }
-
-        .btn {
-            display: inline-block;
-            margin-bottom: 20px;
-            background: #16a34a;
-            color: white;
-            padding: 11px 18px;
-            border-radius: 9px;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 22px;
-            color: #2563eb;
-            font-weight: bold;
-            text-decoration: none;
-        }
-    </style>
-</head>
-
-<body>
-
-<div class="topbar">
-    GAF Conference Hub
-</div>
-
-<div class="container">
-
-    <h1>Important Information</h1>
-
-    <p>
+    <p style="margin-bottom:30px;">
         {{ conference.title_en }}
     </p>
 
-    {% if is_manager %}
-        <a class="btn"
-           href="{% url 'add_info_card' conference.slug %}">
-            Add information card
-        </a>
-    {% endif %}
+    <h2 style="color:#0d5c2f; margin-bottom:20px;">
+        Conference Topics
+    </h2>
 
-    {% if cards %}
-        {% for card in cards %}
-            <div class="card">
-                <h2>{{ card.title }}</h2>
+    {% if topics %}
+        {% for topic in topics %}
+            <div style="
+                border:1px solid #ddd;
+                border-radius:15px;
+                padding:20px;
+                margin-bottom:20px;
+            ">
 
-                <div>
-                    {{ card.content|linebreaks }}
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    margin-bottom:10px;
+                ">
+                    <h3 style="margin:0; color:#d97706;">
+                        {{ topic.title }}
+                    </h3>
+
+                    <strong style="color:#d97706;">
+                        {{ topic.code }}
+                    </strong>
                 </div>
 
-                {% if is_manager %}
-                    <p>
-                        <a href="{% url 'edit_info_card' card.id %}">
-                            Edit
-                        </a>
-                        |
-                        <a href="{% url 'delete_info_card' card.id %}">
-                            Delete
-                        </a>
-                    </p>
-                {% endif %}
+                <p style="line-height:1.7;">
+                    {{ topic.description }}
+                </p>
+
             </div>
         {% endfor %}
     {% else %}
-        <div class="empty">
-            No important information has been added yet.
+        <p>No conference topics added yet.</p>
+    {% endif %}
+
+    {% if is_manager %}
+        <a href="{% url 'conference_topics' conference.slug %}"
+           style="
+                display:inline-block;
+                margin-bottom:30px;
+                background:#2563eb;
+                color:white;
+                padding:12px 20px;
+                border-radius:10px;
+                text-decoration:none;
+                font-weight:bold;
+           ">
+            Manage Topics
+        </a>
+    {% endif %}
+
+    {% if is_manager %}
+        <div style="margin-bottom:30px;">
+            <a href="{% url 'add_info_card' conference.slug %}"
+               style="
+                    background:#16a34a;
+                    color:white;
+                    padding:12px 20px;
+                    border-radius:10px;
+                    text-decoration:none;
+                    font-weight:bold;
+               ">
+                Add information card
+            </a>
         </div>
     {% endif %}
 
-    <a class="back-link"
-       href="{% url 'conference_overview' conference.slug %}">
-        ← Back to conference
-    </a>
+    {% for card in cards %}
+        <div style="
+            border:1px solid #ddd;
+            border-radius:15px;
+            padding:20px;
+            margin-bottom:20px;
+        ">
+
+            <h2 style="color:#0d5c2f;">
+                {{ card.title }}
+            </h2>
+
+            <div style="margin-top:15px;">
+                {{ card.content|safe }}
+            </div>
+
+            {% if card.file %}
+                <div style="margin-top:15px;">
+                    <a href="{{ card.file.url }}" target="_blank">
+                        Download attachment
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if is_manager %}
+                <div style="margin-top:20px;">
+                    <a href="{% url 'edit_info_card' conference.slug card.id %}">
+                        Edit
+                    </a>
+
+                    |
+
+                    <a href="{% url 'delete_info_card' conference.slug card.id %}">
+                        Delete
+                    </a>
+                </div>
+            {% endif %}
+
+        </div>
+    {% endfor %}
+
+    <div style="margin-top:40px;">
+        <a href="{% url 'conference_overview' conference.slug %}">
+            ← Back to conference
+        </a>
+    </div>
 
 </div>
 
-</body>
-</html>
+{% endblock %}
