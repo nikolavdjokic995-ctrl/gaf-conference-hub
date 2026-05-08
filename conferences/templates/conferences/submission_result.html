@@ -27,13 +27,21 @@
 
         <p><strong>First author:</strong> {{ submission.first_author }}</p>
 
-        <p><strong>Topic:</strong>
-            {% if submission.topic %}
-                {{ submission.topic.code }} — {{ submission.topic.title }}
-            {% else %}
+        <p><strong>Topics:</strong>
+            {% for topic in submission.topic_list %}
+                {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+            {% empty %}
                 No topic assigned
-            {% endif %}
+            {% endfor %}
         </p>
+
+        {% if submission.abstract %}
+            <p><strong>Abstract:</strong><br>{{ submission.abstract|linebreaksbr }}</p>
+        {% endif %}
+
+        {% if submission.keywords %}
+            <p><strong>Keywords:</strong> {{ submission.keywords }}</p>
+        {% endif %}
 
         <p>
             <strong>Status:</strong>

@@ -10,12 +10,12 @@ class UserProfile(models.Model):
     )
 
     affiliation = models.CharField(max_length=255)
+    title = models.CharField(max_length=50, blank=True)
+    country = models.CharField(max_length=100, blank=True)
 
     def __str__(self):
         full_name = f"{self.user.first_name} {self.user.last_name}"
         return full_name.strip() or self.user.username
-        title = models.CharField(max_length=50, blank=True)
-        country = models.CharField(max_length=100, blank=True)
 
 class Conference(models.Model):
     SUBMISSION_MODE_CHOICES = [
@@ -125,7 +125,14 @@ class Submission(models.Model):
     )    
 
     title = models.CharField(max_length=255)
-    abstract = models.TextField(blank=True)
+    abstract = models.TextField(
+        max_length=2500,
+        help_text="Write the abstract directly in this field. Maximum 2500 characters."
+    )
+    keywords = models.CharField(
+        max_length=255,
+        help_text="Enter keywords separated by commas."
+    )
 
     abstract_file = models.FileField(
         upload_to="abstracts/",
@@ -165,6 +172,17 @@ class Submission(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def topic_list(self):
+        topics = []
+
+        if self.topic:
+            topics.append(self.topic)
+
+        if self.secondary_topic:
+            topics.append(self.secondary_topic)
+
+        return topics
 
     def __str__(self):
         return self.title

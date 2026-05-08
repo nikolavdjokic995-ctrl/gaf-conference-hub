@@ -140,7 +140,8 @@ def assign_papers(request, slug):
         conference=conference
     ).select_related(
         "author",
-        "topic"
+        "topic",
+        "secondary_topic"
     ).prefetch_related(
         "review_assignments__reviewer"
     )
@@ -180,9 +181,15 @@ def assign_papers(request, slug):
     submission_data = []
 
     for submission in submissions:
+        topic_ids = [
+            topic.id
+            for topic in [submission.topic, submission.secondary_topic]
+            if topic
+        ]
+
         suggested_reviewers = reviewers.filter(
-            topics=submission.topic
-        ) if submission.topic else reviewers.none()
+            topics__id__in=topic_ids
+        ).distinct() if topic_ids else reviewers.none()
 
         submission_data.append({
             "submission": submission,
@@ -621,7 +628,7 @@ def delete_conference_topic(request, topic_id):
 def my_submissions(request):
     submissions = Submission.objects.filter(
         author=request.user
-    ).select_related("conference", "topic").order_by("-created_at")
+    ).select_related("conference", "topic", "secondary_topic").order_by("-created_at")
 
     return render(request, "conferences/my_submissions.html", {
         "submissions": submissions
@@ -656,6 +663,10 @@ def conference_submissions(request, slug):
 
     submissions = Submission.objects.filter(
         conference=conference
+    ).select_related(
+        "author",
+        "topic",
+        "secondary_topic",
     ).order_by("-created_at")
 
     return render(
@@ -674,7 +685,7 @@ def reviewer_topics(request, slug):
     reviewer_role = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
-        role="reviewer"
+        role__in=["content_reviewer", "layout_reviewer"]
     ).first()
 
     if not reviewer_role:
@@ -732,6 +743,7 @@ def my_reviews(request):
         "submission",
         "submission__conference",
         "submission__topic",
+        "submission__secondary_topic",
     )
 
     return render(request, "conferences/my_reviews.html", {
@@ -745,6 +757,7 @@ def reviewer_dashboard(request):
         "submission",
         "submission__conference",
         "submission__topic",
+        "submission__secondary_topic",
     )
 
     return render(request, "conferences/reviewer_dashboard.html", {

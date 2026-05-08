@@ -138,16 +138,30 @@
                     {% endif %}
                 </div>
 
+                {% if submission.abstract %}
+                    <div class="meta">
+                        <strong>Abstract:</strong><br>
+                        {{ submission.abstract|linebreaksbr }}
+                    </div>
+                {% endif %}
+
+                {% if submission.keywords %}
+                    <div class="meta">
+                        <strong>Keywords:</strong>
+                        {{ submission.keywords }}
+                    </div>
+                {% endif %}
+
                 <div class="meta">
                     <strong>Conference:</strong>
                     {{ submission.conference.title_en }}<br>
 
-                    <strong>Topic:</strong>
-                    {% if submission.topic %}
-                        {{ submission.topic.code }} — {{ submission.topic.title }}
-                    {% else %}
+                    <strong>Topics:</strong>
+                    {% for topic in submission.topic_list %}
+                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
                         No topic selected
-                    {% endif %}
+                    {% endfor %}
                     <br>
 
                     <strong>Status:</strong>

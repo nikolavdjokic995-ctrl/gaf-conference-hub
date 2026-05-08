@@ -151,9 +151,23 @@
             <strong>Co-authors:</strong> {{ submission.coauthors|linebreaksbr }}<br>
         {% endif %}
 
-        {% if submission.topic %}
-            <strong>Topic:</strong>
-            {{ submission.topic.code }} — {{ submission.topic.title }}<br>
+        <strong>Topics:</strong>
+        {% for topic in submission.topic_list %}
+            {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+        {% empty %}
+            No topic selected
+        {% endfor %}
+        <br>
+
+        {% if submission.abstract %}
+            <strong>Abstract:</strong><br>
+            {{ submission.abstract|linebreaksbr }}
+            <br><br>
+        {% endif %}
+
+        {% if submission.keywords %}
+            <strong>Keywords:</strong> {{ submission.keywords }}
+            <br><br>
         {% endif %}
 
         {% if submission.full_paper_file %}

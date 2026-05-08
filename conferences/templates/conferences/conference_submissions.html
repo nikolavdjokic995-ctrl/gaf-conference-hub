@@ -206,6 +206,20 @@
                             Submitted by:<br>
                             {{ submission.author.username }}
                         </div>
+
+                        {% if submission.abstract %}
+                            <div class="submitted-by">
+                                <strong>Abstract:</strong><br>
+                                {{ submission.abstract|truncatechars:220 }}
+                            </div>
+                        {% endif %}
+
+                        {% if submission.keywords %}
+                            <div class="submitted-by">
+                                <strong>Keywords:</strong><br>
+                                {{ submission.keywords }}
+                            </div>
+                        {% endif %}
                     </td>
 
                     <td>
@@ -218,11 +232,11 @@
                     </td>
 
                     <td>
-                        {% if submission.topic %}
-                            {{ submission.topic.code }} — {{ submission.topic.title }}
-                        {% else %}
+                        {% for topic in submission.topic_list %}
+                            {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                        {% empty %}
                             -
-                        {% endif %}
+                        {% endfor %}
                     </td>
 
                     <td>

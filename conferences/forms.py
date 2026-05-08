@@ -62,6 +62,8 @@ class SubmissionForm(forms.ModelForm):
 
         fields = [
             "title",
+            "abstract",
+            "keywords",
             "first_author",
             "coauthors",
             "coauthor_emails",
@@ -72,6 +74,8 @@ class SubmissionForm(forms.ModelForm):
 
         labels = {
             "title": "Paper title",
+            "abstract": "Abstract",
+            "keywords": "Keywords",
             "first_author": "First author (First Name Last Name)",
             "coauthors": "Co-authors (First Name Last Name)",
             "coauthor_emails": "Co-author email addresses",
@@ -81,6 +85,16 @@ class SubmissionForm(forms.ModelForm):
         }
 
         widgets = {
+            "abstract": forms.Textarea(attrs={
+                "rows": 8,
+                "maxlength": 2500,
+                "placeholder": "Write your abstract here (maximum 2500 characters).",
+            }),
+
+            "keywords": forms.TextInput(attrs={
+                "placeholder": "e.g. green building, energy efficiency, sustainability",
+            }),
+
             "coauthors": forms.Textarea(attrs={
                 "rows": 4,
                 "placeholder": "Enter co-authors, one per line",
@@ -118,6 +132,8 @@ class SubmissionForm(forms.ModelForm):
         self.fields["secondary_topic"].empty_label = "Select second topic if needed"
         self.fields["secondary_topic"].required = False
 
+        self.fields["abstract"].required = True
+        self.fields["keywords"].required = True
         self.fields["full_paper_file"].required = True
         self.fields["first_author"].required = True
 

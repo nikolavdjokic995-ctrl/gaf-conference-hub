@@ -123,13 +123,19 @@
                 {{ item.submission.author.username }}
                 <br>
 
-                <strong>Topic:</strong>
-                {% if item.submission.topic %}
-                    {{ item.submission.topic.code }} — {{ item.submission.topic.title }}
-                {% else %}
+                <strong>Topics:</strong>
+                {% for topic in item.submission.topic_list %}
+                    {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                {% empty %}
                     No topic selected
-                {% endif %}
+                {% endfor %}
                 <br>
+
+                {% if item.submission.keywords %}
+                    <strong>Keywords:</strong>
+                    {{ item.submission.keywords }}
+                    <br>
+                {% endif %}
 
                 <strong>Status:</strong>
                 {{ item.submission.get_status_display }}

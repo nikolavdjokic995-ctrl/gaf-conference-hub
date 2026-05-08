@@ -131,12 +131,13 @@
                         {{ assignment.submission.coauthors|linebreaksbr }}<br>
                     {% endif %}
 
-                    {% if assignment.submission.topic %}
-                        <strong>Topic:</strong>
-                        {{ assignment.submission.topic.code }}
-                        —
-                        {{ assignment.submission.topic.title }}<br>
-                    {% endif %}
+                    <strong>Topics:</strong>
+                    {% for topic in assignment.submission.topic_list %}
+                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                        No topic selected
+                    {% endfor %}
+                    <br>
 
                     <strong>Your role:</strong>
                     <span class="badge">
