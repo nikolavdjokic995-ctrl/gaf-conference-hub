@@ -8,6 +8,7 @@
     <title>{{ conference.title_en }}</title>
 
     <style>
+
         *{
             margin:0;
             padding:0;
@@ -23,14 +24,11 @@
         .hero{
             position:relative;
             min-height:82vh;
-            background-image:
-                linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-                url("{% if conference.hero_image %}{{ conference.hero_image.url }}{% else %}{% static 'conferences/images/hero.jpg' %}{% endif %}");
             background-size:cover;
             background-position:center;
             display:flex;
             flex-direction:column;
-}
+        }
 
         .navbar{
             display:flex;
@@ -188,12 +186,18 @@
                 text-align:center;
             }
         }
+
     </style>
+
 </head>
 
 <body>
 
-<section class="hero">
+<section class="hero"
+    style="background-image:
+        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+        url('{% if conference.hero_image %}{{ conference.hero_image.url }}{% else %}{% static "conferences/images/hero.jpg" %}{% endif %}');
+">
 
     <div class="navbar">
 
@@ -266,10 +270,6 @@
         <h1>
             {{ conference.title_en }}
         </h1>
-
-        <p style="font-size:14px; color:white;">
-            HERO URL: {{ conference.hero_image.url }}
-        </p>
 
         <p>
             {{ conference.location }}
