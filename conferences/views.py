@@ -707,7 +707,9 @@ def register(request):
 
             UserProfile.objects.create(
                 user=user,
-                affiliation=form.cleaned_data["affiliation"]
+                affiliation=form.cleaned_data["affiliation"],
+                title=form.cleaned_data["title"],
+                country=form.cleaned_data["country"],
             )
 
             login(request, user)
@@ -718,8 +720,8 @@ def register(request):
 
     return render(request, "conferences/register.html", {
         "form": form
-    })
-@login_required
+    })@login_required
+
 def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user

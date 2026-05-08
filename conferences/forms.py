@@ -12,23 +12,63 @@ from .models import (
 
 
 class RegisterForm(UserCreationForm):
+
+    TITLE_CHOICES = [
+        ("", "Select"),
+        ("Dr.", "Dr."),
+        ("Mr.", "Mr."),
+        ("Mrs.", "Mrs."),
+        ("Ms.", "Ms."),
+        ("Mx.", "Mx."),
+        ("Prof.", "Prof."),
+        ("Prof. Dr.", "Prof. Dr."),
+        ("Doc. dr.", "Doc. dr."),
+        ("MA", "MA"),
+    ]
+
+    COUNTRY_CHOICES = [
+        ("", "Select country"),
+        ("Serbia", "Serbia"),
+        ("Bosnia and Herzegovina", "Bosnia and Herzegovina"),
+        ("Montenegro", "Montenegro"),
+        ("Croatia", "Croatia"),
+        ("North Macedonia", "North Macedonia"),
+        ("Slovenia", "Slovenia"),
+        ("Germany", "Germany"),
+        ("Austria", "Austria"),
+        ("Italy", "Italy"),
+        ("France", "France"),
+        ("United Kingdom", "United Kingdom"),
+        ("United States", "United States"),
+        ("Other", "Other"),
+    ]
+
+    title = forms.ChoiceField(choices=TITLE_CHOICES)
+
     first_name = forms.CharField(max_length=100)
+
     last_name = forms.CharField(max_length=100)
+
     email = forms.EmailField()
+
     affiliation = forms.CharField(max_length=255)
+
+    country = forms.ChoiceField(choices=COUNTRY_CHOICES)
 
     class Meta:
         model = User
+
         fields = [
             "username",
+            "title",
             "first_name",
             "last_name",
             "email",
             "affiliation",
+            "country",
             "password1",
             "password2",
         ]
-
 
 class SubmissionForm(forms.ModelForm):
     class Meta:

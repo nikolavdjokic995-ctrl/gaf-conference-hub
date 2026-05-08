@@ -14,7 +14,8 @@ class UserProfile(models.Model):
     def __str__(self):
         full_name = f"{self.user.first_name} {self.user.last_name}"
         return full_name.strip() or self.user.username
-
+        title = models.CharField(max_length=50, blank=True)
+        country = models.CharField(max_length=100, blank=True)
 
 class Conference(models.Model):
     SUBMISSION_MODE_CHOICES = [
