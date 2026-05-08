@@ -119,6 +119,11 @@ class Submission(models.Model):
         help_text="Separate co-authors with commas or new lines."
     )
 
+    coauthor_emails = models.TextField(
+        blank=True,
+        help_text="Enter co-author emails, one per line."
+    )    
+
     title = models.CharField(max_length=255)
     abstract = models.TextField(blank=True)
 

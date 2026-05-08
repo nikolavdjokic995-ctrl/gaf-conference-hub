@@ -383,6 +383,7 @@ def submit_paper(request, slug):
             submission = form.save(commit=False)
             submission.conference = conference
             submission.author = request.user
+            submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
             submission.save()
 
             return redirect("my_submissions")
@@ -722,6 +723,8 @@ def register(request):
         "form": form
     })
 
+
+@login_required
 def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user

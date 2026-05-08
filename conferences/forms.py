@@ -61,24 +61,30 @@ class SubmissionForm(forms.ModelForm):
             "title",
             "first_author",
             "coauthors",
+            "coauthor_emails",
             "topic",
             "full_paper_file",
         ]
 
         labels = {
             "title": "Paper title",
-            "first_author": "First author",
-            "coauthors": "Co-authors",
+            "first_author": "First author (First Name Last Name)",
+            "coauthors": "Co-authors (First Name Last Name)",
             "topic": "Conference topic",
             "full_paper_file": "Full paper file",
+            "coauthor_emails": "Co-author email addresses",
         }
 
         widgets = {
             "coauthors": forms.Textarea(attrs={
-                "rows": 4,
-                "placeholder": "Enter co-authors, one per line",
-            })
-        }
+            "rows": 4,
+            "placeholder": "Enter co-authors, one per line",
+    }),
+            "coauthor_emails": forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Enter co-author emails, one per line",
+    }),
+}
 
     def __init__(self, *args, **kwargs):
         conference = kwargs.pop("conference", None)
