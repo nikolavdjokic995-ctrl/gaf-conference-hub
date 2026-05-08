@@ -720,7 +720,7 @@ def register(request):
 
     return render(request, "conferences/register.html", {
         "form": form
-    })@login_required
+    })
 
 def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
