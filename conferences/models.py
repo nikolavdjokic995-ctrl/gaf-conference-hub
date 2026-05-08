@@ -1,6 +1,6 @@
 from django.db import models
 from django.contrib.auth.models import User
-
+from cloudinary_storage.storage import RawMediaCloudinaryStorage
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
@@ -129,6 +129,7 @@ class Submission(models.Model):
 
     full_paper_file = models.FileField(
         upload_to="papers/",
+        storage=RawMediaCloudinaryStorage(),
         blank=True,
         null=True
     )
