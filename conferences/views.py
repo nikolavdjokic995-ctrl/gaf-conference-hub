@@ -115,17 +115,7 @@ def make_decision(request, submission_id):
         submission.final_comment = comment
         submission.save()
 
-        send_conference_email(
-            submission.conference,
-            "decision_made",
-            submission.author,
-            {
-                "title": submission.title,
-                "status": submission.get_status_display(),
-                "comment": submission.final_comment,
-            }
-        )
-
+        
         return redirect("submission_result", submission_id=submission.id)
 
     return render(request, "conferences/make_decision.html", {
