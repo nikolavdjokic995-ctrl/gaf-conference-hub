@@ -465,11 +465,24 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    class Meta:
-        unique_together = ("submission", "reviewer")
+class Meta:
+    unique_together = ("submission", "reviewer")
 
     def calculate_auto_score(self):
-        score = 5
+        total = 0
+        count = 0
+
+        author_score_map = {
+            "yes": 5,
+            "can_be_improved": 3.5,
+            "must_be_improved": 2,
+        }
+
+        rating_score_map = {
+            "high": 5,
+            "average": 3.5,
+            "low": 2,
+        }
 
         author_fields = [
             self.content_context,
@@ -481,24 +494,9 @@ class Review(models.Model):
         ]
 
         for value in author_fields:
-            if value == "can_be_improved":
-                score -= 0.4
-            elif value == "must_be_improved":
-                score -= 0.8
-
-        if self.english_quality == "needs_improvement":
-            score -= 0.5
-
-        editor_flags = [
-            self.conflict_of_interest,
-            self.plagiarism_detected,
-            self.inappropriate_self_citations,
-            self.ethical_concerns,
-        ]
-
-        for value in editor_flags:
-            if value == "yes":
-                score -= 1
+            if value in author_score_map:
+                total += author_score_map[value]
+                count += 1
 
         rating_fields = [
             self.originality,
@@ -510,24 +508,42 @@ class Review(models.Model):
         ]
 
         for value in rating_fields:
-            if value == "average":
-                score -= 0.4
-            elif value == "low":
-                score -= 0.8
-            elif value == "no_answer":
-                score -= 0.3
+            if value in rating_score_map:
+                total += rating_score_map[value]
+                count += 1
+
+        if count == 0:
+            score = 3
+        else:
+            score = total / count
+
+        if self.english_quality == "needs_improvement":
+            score -= 0.3
 
         if self.references_relevant == "no":
-            score -= 0.5
+            score -= 0.3
 
-        if self.overall_recommendation == "minor_revision":
-            score -= 0.5
+        editor_flags = [
+            self.conflict_of_interest,
+            self.plagiarism_detected,
+            self.inappropriate_self_citations,
+            self.ethical_concerns,
+        ]
+
+        for value in editor_flags:
+            if value == "yes":
+                score -= 0.8
+
+        if self.overall_recommendation == "accept":
+            score += 0.5
+        elif self.overall_recommendation == "minor_revision":
+            score -= 0.2
         elif self.overall_recommendation == "major_revision":
-            score -= 1.2
+            score -= 0.7
         elif self.overall_recommendation == "reject":
-            score -= 2
+            score -= 1.5
 
-        return max(1, min(5, round(score)))
+        return max(1, min(5, round(score, 1)))
 
     def save(self, *args, **kwargs):
         self.auto_score = self.calculate_auto_score()
