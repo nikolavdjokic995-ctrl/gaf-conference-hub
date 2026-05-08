@@ -21,16 +21,20 @@
         }
 
         .hero{
-            position:relative;
-            min-height:82vh;
-            background:
-                linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-                url("{% static 'conferences/images/hero.jpg' %}");
-            background-size:cover;
-            background-position:center;
-            display:flex;
-            flex-direction:column;
-        }
+    position:relative;
+    min-height:82vh;
+    background:
+        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+        {% if conference.hero_image %}
+            url("{{ conference.hero_image.url }}");
+        {% else %}
+            url("{% static 'conferences/images/hero.jpg' %}");
+        {% endif %}
+    background-size:cover;
+    background-position:center;
+    display:flex;
+    flex-direction:column;
+}
 
         .navbar{
             display:flex;
@@ -258,7 +262,7 @@
     <div class="hero-content">
 
         <img
-            src="{% static 'conferences/images/logo.png' %}"
+            src="{% if conference.logo %}{{ conference.logo.url }}{% else %}{% static 'conferences/images/logo.png' %}{% endif %}"
             class="conference-logo"
             alt="Green Building Conference 2026"
         >
