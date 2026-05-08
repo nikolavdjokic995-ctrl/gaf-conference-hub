@@ -423,19 +423,22 @@ def important_information(request, slug):
         conference=conference,
         enabled=True
     ).order_by("order")
-    topics = ConferenceTopic.objects.filter(
-        conference=conference,
-        enabled=True
-    ).order_by("order", "code")
+
     is_manager = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
         role="manager"
     ).exists()
 
+    topics = ConferenceTopic.objects.filter(
+        conference=conference,
+        enabled=True
+    ).order_by("order", "code")
+
     return render(request, "conferences/important_information.html", {
         "conference": conference,
         "cards": cards,
+        "topics": topics,
         "is_manager": is_manager,
     })
 
