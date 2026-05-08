@@ -16,16 +16,17 @@ from .models import (
 class RegisterForm(UserCreationForm):
 
     TITLE_CHOICES = [
-        ("", "Select"),
-        ("Dr.", "Dr."),
         ("Mr.", "Mr."),
-        ("Mrs.", "Mrs."),
         ("Ms.", "Ms."),
-        ("Mx.", "Mx."),
+        ("Mrs.", "Mrs."),
+        ("Dr.", "Dr."),
         ("Prof.", "Prof."),
         ("Prof. Dr.", "Prof. Dr."),
-        ("Doc. dr.", "Doc. dr."),
-        ("MA", "MA"),
+        ("BSc", "BSc"),
+        ("MSc", "MSc"),
+        ("MBA", "MBA"),
+        ("PhD", "PhD"),
+
     ]
 
     title = forms.ChoiceField(choices=TITLE_CHOICES)
