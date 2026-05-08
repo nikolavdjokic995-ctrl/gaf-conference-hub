@@ -31,6 +31,9 @@ from conferences.views import (
     my_submissions,
     delete_submission,
     reviewer_dashboard,
+    upload_revision,
+    layout_dashboard,
+    layout_decision,
 )
 
 urlpatterns = [
@@ -47,6 +50,7 @@ urlpatterns = [
     path("dashboard/", manager_dashboard, name="dashboard"),
     path("judge-dashboard/", judge_dashboard, name="judge_dashboard"),
     path("reviewer-dashboard/", reviewer_dashboard, name="reviewer_dashboard"),
+    path("layout-dashboard/", layout_dashboard, name="layout_dashboard"),
 
     path("my-reviews/", my_reviews, name="my_reviews"),
     path("my-submissions/", my_submissions, name="my_submissions"),
@@ -55,6 +59,8 @@ urlpatterns = [
     path("submission/<int:submission_id>/result/", submission_result, name="submission_result"),
     path("submission/<int:submission_id>/decision/", make_decision, name="make_decision"),
     path("submission/<int:submission_id>/delete/", delete_submission, name="delete_submission"),
+    path("submission/<int:submission_id>/upload-revision/", upload_revision, name="upload_revision"),
+    path("submission/<int:submission_id>/layout-decision/", layout_decision, name="layout_decision"),
 
     path("conference/<slug:slug>/overview/", conference_overview, name="conference_overview"),
     path("conference/<slug:slug>/edit-overview/", edit_conference_overview, name="edit_conference_overview"),

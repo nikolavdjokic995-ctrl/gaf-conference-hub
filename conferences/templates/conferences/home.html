@@ -95,6 +95,10 @@
                     <a class="btn secondary" href="/my-reviews/">My reviews</a>
                 {% endif %}
 
+                {% if is_layout_reviewer %}
+                    <a class="btn secondary" href="/layout-dashboard/">Layout review</a>
+                {% endif %}
+
                 {% if is_judge %}
                     <a class="btn secondary" href="/judge-dashboard/">Judge dashboard</a>
                 {% endif %}

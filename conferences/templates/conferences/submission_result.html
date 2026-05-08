@@ -57,6 +57,17 @@
             </span>
         </p>
 
+        {% if submission.judge_revision_message %}
+            <p><strong>Judge revision message:</strong><br>{{ submission.judge_revision_message|linebreaksbr }}</p>
+        {% endif %}
+
+        {% if submission.layout_revision_message %}
+            <p><strong>Layout revision message:</strong><br>{{ submission.layout_revision_message|linebreaksbr }}</p>
+        {% endif %}
+
+        <p><strong>Content revision round:</strong> {{ submission.revision_round }}</p>
+        <p><strong>Layout revision round:</strong> {{ submission.layout_revision_round }}</p>
+
         {% if submission.full_paper_file %}
             <a href="{{ submission.full_paper_file.url }}"
                target="_blank"

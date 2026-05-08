@@ -239,6 +239,12 @@
                     </a>
                 {% endif %}
 
+                {% if is_layout_reviewer %}
+                    <a href="{% url 'layout_dashboard' %}">
+                        Layout Review
+                    </a>
+                {% endif %}
+
                 <form method="post"
                       action="{% url 'logout' %}"
                       style="display:inline;">

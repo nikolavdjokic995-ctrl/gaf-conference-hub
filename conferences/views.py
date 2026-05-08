@@ -25,6 +25,9 @@ from .forms import (
     ConferenceInfoCardForm,
     ConferenceTopicForm,
     RegisterForm,
+    JudgeDecisionForm,
+    RevisionUploadForm,
+    LayoutDecisionForm,
 )
 
 
@@ -34,6 +37,7 @@ def home(request):
     is_manager = False
     is_judge = False
     is_reviewer = False
+    is_layout_reviewer = False
 
     if request.user.is_authenticated:
         is_manager = ConferenceRole.objects.filter(
@@ -47,15 +51,21 @@ def home(request):
         ).exists()
 
         is_reviewer = ConferenceRole.objects.filter(
-    user=request.user,
-    role__in=["content_reviewer", "layout_reviewer"]
-).exists()
+            user=request.user,
+            role="content_reviewer"
+        ).exists()
+
+        is_layout_reviewer = ConferenceRole.objects.filter(
+            user=request.user,
+            role="layout_reviewer"
+        ).exists()
 
     return render(request, "conferences/home.html", {
         "conferences": conferences,
         "is_manager": is_manager,
         "is_judge": is_judge,
         "is_reviewer": is_reviewer,
+        "is_layout_reviewer": is_layout_reviewer,
     })
 
 
@@ -66,6 +76,7 @@ def conference_overview(request, slug):
     is_manager = False
     is_reviewer = False
     is_judge = False
+    is_layout_reviewer = False
 
     if request.user.is_authenticated:
         is_manager = ConferenceRole.objects.filter(
@@ -86,12 +97,19 @@ def conference_overview(request, slug):
             role="judge"
         ).exists()
 
+        is_layout_reviewer = ConferenceRole.objects.filter(
+            conference=conference,
+            user=request.user,
+            role="layout_reviewer"
+        ).exists()
+
     return render(request, "conferences/conference_overview.html", {
         "conference": conference,
         "can_submit": can_submit,
         "is_manager": is_manager,
         "is_reviewer": is_reviewer,
         "is_judge": is_judge,
+        "is_layout_reviewer": is_layout_reviewer,
     })
 
 @login_required
@@ -108,18 +126,32 @@ def make_decision(request, submission_id):
         return redirect("/")
 
     if request.method == "POST":
-        status = request.POST.get("status")
-        comment = request.POST.get("comment")
+        form = JudgeDecisionForm(request.POST)
 
-        submission.status = status
-        submission.final_comment = comment
-        submission.save()
+        if form.is_valid():
+            status = form.cleaned_data["status"]
+            comment = form.cleaned_data["comment"]
 
-        
-        return redirect("submission_result", submission_id=submission.id)
+            submission.status = status
+            submission.final_comment = comment
+
+            if status == "revision_required":
+                submission.judge_revision_message = comment
+                submission.revision_round += 1
+
+            submission.save()
+
+            messages.success(request, "Decision saved successfully.")
+            return redirect("submission_result", submission_id=submission.id)
+    else:
+        form = JudgeDecisionForm(initial={
+            "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "rejected"] else "accepted_for_layout",
+            "comment": submission.final_comment,
+        })
 
     return render(request, "conferences/make_decision.html", {
-        "submission": submission
+        "submission": submission,
+        "form": form,
     })
 
 
@@ -148,7 +180,7 @@ def assign_papers(request, slug):
 
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
-        role__in=["content_reviewer", "layout_reviewer"]
+        role="content_reviewer"
     ).select_related("user").prefetch_related("topics")
 
     if request.method == "POST":
@@ -710,6 +742,126 @@ def reviewer_topics(request, slug):
     })
 
 
+@login_required
+def upload_revision(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id, author=request.user)
+
+    allowed_statuses = [
+        "revision_required",
+        "layout_revision_required",
+    ]
+
+    if submission.status not in allowed_statuses:
+        messages.error(request, "This submission is not currently open for revision upload.")
+        return redirect("my_submissions")
+
+    if request.method == "POST":
+        form = RevisionUploadForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            uploaded_file = form.cleaned_data["full_paper_file"]
+
+            if submission.status == "revision_required":
+                submission.revised_paper_file = uploaded_file
+                submission.full_paper_file = uploaded_file
+                submission.status = "revised_submitted"
+                success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
+            else:
+                submission.layout_revised_paper_file = uploaded_file
+                submission.full_paper_file = uploaded_file
+                submission.status = "layout_revision_submitted"
+                success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
+
+            submission.save()
+            messages.success(request, success_message)
+            return redirect("my_submissions")
+    else:
+        form = RevisionUploadForm()
+
+    return render(request, "conferences/upload_revision.html", {
+        "submission": submission,
+        "form": form,
+    })
+
+
+@login_required
+def layout_dashboard(request):
+    layout_roles = ConferenceRole.objects.filter(
+        user=request.user,
+        role__in=["layout_reviewer", "manager"]
+    )
+
+    if not layout_roles.exists():
+        return redirect("/")
+
+    conferences = [role.conference for role in layout_roles]
+
+    submissions = Submission.objects.filter(
+        conference__in=conferences,
+        status__in=[
+            "accepted_for_layout",
+            "layout_revision_required",
+            "layout_revision_submitted",
+        ]
+    ).select_related(
+        "conference",
+        "author",
+        "topic",
+        "secondary_topic",
+    ).order_by("-updated_at")
+
+    return render(request, "conferences/layout_dashboard.html", {
+        "submissions": submissions,
+    })
+
+
+@login_required
+def layout_decision(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id)
+
+    can_layout_review = ConferenceRole.objects.filter(
+        user=request.user,
+        conference=submission.conference,
+        role__in=["layout_reviewer", "manager"]
+    ).exists()
+
+    if not can_layout_review:
+        return redirect("/")
+
+    if submission.status not in ["accepted_for_layout", "layout_revision_submitted", "layout_revision_required"]:
+        messages.error(request, "This submission is not currently in layout review.")
+        return redirect("layout_dashboard")
+
+    if request.method == "POST":
+        form = LayoutDecisionForm(request.POST)
+
+        if form.is_valid():
+            status = form.cleaned_data["status"]
+            comment = form.cleaned_data["comment"]
+
+            submission.status = status
+            submission.final_comment = comment
+
+            if status == "layout_revision_required":
+                submission.layout_revision_message = comment
+                submission.layout_revision_round += 1
+
+            submission.save()
+
+            messages.success(request, "Layout decision saved successfully.")
+            return redirect("layout_dashboard")
+    else:
+        form = LayoutDecisionForm(initial={
+            "status": "final_accepted",
+            "comment": submission.layout_revision_message,
+        })
+
+    return render(request, "conferences/layout_decision.html", {
+        "submission": submission,
+        "form": form,
+    })
+
+
 def register(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
@@ -738,7 +890,8 @@ def register(request):
 @login_required
 def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
-        reviewer=request.user
+        reviewer=request.user,
+        role="content_reviewer"
     ).select_related(
         "submission",
         "submission__conference",
@@ -752,7 +905,8 @@ def my_reviews(request):
 @login_required
 def reviewer_dashboard(request):
     assignments = ReviewAssignment.objects.filter(
-        reviewer=request.user
+        reviewer=request.user,
+        role="content_reviewer"
     ).select_related(
         "submission",
         "submission__conference",

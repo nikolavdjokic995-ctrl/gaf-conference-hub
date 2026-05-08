@@ -223,3 +223,54 @@ class ConferenceTopicForm(forms.ModelForm):
             "order",
             "enabled",
         ]
+
+class JudgeDecisionForm(forms.Form):
+
+    STATUS_CHOICES = [
+        ("accepted_for_layout", "Accept for layout review"),
+        ("revision_required", "Request author revision"),
+        ("rejected", "Reject"),
+    ]
+
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        label="Decision"
+    )
+
+    comment = forms.CharField(
+        label="Decision message / instructions for author",
+        widget=forms.Textarea(attrs={
+            "rows": 6,
+            "placeholder": "Write the decision message or revision instructions for the author.",
+        }),
+        required=False,
+    )
+
+
+class RevisionUploadForm(forms.Form):
+
+    full_paper_file = forms.FileField(
+        label="Upload revised full paper file"
+    )
+
+
+class LayoutDecisionForm(forms.Form):
+
+    STATUS_CHOICES = [
+        ("final_accepted", "Final accept"),
+        ("layout_revision_required", "Request technical corrections"),
+    ]
+
+    status = forms.ChoiceField(
+        choices=STATUS_CHOICES,
+        label="Layout decision"
+    )
+
+    comment = forms.CharField(
+        label="Technical correction instructions / final note",
+        widget=forms.Textarea(attrs={
+            "rows": 6,
+            "placeholder": "Write technical corrections for the author, or a final layout note.",
+        }),
+        required=False,
+    )

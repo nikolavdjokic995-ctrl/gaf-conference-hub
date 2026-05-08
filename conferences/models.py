@@ -96,9 +96,14 @@ class ConferenceTopic(models.Model):
 class Submission(models.Model):
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
-        ("under_review", "Under review"),
-        ("revision_required", "Revision required"),
-        ("accepted", "Accepted"),
+        ("under_review", "Under content review"),
+        ("revision_required", "Revision requested"),
+        ("revised_submitted", "Revised paper submitted"),
+        ("accepted_for_layout", "Accepted for layout review"),
+        ("layout_revision_required", "Layout corrections requested"),
+        ("layout_revision_submitted", "Layout corrected paper submitted"),
+        ("final_accepted", "Final accepted"),
+        ("accepted", "Accepted (legacy)"),
         ("rejected", "Rejected"),
     ]
 
@@ -169,6 +174,26 @@ class Submission(models.Model):
     )
 
     final_comment = models.TextField(blank=True)
+
+    judge_revision_message = models.TextField(blank=True)
+    layout_revision_message = models.TextField(blank=True)
+
+    revision_round = models.PositiveSmallIntegerField(default=0)
+    layout_revision_round = models.PositiveSmallIntegerField(default=0)
+
+    revised_paper_file = models.FileField(
+        upload_to="revised_papers/",
+        storage=RawMediaCloudinaryStorage(),
+        blank=True,
+        null=True
+    )
+
+    layout_revised_paper_file = models.FileField(
+        upload_to="layout_revised_papers/",
+        storage=RawMediaCloudinaryStorage(),
+        blank=True,
+        null=True
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

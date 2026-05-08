@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Layout Review Dashboard</title>
+    <style>
+        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}.container{max-width:1150px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}h1{color:#14532d;margin-top:0}.card{border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:18px}.title{font-size:22px;font-weight:bold;color:#14532d;margin-bottom:10px}.meta{line-height:1.8;color:#444}.badge{display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-weight:bold;font-size:13px}.btn{display:inline-block;margin-top:14px;margin-right:10px;background:#16a34a;color:white;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}.btn-outline{background:white;color:#14532d;border:1px solid #14532d}.empty{padding:26px;background:#f9fafb;border-radius:12px;color:#555}
+    </style>
+</head>
+<body>
+<div class="topbar">GAF Conference Hub</div>
+<div class="container">
+    <h1>Layout Review Dashboard</h1>
+
+    {% if submissions %}
+        {% for submission in submissions %}
+            <div class="card">
+                <div class="title">{{ submission.title }}</div>
+                <div class="meta">
+                    <strong>Conference:</strong> {{ submission.conference.title_en }}<br>
+                    <strong>First author:</strong> {{ submission.first_author }}<br>
+                    <strong>Topics:</strong>
+                    {% for topic in submission.topic_list %}
+                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                        No topic selected
+                    {% endfor %}<br>
+                    <strong>Status:</strong> <span class="badge">{{ submission.get_status_display }}</span><br>
+                    <strong>Layout revision round:</strong> {{ submission.layout_revision_round }}
+                </div>
+
+                {% if submission.full_paper_file %}
+                    <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">Download paper</a>
+                {% endif %}
+
+                <a class="btn" href="{% url 'layout_decision' submission.id %}">Open layout decision</a>
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">No papers are currently waiting for layout review.</div>
+    {% endif %}
+</div>
+</body>
+</html>

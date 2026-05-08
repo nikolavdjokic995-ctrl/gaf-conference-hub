@@ -2,202 +2,69 @@
 <html>
 <head>
     <title>My submissions</title>
-
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-        }
-
-        .topbar {
-            background: #14532d;
-            color: white;
-            padding: 20px 40px;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .container {
-            max-width: 950px;
-            margin: 50px auto;
-            background: white;
-            padding: 40px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-
-        h1 {
-            margin-top: 0;
-            color: #14532d;
-        }
-
-        .submission-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 12px;
-            padding: 22px;
-            margin-bottom: 18px;
-            background: #ffffff;
-        }
-
-        .submission-title {
-            font-size: 20px;
-            font-weight: bold;
-            color: #14532d;
-            margin-bottom: 10px;
-        }
-
-        .authors-box {
-            background: #f9fafb;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 14px;
-            color: #444;
-            line-height: 1.6;
-        }
-
-        .meta {
-            color: #444;
-            line-height: 1.7;
-        }
-
-        .badge {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            padding: 5px 10px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .file-link {
-            display: inline-block;
-            margin-top: 14px;
-            margin-right: 16px;
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .delete-btn {
-            display: inline-block;
-            margin-top: 14px;
-            background: #dc2626;
-            color: white;
-            border: none;
-            padding: 10px 16px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #2563eb;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .empty {
-            padding: 25px;
-            background: #f9fafb;
-            border-radius: 12px;
-            color: #555;
-        }
+        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:20px 40px;font-size:28px;font-weight:bold}.container{max-width:1000px;margin:50px auto;background:white;padding:40px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.1)}h1{margin-top:0;color:#14532d}.submission-card{border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:18px;background:#fff}.submission-title{font-size:20px;font-weight:bold;color:#14532d;margin-bottom:10px}.authors-box,.message-box{background:#f9fafb;border-radius:10px;padding:12px 14px;margin-bottom:14px;color:#444;line-height:1.6}.message-box{background:#fff7ed;border:1px solid #fed7aa}.meta{color:#444;line-height:1.7;margin-bottom:8px}.badge{display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-size:13px;font-weight:bold}.file-link,.back-link{display:inline-block;margin-top:14px;margin-right:16px;color:#2563eb;text-decoration:none;font-weight:bold}.btn{display:inline-block;margin-top:14px;margin-right:12px;background:#16a34a;color:white;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}.empty{padding:25px;background:#f9fafb;border-radius:12px;color:#555}
     </style>
 </head>
-
 <body>
-
-<div class="topbar">
-    GAF Conference Hub
-</div>
-
+<div class="topbar">GAF Conference Hub</div>
 <div class="container">
-
     <h1>My submissions</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message-box">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
 
     {% if submissions %}
         {% for submission in submissions %}
             <div class="submission-card">
-
-                <div class="submission-title">
-                    {{ submission.title }}
-                </div>
+                <div class="submission-title">{{ submission.title }}</div>
 
                 <div class="authors-box">
-                    <strong>First author:</strong>
-                    {{ submission.first_author }}
-
-                    {% if submission.coauthors %}
-                        <br>
-                        <strong>Co-authors:</strong>
-                        {{ submission.coauthors|linebreaksbr }}
-                    {% endif %}
+                    <strong>First author:</strong> {{ submission.first_author }}
+                    {% if submission.coauthors %}<br><strong>Co-authors:</strong> {{ submission.coauthors|linebreaksbr }}{% endif %}
                 </div>
 
-                {% if submission.abstract %}
-                    <div class="meta">
-                        <strong>Abstract:</strong><br>
-                        {{ submission.abstract|linebreaksbr }}
-                    </div>
-                {% endif %}
-
-                {% if submission.keywords %}
-                    <div class="meta">
-                        <strong>Keywords:</strong>
-                        {{ submission.keywords }}
-                    </div>
-                {% endif %}
+                {% if submission.abstract %}<div class="meta"><strong>Abstract:</strong><br>{{ submission.abstract|linebreaksbr }}</div>{% endif %}
+                {% if submission.keywords %}<div class="meta"><strong>Keywords:</strong> {{ submission.keywords }}</div>{% endif %}
 
                 <div class="meta">
-                    <strong>Conference:</strong>
-                    {{ submission.conference.title_en }}<br>
-
+                    <strong>Conference:</strong> {{ submission.conference.title_en }}<br>
                     <strong>Topics:</strong>
                     {% for topic in submission.topic_list %}
                         {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
                     {% empty %}
                         No topic selected
-                    {% endfor %}
-                    <br>
-
-                    <strong>Status:</strong>
-                    <span class="badge">
-                        {{ submission.get_status_display }}
-                    </span>
-                    <br>
-
-                    <strong>Submitted:</strong>
-                    {{ submission.created_at|date:"d.m.Y. H:i" }}
+                    {% endfor %}<br>
+                    <strong>Status:</strong> <span class="badge">{{ submission.get_status_display }}</span><br>
+                    <strong>Content revision round:</strong> {{ submission.revision_round }}<br>
+                    <strong>Layout revision round:</strong> {{ submission.layout_revision_round }}
                 </div>
 
-                {% if submission.full_paper_file %}
-                    <a class="file-link"
-                       href="{{ submission.full_paper_file.url }}"
-                       target="_blank">
-                        Download paper
-                    </a>
+                {% if submission.status == "revision_required" and submission.judge_revision_message %}
+                    <div class="message-box"><strong>Judge revision instructions:</strong><br>{{ submission.judge_revision_message|linebreaksbr }}</div>
                 {% endif %}
 
-                
+                {% if submission.status == "layout_revision_required" and submission.layout_revision_message %}
+                    <div class="message-box"><strong>Layout correction instructions:</strong><br>{{ submission.layout_revision_message|linebreaksbr }}</div>
+                {% endif %}
 
+                {% if submission.full_paper_file %}
+                    <a class="file-link" href="{{ submission.full_paper_file.url }}" target="_blank">Download current paper</a>
+                {% endif %}
+
+                {% if submission.status == "revision_required" or submission.status == "layout_revision_required" %}
+                    <a class="btn" href="{% url 'upload_revision' submission.id %}">Upload revised paper</a>
+                {% endif %}
             </div>
         {% endfor %}
     {% else %}
-        <div class="empty">
-            You have not submitted any papers yet.
-        </div>
+        <div class="empty">You have not submitted any papers yet.</div>
     {% endif %}
 
-    <a class="back-link"
-       href="/conference/green-building-2026/overview/">
-        ← Back to conference
-    </a>
-
+    <a class="back-link" href="/">← Back home</a>
 </div>
-
 </body>
 </html>
