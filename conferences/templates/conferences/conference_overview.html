@@ -193,11 +193,17 @@
 
 <body>
 
+{% if conference.hero_image %}
 <section class="hero"
     style="background-image:
         linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-        url('{% if conference.hero_image %}{{ conference.hero_image.url }}{% else %}{% static "conferences/images/hero.jpg" %}{% endif %}');
-">
+        url('{{ conference.hero_image.url }}');">
+{% else %}
+<section class="hero"
+    style="background-image:
+        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+        url('{% static "conferences/images/hero.jpg" %}');">
+{% endif %}
 
     <div class="navbar">
 
