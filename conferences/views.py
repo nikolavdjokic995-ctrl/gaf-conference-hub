@@ -730,6 +730,19 @@ def register(request):
         "form": form
     })
 @login_required
+def my_reviews(request):
+    assignments = ReviewAssignment.objects.filter(
+        reviewer=request.user
+    ).select_related(
+        "submission",
+        "submission__conference",
+        "submission__topic",
+    )
+
+    return render(request, "conferences/my_reviews.html", {
+        "assignments": assignments,
+    })
+@login_required
 def reviewer_dashboard(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user
