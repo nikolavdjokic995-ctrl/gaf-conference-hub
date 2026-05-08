@@ -137,13 +137,13 @@ def make_decision(request, submission_id):
 def assign_papers(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
-    is_manager = ConferenceRole.objects.filter(
+    can_assign = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
-        role="manager"
+        role__in=["manager", "judge"]
     ).exists()
 
-    if not is_manager:
+    if not can_assign:
         return redirect("/")
 
     all_reviewers = ConferenceRole.objects.filter(
@@ -456,8 +456,8 @@ def add_info_card(request, slug):
 
     if not is_manager:
         return redirect("/")
-
-    if request.method == "POST":
+    
+       if request.method == "POST":
         form = ConferenceInfoCardForm(request.POST, request.FILES)
 
         if form.is_valid():
