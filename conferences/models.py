@@ -147,6 +147,13 @@ class Submission(models.Model):
         blank=True,
         related_name="submissions"
     )
+    secondary_topic = models.ForeignKey(
+        ConferenceTopic,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="secondary_submissions"
+    )
 
     status = models.CharField(
         max_length=30,
