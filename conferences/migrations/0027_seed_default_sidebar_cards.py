@@ -72,7 +72,7 @@ def unseed_default_sidebar_cards(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("conferences", "0025_conferenceinfocard_icon_image_conferencesidebarcard"),
+        ("conferences", "0026_alter_review_auto_score_recalculate"),
     ]
 
     operations = [

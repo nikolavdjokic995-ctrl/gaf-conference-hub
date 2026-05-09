@@ -460,28 +460,35 @@ class Review(models.Model):
         default="no"
     )
 
-    auto_score = models.PositiveSmallIntegerField(default=3)
+    auto_score = models.FloatField(default=3.0)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-class Meta:
-    unique_together = ("submission", "reviewer")
+    class Meta:
+        unique_together = ("submission", "reviewer")
 
     def calculate_auto_score(self):
-        total = 0
+        """Calculate a balanced 1-5 review score from reviewer answers.
+
+        Author-scale answers and scientific ratings are scored equally:
+        yes/high = 5, can_be_improved/average = 3.5, must_be_improved/low = 2.
+        Non-applicable/no-answer fields are ignored instead of being counted as zero.
+        Small penalties/bonuses are then applied for recommendation and red flags.
+        """
+        total = 0.0
         count = 0
 
         author_score_map = {
-            "yes": 5,
+            "yes": 5.0,
             "can_be_improved": 3.5,
-            "must_be_improved": 2,
+            "must_be_improved": 2.0,
         }
 
         rating_score_map = {
-            "high": 5,
+            "high": 5.0,
             "average": 3.5,
-            "low": 2,
+            "low": 2.0,
         }
 
         author_fields = [
@@ -494,8 +501,9 @@ class Meta:
         ]
 
         for value in author_fields:
-            if value in author_score_map:
-                total += author_score_map[value]
+            mapped_score = author_score_map.get(value)
+            if mapped_score is not None:
+                total += mapped_score
                 count += 1
 
         rating_fields = [
@@ -508,14 +516,12 @@ class Meta:
         ]
 
         for value in rating_fields:
-            if value in rating_score_map:
-                total += rating_score_map[value]
+            mapped_score = rating_score_map.get(value)
+            if mapped_score is not None:
+                total += mapped_score
                 count += 1
 
-        if count == 0:
-            score = 3
-        else:
-            score = total / count
+        score = total / count if count else 3.0
 
         if self.english_quality == "needs_improvement":
             score -= 0.3
@@ -534,16 +540,15 @@ class Meta:
             if value == "yes":
                 score -= 0.8
 
-        if self.overall_recommendation == "accept":
-            score += 0.5
-        elif self.overall_recommendation == "minor_revision":
-            score -= 0.2
-        elif self.overall_recommendation == "major_revision":
-            score -= 0.7
-        elif self.overall_recommendation == "reject":
-            score -= 1.5
+        recommendation_adjustments = {
+            "accept": 0.5,
+            "minor_revision": -0.2,
+            "major_revision": -0.7,
+            "reject": -1.5,
+        }
+        score += recommendation_adjustments.get(self.overall_recommendation, 0.0)
 
-        return max(1, min(5, round(score, 1)))
+        return max(1.0, min(5.0, round(score, 1)))
 
     def save(self, *args, **kwargs):
         self.auto_score = self.calculate_auto_score()
