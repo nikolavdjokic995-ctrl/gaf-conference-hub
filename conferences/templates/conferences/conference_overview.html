@@ -160,6 +160,55 @@
             color:#111827;
         }
 
+        .about-overview{
+            margin-top:34px;
+            padding:38px;
+            border-radius:24px;
+            background:#ffffff;
+            border:1px solid #e5e7eb;
+            box-shadow:0 10px 26px rgba(0,0,0,0.06);
+        }
+
+        .about-kicker{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            margin-bottom:12px;
+            padding:8px 14px;
+            border-radius:999px;
+            background:#ecfdf5;
+            color:#047857;
+            font-size:13px;
+            font-weight:800;
+            letter-spacing:0.08em;
+            text-transform:uppercase;
+        }
+
+        .about-overview h2{
+            margin-bottom:18px;
+            padding-bottom:14px;
+            border-bottom:1px solid #d1d5db;
+            color:#1f2937;
+            font-size:42px;
+            line-height:1.15;
+        }
+
+        .about-content{
+            color:#111827;
+            font-size:18px;
+            line-height:1.8;
+        }
+
+        .about-content p{
+            margin-bottom:18px;
+        }
+
+        .about-empty{
+            color:#6b7280;
+            font-size:16px;
+            line-height:1.7;
+        }
+
         @media(max-width:900px){
 
             .navbar{
@@ -184,6 +233,23 @@
                 width:100%;
                 max-width:320px;
                 text-align:center;
+            }
+
+            .overview-section{
+                margin:-30px 16px 40px;
+                padding:24px;
+            }
+
+            .about-overview{
+                padding:26px;
+            }
+
+            .about-overview h2{
+                font-size:32px;
+            }
+
+            .about-content{
+                font-size:16px;
             }
         }
 
@@ -362,6 +428,28 @@
             <h3>✉️ Contact</h3>
             <p>{{ conference.contact_email }}</p>
         </div>
+
+    </div>
+
+    <div class="about-overview">
+
+        <div class="about-kicker">
+            Conference overview
+        </div>
+
+        <h2>
+            About {{ conference.title_en }}
+        </h2>
+
+        {% if conference.description_en %}
+            <div class="about-content">
+                {{ conference.description_en|linebreaks }}
+            </div>
+        {% else %}
+            <p class="about-empty">
+                Conference overview text has not been added yet.
+            </p>
+        {% endif %}
 
     </div>
 
