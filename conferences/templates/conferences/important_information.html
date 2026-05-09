@@ -630,72 +630,12 @@
                             {% endif %}
                         </section>
                     {% endfor %}
-                {% else %}
+                {% elif is_manager %}
                     <section class="info-sidebar-card">
-                        <p class="eyebrow">Submission guide</p>
-                        <h3>How to submit</h3>
-                        <ul class="sidebar-list">
-                            <li>
-                                <strong>1. Review the topics</strong>
-                                Choose the conference topic that best matches your paper.
-                            </li>
-                            <li>
-                                <strong>2. Read the documents</strong>
-                                Use the available guidelines and templates before submitting.
-                            </li>
-                            <li>
-                                <strong>3. Follow the workflow</strong>
-                                Track your paper status from submission to final decision.
-                            </li>
-                        </ul>
+                        <p class="eyebrow">Sidebar</p>
+                        <h3>No sidebar cards yet</h3>
+                        <p class="muted-text">Use “Add sidebar card” above to create the first right-side card.</p>
                     </section>
-
-                    <section class="info-sidebar-card">
-                        <p class="eyebrow">Timeline</p>
-                        <h3>Important dates</h3>
-                        <ul class="sidebar-list">
-                            {% if conference.submission_deadline %}
-                                <li>
-                                    <strong>Submission deadline</strong>
-                                    {{ conference.submission_deadline }}
-                                </li>
-                            {% endif %}
-
-                            {% if conference.review_deadline %}
-                                <li>
-                                    <strong>Review deadline</strong>
-                                    {{ conference.review_deadline }}
-                                </li>
-                            {% endif %}
-
-                            <li>
-                                <strong>Conference dates</strong>
-                                {{ conference.start_date }}{% if conference.end_date %} – {{ conference.end_date }}{% endif %}
-                            </li>
-                        </ul>
-                    </section>
-
-                    {% if conference.contact_email or conference.registration_url %}
-                        <section class="info-sidebar-card">
-                            <p class="eyebrow">Links</p>
-                            <h3>Useful information</h3>
-                            <ul class="sidebar-list">
-                                {% if conference.registration_url %}
-                                    <li>
-                                        <strong>Registration</strong>
-                                        <a href="{{ conference.registration_url }}" target="_blank">Open registration page</a>
-                                    </li>
-                                {% endif %}
-
-                                {% if conference.contact_email %}
-                                    <li>
-                                        <strong>Contact</strong>
-                                        <a href="mailto:{{ conference.contact_email }}">{{ conference.contact_email }}</a>
-                                    </li>
-                                {% endif %}
-                            </ul>
-                        </section>
-                    {% endif %}
                 {% endif %}
             </aside>
         </div>
