@@ -14,6 +14,7 @@ from .models import (
     Review,
     EmailTemplate,
     ConferenceInfoCard,
+    ConferenceSidebarCard,
     ConferenceTopic,
     UserProfile,
 )
@@ -23,6 +24,7 @@ from .forms import (
     ConferenceOverviewForm,
     SubmissionForm,
     ConferenceInfoCardForm,
+    ConferenceSidebarCardForm,
     ConferenceTopicForm,
     RegisterForm,
     JudgeDecisionForm,
@@ -449,6 +451,11 @@ def important_information(request, slug):
         enabled=True
     ).order_by("order", "code")
 
+    sidebar_cards = ConferenceSidebarCard.objects.filter(
+        conference=conference,
+        enabled=True
+    ).order_by("order")
+
     is_manager = False
     if request.user.is_authenticated:
         is_manager = ConferenceRole.objects.filter(
@@ -461,6 +468,7 @@ def important_information(request, slug):
         "conference": conference,
         "cards": cards,
         "topics": topics,
+        "sidebar_cards": sidebar_cards,
         "is_manager": is_manager,
     })
 
@@ -551,6 +559,93 @@ def delete_info_card(request, card_id):
 
 
 @login_required
+def add_sidebar_card(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    if request.method == "POST":
+        form = ConferenceSidebarCardForm(request.POST, request.FILES)
+
+        if form.is_valid():
+            sidebar_card = form.save(commit=False)
+            sidebar_card.conference = conference
+            sidebar_card.save()
+            return redirect("important_information", slug=conference.slug)
+    else:
+        form = ConferenceSidebarCardForm()
+
+    return render(request, "conferences/sidebar_card_form.html", {
+        "form": form,
+        "conference": conference,
+    })
+
+
+@login_required
+def edit_sidebar_card(request, sidebar_card_id):
+    sidebar_card = get_object_or_404(ConferenceSidebarCard, id=sidebar_card_id)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=sidebar_card.conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    if request.method == "POST":
+        form = ConferenceSidebarCardForm(
+            request.POST,
+            request.FILES,
+            instance=sidebar_card
+        )
+
+        if form.is_valid():
+            form.save()
+            return redirect(
+                "important_information",
+                slug=sidebar_card.conference.slug
+            )
+    else:
+        form = ConferenceSidebarCardForm(instance=sidebar_card)
+
+    return render(request, "conferences/sidebar_card_form.html", {
+        "form": form,
+        "conference": sidebar_card.conference,
+    })
+
+
+@login_required
+def delete_sidebar_card(request, sidebar_card_id):
+    sidebar_card = get_object_or_404(ConferenceSidebarCard, id=sidebar_card_id)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=sidebar_card.conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    conference_slug = sidebar_card.conference.slug
+    sidebar_card.delete()
+
+    return redirect(
+        "important_information",
+        slug=conference_slug
+    )
+
+
+@login_required
 def conference_topics(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
@@ -576,6 +671,7 @@ def conference_topics(request, slug):
     return render(request, "conferences/conference_topics.html", {
         "conference": conference,
         "topics": topics,
+        "sidebar_cards": sidebar_cards,
         "is_manager": is_manager,
     })
 
@@ -727,6 +823,11 @@ def reviewer_topics(request, slug):
         conference=conference,
         enabled=True
     ).order_by("order", "code")
+
+    sidebar_cards = ConferenceSidebarCard.objects.filter(
+        conference=conference,
+        enabled=True
+    ).order_by("order")
 
     if request.method == "POST":
         selected_topic_ids = request.POST.getlist("topics")

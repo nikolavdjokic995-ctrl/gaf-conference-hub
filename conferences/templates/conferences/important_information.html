@@ -268,6 +268,14 @@
         background: #eaf7ef;
         color: #0d5c2f;
         font-weight: 900;
+        overflow: hidden;
+    }
+
+    .info-card-icon img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
     }
 
     .info-card-title-wrap {
@@ -375,6 +383,25 @@
         display: block;
         color: #0d5c2f;
         margin-bottom: 4px;
+    }
+
+    .sidebar-card-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .sidebar-card-header-text {
+        min-width: 0;
+        flex: 1;
+    }
+
+    .sidebar-description {
+        margin-top: 14px;
+        color: #315a45;
+        line-height: 1.75;
+        white-space: normal;
+        overflow-wrap: anywhere;
     }
 
     .bottom-back {
@@ -518,7 +545,13 @@
                                 <article class="info-card">
                                     <details class="info-card-details">
                                         <summary>
-                                            <span class="info-card-icon">i</span>
+                                            <span class="info-card-icon">
+                                                {% if card.icon_image %}
+                                                    <img src="{{ card.icon_image.url }}" alt="">
+                                                {% else %}
+                                                    i
+                                                {% endif %}
+                                            </span>
                                             <span class="info-card-title-wrap">
                                                 <h3>{{ card.title }}</h3>
                                                 <span class="info-card-hint">Click to view details</span>
@@ -555,70 +588,114 @@
             </main>
 
             <aside class="info-sidebar">
-                <section class="info-sidebar-card">
-                    <p class="eyebrow">Submission guide</p>
-                    <h3>How to submit</h3>
-                    <ul class="sidebar-list">
-                        <li>
-                            <strong>1. Review the topics</strong>
-                            Choose the conference topic that best matches your paper.
-                        </li>
-                        <li>
-                            <strong>2. Read the documents</strong>
-                            Use the available guidelines and templates before submitting.
-                        </li>
-                        <li>
-                            <strong>3. Follow the workflow</strong>
-                            Track your paper status from submission to final decision.
-                        </li>
-                    </ul>
-                </section>
-
-                <section class="info-sidebar-card">
-                    <p class="eyebrow">Timeline</p>
-                    <h3>Important dates</h3>
-                    <ul class="sidebar-list">
-                        {% if conference.submission_deadline %}
-                            <li>
-                                <strong>Submission deadline</strong>
-                                {{ conference.submission_deadline }}
-                            </li>
-                        {% endif %}
-
-                        {% if conference.review_deadline %}
-                            <li>
-                                <strong>Review deadline</strong>
-                                {{ conference.review_deadline }}
-                            </li>
-                        {% endif %}
-
-                        <li>
-                            <strong>Conference dates</strong>
-                            {{ conference.start_date }}{% if conference.end_date %} – {{ conference.end_date }}{% endif %}
-                        </li>
-                    </ul>
-                </section>
-
-                {% if conference.contact_email or conference.registration_url %}
+                {% if is_manager %}
                     <section class="info-sidebar-card">
-                        <p class="eyebrow">Links</p>
-                        <h3>Useful information</h3>
-                        <ul class="sidebar-list">
-                            {% if conference.registration_url %}
-                                <li>
-                                    <strong>Registration</strong>
-                                    <a href="{{ conference.registration_url }}" target="_blank">Open registration page</a>
-                                </li>
+                        <p class="eyebrow">Sidebar</p>
+                        <h3>Manage right-side cards</h3>
+                        <p class="muted-text">Add/edit the cards shown in this sidebar.</p>
+                        <div class="card-manager-actions">
+                            <a href="{% url 'add_sidebar_card' conference.slug %}">Add sidebar card</a>
+                        </div>
+                    </section>
+                {% endif %}
+
+                {% if sidebar_cards %}
+                    {% for sidebar_card in sidebar_cards %}
+                        <section class="info-sidebar-card">
+                            <div class="sidebar-card-header">
+                                <span class="info-card-icon">
+                                    {% if sidebar_card.icon_image %}
+                                        <img src="{{ sidebar_card.icon_image.url }}" alt="">
+                                    {% else %}
+                                        i
+                                    {% endif %}
+                                </span>
+                                <div class="sidebar-card-header-text">
+                                    {% if sidebar_card.eyebrow %}
+                                        <p class="eyebrow">{{ sidebar_card.eyebrow }}</p>
+                                    {% endif %}
+                                    <h3>{{ sidebar_card.title }}</h3>
+                                </div>
+                            </div>
+
+                            {% if sidebar_card.description %}
+                                <div class="sidebar-description">{{ sidebar_card.description|linebreaksbr }}</div>
                             {% endif %}
 
-                            {% if conference.contact_email %}
-                                <li>
-                                    <strong>Contact</strong>
-                                    <a href="mailto:{{ conference.contact_email }}">{{ conference.contact_email }}</a>
-                                </li>
+                            {% if is_manager %}
+                                <div class="card-manager-actions">
+                                    <a href="{% url 'edit_sidebar_card' sidebar_card.id %}">Edit</a>
+                                    <a class="delete-link" href="{% url 'delete_sidebar_card' sidebar_card.id %}">Delete</a>
+                                </div>
                             {% endif %}
+                        </section>
+                    {% endfor %}
+                {% else %}
+                    <section class="info-sidebar-card">
+                        <p class="eyebrow">Submission guide</p>
+                        <h3>How to submit</h3>
+                        <ul class="sidebar-list">
+                            <li>
+                                <strong>1. Review the topics</strong>
+                                Choose the conference topic that best matches your paper.
+                            </li>
+                            <li>
+                                <strong>2. Read the documents</strong>
+                                Use the available guidelines and templates before submitting.
+                            </li>
+                            <li>
+                                <strong>3. Follow the workflow</strong>
+                                Track your paper status from submission to final decision.
+                            </li>
                         </ul>
                     </section>
+
+                    <section class="info-sidebar-card">
+                        <p class="eyebrow">Timeline</p>
+                        <h3>Important dates</h3>
+                        <ul class="sidebar-list">
+                            {% if conference.submission_deadline %}
+                                <li>
+                                    <strong>Submission deadline</strong>
+                                    {{ conference.submission_deadline }}
+                                </li>
+                            {% endif %}
+
+                            {% if conference.review_deadline %}
+                                <li>
+                                    <strong>Review deadline</strong>
+                                    {{ conference.review_deadline }}
+                                </li>
+                            {% endif %}
+
+                            <li>
+                                <strong>Conference dates</strong>
+                                {{ conference.start_date }}{% if conference.end_date %} – {{ conference.end_date }}{% endif %}
+                            </li>
+                        </ul>
+                    </section>
+
+                    {% if conference.contact_email or conference.registration_url %}
+                        <section class="info-sidebar-card">
+                            <p class="eyebrow">Links</p>
+                            <h3>Useful information</h3>
+                            <ul class="sidebar-list">
+                                {% if conference.registration_url %}
+                                    <li>
+                                        <strong>Registration</strong>
+                                        <a href="{{ conference.registration_url }}" target="_blank">Open registration page</a>
+                                    </li>
+                                {% endif %}
+
+                                {% if conference.contact_email %}
+                                    <li>
+                                        <strong>Contact</strong>
+                                        <a href="mailto:{{ conference.contact_email }}">{{ conference.contact_email }}</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </section>
+                    {% endif %}
                 {% endif %}
             </aside>
         </div>

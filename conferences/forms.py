@@ -9,6 +9,7 @@ from .models import (
     Review,
     Conference,
     ConferenceInfoCard,
+    ConferenceSidebarCard,
     ConferenceTopic,
 )
 
@@ -241,7 +242,23 @@ class ConferenceInfoCardForm(forms.ModelForm):
         fields = [
             "title",
             "description",
+            "icon_image",
             "file",
+            "order",
+            "enabled",
+        ]
+
+
+class ConferenceSidebarCardForm(forms.ModelForm):
+
+    class Meta:
+        model = ConferenceSidebarCard
+
+        fields = [
+            "eyebrow",
+            "title",
+            "description",
+            "icon_image",
             "order",
             "enabled",
         ]

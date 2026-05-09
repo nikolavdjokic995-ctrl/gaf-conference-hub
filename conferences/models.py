@@ -583,6 +583,13 @@ class ConferenceInfoCard(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField(blank=True)
 
+    icon_image = models.ImageField(
+        upload_to="conference_info_icons/",
+        blank=True,
+        null=True,
+        help_text="Optional small image/icon shown next to the card title."
+    )
+
     file = models.FileField(
         upload_to="conference_files/",
         blank=True,
@@ -597,3 +604,31 @@ class ConferenceInfoCard(models.Model):
 
     class Meta:
         ordering = ["order"]
+
+class ConferenceSidebarCard(models.Model):
+    conference = models.ForeignKey(
+        Conference,
+        on_delete=models.CASCADE,
+        related_name="sidebar_cards"
+    )
+
+    eyebrow = models.CharField(max_length=80, blank=True)
+    title = models.CharField(max_length=200)
+    description = models.TextField(blank=True)
+
+    icon_image = models.ImageField(
+        upload_to="conference_sidebar_icons/",
+        blank=True,
+        null=True,
+        help_text="Optional small image/icon shown next to the sidebar card title."
+    )
+
+    order = models.PositiveIntegerField(default=0)
+    enabled = models.BooleanField(default=True)
+
+    def __str__(self):
+        return f"{self.conference.title_en} - {self.title}"
+
+    class Meta:
+        ordering = ["order"]
+

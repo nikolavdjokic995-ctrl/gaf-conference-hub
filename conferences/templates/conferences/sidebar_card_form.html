@@ -1,0 +1,18 @@
+<h1>
+    {% if form.instance.id %}
+        Edit sidebar card
+    {% else %}
+        Add sidebar card
+    {% endif %}
+</h1>
+
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+
+    <button type="submit">Save sidebar card</button>
+</form>
+
+<p>
+    <a href="{% url 'important_information' conference.slug %}">Back</a>
+</p>
