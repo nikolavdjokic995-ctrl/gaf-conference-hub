@@ -227,24 +227,40 @@
 
     .cards-grid {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
+        grid-template-columns: 1fr;
         gap: 18px;
     }
 
     .info-card {
-        display: flex;
-        flex-direction: column;
-        min-height: 220px;
-        border: 1px solid rgba(13, 92, 47, 0.11);
+        border: 1px solid rgba(13, 92, 47, 0.13);
         border-radius: 24px;
-        padding: 22px;
+        padding: 0;
         background: #ffffff;
         box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+        overflow: hidden;
+    }
+
+    .info-card-details {
+        margin: 0;
+    }
+
+    .info-card-details summary {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 22px;
+        cursor: pointer;
+        list-style: none;
+    }
+
+    .info-card-details summary::-webkit-details-marker {
+        display: none;
     }
 
     .info-card-icon {
         width: 44px;
         height: 44px;
+        flex: 0 0 44px;
         border-radius: 14px;
         display: inline-flex;
         align-items: center;
@@ -252,19 +268,43 @@
         background: #eaf7ef;
         color: #0d5c2f;
         font-weight: 900;
-        margin-bottom: 16px;
+    }
+
+    .info-card-title-wrap {
+        flex: 1;
+        min-width: 0;
     }
 
     .info-card h3 {
-        margin: 0 0 10px;
+        margin: 0;
         color: #0d5c2f;
         font-size: 22px;
     }
 
+    .info-card-hint {
+        display: block;
+        margin-top: 5px;
+        color: #587568;
+        font-size: 14px;
+        font-weight: 600;
+    }
+
+    .info-card-toggle {
+        color: #0d5c2f;
+        font-size: 22px;
+        font-weight: 900;
+        transition: transform 0.15s ease;
+    }
+
+    .info-card-details[open] .info-card-toggle {
+        transform: rotate(45deg);
+    }
+
     .info-card-body {
         color: #456c59;
-        line-height: 1.7;
-        flex: 1;
+        line-height: 1.8;
+        padding: 0 22px 22px 82px;
+        max-width: 100%;
     }
 
     .info-card-body p:first-child {
@@ -347,10 +387,6 @@
             position: static;
         }
 
-        .cards-grid {
-            grid-template-columns: 1fr;
-        }
-
         .section-heading {
             flex-direction: column;
         }
@@ -374,6 +410,15 @@
 
         .topic-card-header {
             flex-direction: column;
+        }
+
+        .info-card-details summary {
+            align-items: flex-start;
+            padding: 18px;
+        }
+
+        .info-card-body {
+            padding: 0 18px 18px;
         }
     }
 </style>
@@ -461,20 +506,28 @@
                         <div class="cards-grid">
                             {% for card in cards %}
                                 <article class="info-card">
-                                    <div class="info-card-icon">i</div>
-                                    <h3>{{ card.title }}</h3>
+                                    <details class="info-card-details">
+                                        <summary>
+                                            <span class="info-card-icon">i</span>
+                                            <span class="info-card-title-wrap">
+                                                <h3>{{ card.title }}</h3>
+                                                <span class="info-card-hint">Click to view details</span>
+                                            </span>
+                                            <span class="info-card-toggle">+</span>
+                                        </summary>
 
-                                    <div class="info-card-body">
-                                        {{ card.description|safe }}
-                                    </div>
+                                        <div class="info-card-body">
+                                            {{ card.description|safe }}
 
-                                    {% if card.file %}
-                                        <div class="info-card-footer">
-                                            <a class="btn-link-card" href="{{ card.file.url }}" target="_blank">
-                                                Download attachment
-                                            </a>
+                                            {% if card.file %}
+                                                <div class="info-card-footer">
+                                                    <a class="btn-link-card" href="{{ card.file.url }}" target="_blank">
+                                                        Download attachment
+                                                    </a>
+                                                </div>
+                                            {% endif %}
                                         </div>
-                                    {% endif %}
+                                    </details>
 
                                     {% if is_manager %}
                                         <div class="card-manager-actions">
