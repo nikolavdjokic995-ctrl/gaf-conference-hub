@@ -1,371 +1,340 @@
+
+{% extends 'base.html' %}
 {% load static %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ conference.title_en }}</title>
+{% block content %}
+<style>
+:root{
+    --green-dark:#14532d;
+    --green:#15803d;
+    --green-soft:#f0fdf4;
+    --border:#dbe4dc;
+    --text:#111827;
+    --muted:#6b7280;
+}
 
-    <style>
+.page-wrap{
+    max-width:1400px;
+    margin:40px auto;
+    padding:0 24px;
+}
 
-        *{
-            margin:0;
-            padding:0;
-            box-sizing:border-box;
-        }
+.hero-card{
+    background:white;
+    border-radius:24px;
+    padding:32px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.06);
+    margin-bottom:24px;
+}
 
-        body{
-            font-family:Arial,sans-serif;
-            background:#f4f4f4;
-            color:white;
-        }
+.page-grid{
+    display:grid;
+    grid-template-columns: minmax(0,1fr) 320px;
+    gap:24px;
+}
 
-        .hero{
-            position:relative;
-            min-height:82vh;
-            background-size:cover;
-            background-position:center;
-            display:flex;
-            flex-direction:column;
-        }
+.content-column{
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+}
 
-        .navbar{
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            padding:28px 45px;
-        }
+.sidebar-column{
+    display:flex;
+    flex-direction:column;
+    gap:24px;
+}
 
-        .logo-text{
-            font-size:28px;
-            font-weight:700;
-        }
+.section-card{
+    background:white;
+    border-radius:22px;
+    padding:28px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.05);
+}
 
-        .nav-links{
-            display:flex;
-            align-items:center;
-            gap:28px;
-        }
+.section-title{
+    color:var(--green-dark);
+    font-size:32px;
+    font-weight:700;
+    margin-bottom:12px;
+}
 
-        .nav-links a{
-            color:white;
-            text-decoration:none;
-            font-weight:600;
-        }
+.section-subtitle{
+    color:var(--muted);
+    line-height:1.6;
+}
 
-        .nav-links span{
-            font-weight:500;
-        }
+.topic-select{
+    width:100%;
+    margin-top:18px;
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:14px;
+    font-size:15px;
+}
 
-        .logout-btn{
-            background:none;
-            border:none;
-            color:white;
-            cursor:pointer;
-            font-size:16px;
-            font-weight:600;
-        }
+.topic-card{
+    margin-top:22px;
+    border:1px solid var(--border);
+    border-radius:18px;
+    overflow:hidden;
+}
 
-        .hero-content{
-            flex:1;
-            display:flex;
-            flex-direction:column;
-            justify-content:center;
-            align-items:center;
-            text-align:center;
-            margin-top:80px;
-            padding:20px;
-        }
+.topic-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:22px;
+    background:var(--green-soft);
+}
 
-        .conference-logo{
-            width:220px;
-            max-width:100%;
-            margin-bottom:25px;
-        }
+.topic-title{
+    color:var(--green-dark);
+    font-size:24px;
+    font-weight:700;
+}
 
-        .hero-content h1{
-            font-size:78px;
-            font-weight:800;
-            margin-bottom:18px;
-        }
+.topic-code{
+    background:#dcfce7;
+    color:var(--green-dark);
+    padding:6px 12px;
+    border-radius:999px;
+    font-weight:700;
+}
 
-        .hero-content p{
-            font-size:22px;
-            margin-bottom:40px;
-        }
+.topic-body{
+    padding:22px;
+}
 
-        .hero-buttons{
-            display:flex;
-            flex-wrap:wrap;
-            justify-content:center;
-            gap:18px;
-        }
+.topic-body ul{
+    margin:0;
+    padding-left:18px;
+    line-height:2;
+}
 
-        .hero-btn{
-            padding:16px 34px;
-            border:2px solid white;
-            border-radius:18px;
-            color:white;
-            text-decoration:none;
-            font-weight:700;
-            font-size:18px;
-            transition:0.25s;
-            background:transparent;
-        }
+.cards-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:18px;
+}
 
-        .hero-btn:hover{
-            background:white;
-            color:black;
-        }
+.info-card{
+    border:1px solid var(--border);
+    border-radius:20px;
+    padding:22px;
+    background:white;
+}
 
-        .hero-btn.active{
-            background:#22c55e;
-            border-color:#22c55e;
-            color:white;
-        }
+.info-card h3{
+    color:var(--green-dark);
+    margin-top:0;
+}
 
-        .overview-section{
-            max-width:1200px;
-            margin:-40px auto 60px;
-            background:white;
-            border-radius:26px;
-            padding:40px;
-            position:relative;
-            z-index:5;
-            color:#111827;
-            box-shadow:0 8px 24px rgba(0,0,0,0.08);
-        }
+.info-card p{
+    color:var(--muted);
+    line-height:1.6;
+}
 
-        .overview-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-            gap:26px;
-        }
+.info-button{
+    margin-top:18px;
+    display:inline-block;
+    padding:12px 18px;
+    border-radius:12px;
+    background:var(--green-dark);
+    color:white;
+    text-decoration:none;
+    font-weight:700;
+}
 
-        .overview-card{
-            background:#f9fafb;
-            border-radius:20px;
-            padding:28px;
-        }
+.side-card{
+    background:white;
+    border-radius:20px;
+    padding:24px;
+    box-shadow:0 10px 24px rgba(0,0,0,0.05);
+}
 
-        .overview-card h3{
-            margin-bottom:18px;
-            color:#065f46;
-            font-size:20px;
-        }
+.side-card h3{
+    margin-top:0;
+    color:var(--green-dark);
+}
 
-        .overview-card p{
-            line-height:1.6;
-            color:#111827;
-        }
+.timeline{
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+}
 
-        @media(max-width:900px){
+.timeline-item{
+    border-left:3px solid #bbf7d0;
+    padding-left:14px;
+}
 
-            .navbar{
-                flex-direction:column;
-                gap:18px;
-            }
+.timeline-item strong{
+    display:block;
+    margin-bottom:4px;
+}
 
-            .nav-links{
-                flex-wrap:wrap;
-                justify-content:center;
-            }
+@media(max-width:1000px){
+    .page-grid{
+        grid-template-columns:1fr;
+    }
+}
+</style>
 
-            .hero-content h1{
-                font-size:48px;
-            }
+<div class="page-wrap">
 
-            .hero-buttons{
-                flex-direction:column;
-            }
+    <div class="hero-card">
+        <div class="section-title">Important Information</div>
+        <div class="section-subtitle">
+            {{ conference.title_en }} brings together researchers, professionals and practitioners
+            to exchange knowledge and innovations for a sustainable built environment.
+        </div>
+    </div>
 
-            .hero-btn{
-                width:100%;
-                max-width:320px;
-                text-align:center;
-            }
-        }
+    <div class="page-grid">
 
-    </style>
+        <div class="content-column">
 
-</head>
+            <div class="section-card">
 
-<body>
+                <div class="section-title" style="font-size:28px;">
+                    Conference Topics
+                </div>
 
-{% if conference.hero_image %}
-<section class="hero"
-    style="background-image:
-        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-        url('{{ conference.hero_image.url }}');">
-{% else %}
-<section class="hero"
-    style="background-image:
-        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
-        url('{% static "conferences/images/hero.jpg" %}');">
-{% endif %}
+                <div class="section-subtitle">
+                    Select a topic to see detailed information and subtopics.
+                </div>
 
-    <div class="navbar">
+                <select class="topic-select">
+                    <option>Select conference topic</option>
+                    {% for topic in conference.topics.all %}
+                        <option>{{ topic.code }} - {{ topic.title }}</option>
+                    {% endfor %}
+                </select>
 
-        <div class="logo-text">
-            GAF Conference Hub
+                <div class="topic-card">
+                    <div class="topic-header">
+                        <div>
+                            <div class="topic-title">
+                                Green Buildings & Energy Efficiency
+                            </div>
+                        </div>
+
+                        <div class="topic-code">
+                            T02
+                        </div>
+                    </div>
+
+                    <div class="topic-body">
+                        <ul>
+                            <li>Green building design</li>
+                            <li>Sustainable buildings</li>
+                            <li>Certification systems</li>
+                            <li>Passive house principles</li>
+                            <li>Energy-efficient buildings</li>
+                            <li>Building performance and monitoring</li>
+                        </ul>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="cards-grid">
+
+                <div class="info-card">
+                    <h3>Paper Template</h3>
+                    <p>
+                        Download the official paper template and formatting guidelines.
+                    </p>
+                    <a href="#" class="info-button">
+                        Download Template
+                    </a>
+                </div>
+
+                <div class="info-card">
+                    <h3>First Call for Papers</h3>
+                    <p>
+                        Read the official announcement and submission guidelines.
+                    </p>
+                    <a href="#" class="info-button">
+                        View First Call
+                    </a>
+                </div>
+
+                <div class="info-card">
+                    <h3>Author Guidelines</h3>
+                    <p>
+                        Detailed information for authors and submission requirements.
+                    </p>
+                    <a href="#" class="info-button">
+                        View Guidelines
+                    </a>
+                </div>
+
+                <!-- FUTURE CARDS GO HERE -->
+                <!-- Registration -->
+                <!-- Accommodation -->
+                <!-- Venue -->
+                <!-- Sponsors -->
+                <!-- Workshops -->
+                <!-- Visa information -->
+
+            </div>
+
         </div>
 
-        <div class="nav-links">
+        <div class="sidebar-column">
 
-            {% if user.is_authenticated %}
+            <div class="side-card">
+                <h3>How to submit?</h3>
 
-                <span>
-                    Welcome, {{ user.username }}
-                </span>
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <strong>1. Choose a topic</strong>
+                        Select the most relevant topic for your paper.
+                    </div>
 
-                <a href="{% url 'conference_overview' conference.slug %}">
-                    Home
-                </a>
+                    <div class="timeline-item">
+                        <strong>2. Prepare your paper</strong>
+                        Follow the template and formatting instructions.
+                    </div>
 
-                <a href="{% url 'my_submissions' %}">
-                    My submissions
-                </a>
+                    <div class="timeline-item">
+                        <strong>3. Submit online</strong>
+                        Complete all submission steps before the deadline.
+                    </div>
+                </div>
+            </div>
 
-                {% if is_reviewer %}
-                    <a href="{% url 'my_reviews' %}">
-                        My Reviews
-                    </a>
-                {% endif %}
+            <div class="side-card">
+                <h3>Important Dates</h3>
 
-                {% if is_judge %}
-                    <a href="{% url 'judge_dashboard' %}">
-                        Judge Dashboard
-                    </a>
-                {% endif %}
+                <div class="timeline">
+                    <div class="timeline-item">
+                        <strong>First Call for Papers</strong>
+                        01 October 2025
+                    </div>
 
-                {% if is_layout_reviewer %}
-                    <a href="{% url 'layout_dashboard' %}">
-                        Layout Review
-                    </a>
-                {% endif %}
+                    <div class="timeline-item">
+                        <strong>Submission Deadline</strong>
+                        15 January 2026
+                    </div>
 
-                <form method="post"
-                      action="{% url 'logout' %}"
-                      style="display:inline;">
-                    {% csrf_token %}
+                    <div class="timeline-item">
+                        <strong>Notification of Acceptance</strong>
+                        01 March 2026
+                    </div>
 
-                    <button class="logout-btn">
-                        Logout
-                    </button>
-                </form>
-
-            {% else %}
-
-                <a href="{% url 'login' %}">
-                    Login
-                </a>
-
-                <a href="{% url 'register' %}">
-                    Register
-                </a>
-
-            {% endif %}
+                    <div class="timeline-item">
+                        <strong>Conference Dates</strong>
+                        20–22 May 2026
+                    </div>
+                </div>
+            </div>
 
         </div>
 
     </div>
 
-    <div class="hero-content">
-
-        <img
-            src="{% static 'conferences/images/logo.png' %}"
-            class="conference-logo"
-            alt="Green Building Conference 2026"
-        >
-
-        <h1>
-            {{ conference.title_en }}
-        </h1>
-
-        <p>
-            {{ conference.location }}
-            •
-            {{ conference.start_date }}
-            —
-            {{ conference.end_date }}
-        </p>
-
-        <div class="hero-buttons">
-
-            <a class="hero-btn active"
-               href="{% url 'conference_overview' conference.slug %}">
-                Overview
-            </a>
-
-            <a class="hero-btn"
-               href="{% url 'important_information' conference.slug %}">
-                Important Information
-            </a>
-
-            <a class="hero-btn"
-               href="{% url 'submit_paper' conference.slug %}">
-                Submit Paper
-            </a>
-
-            {% if is_manager or is_judge %}
-
-                <a class="hero-btn"
-                   href="{% url 'conference_submissions' conference.slug %}">
-                    Manage Submissions
-                </a>
-
-                <a class="hero-btn"
-                   href="{% url 'conference_people' conference.slug %}">
-                    People Management
-                </a>
-
-                {% if is_manager %}
-                    <a class="hero-btn"
-                       href="{% url 'conference_settings' conference.slug %}">
-                        Conference Settings
-                    </a>
-                {% endif %}
-
-            {% endif %}
-
-        </div>
-
-    </div>
-
-</section>
-
-<section class="overview-section">
-
-    <div class="overview-grid">
-
-        <div class="overview-card">
-            <h3>📍 Location</h3>
-            <p>{{ conference.location }}</p>
-        </div>
-
-        <div class="overview-card">
-            <h3>🗓️ Conference Dates</h3>
-            <p>
-                {{ conference.start_date }}
-                —
-                {{ conference.end_date }}
-            </p>
-        </div>
-
-        <div class="overview-card">
-            <h3>💼 Organizer</h3>
-            <p>{{ conference.organizer }}</p>
-        </div>
-
-        <div class="overview-card">
-            <h3>✉️ Contact</h3>
-            <p>{{ conference.contact_email }}</p>
-        </div>
-
-    </div>
-
-</section>
-
-</body>
-</html>
+</div>
+{% endblock %}
