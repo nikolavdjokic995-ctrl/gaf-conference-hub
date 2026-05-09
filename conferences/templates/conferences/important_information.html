@@ -1,175 +1,136 @@
+{% block content %}
 
-<style>
-.page-wrap{
-    max-width:1400px;
-    margin:40px auto;
-    padding:0 24px;
-    font-family:Arial,sans-serif;
-}
+<div style="font-family: Calibri, sans-serif;">
 
-.hero-card,
-.section-card,
-.side-card,
-.info-card{
-    background:white;
-    border-radius:20px;
-    padding:24px;
-    box-shadow:0 6px 18px rgba(0,0,0,0.06);
-}
+<div class="container" style="max-width: 1000px; margin: 40px auto; background: white; padding: 40px; border-radius: 20px;">
 
-.hero-card{
-    margin-bottom:24px;
-}
+    <h1 style="color:#0d5c2f; margin-bottom:20px;">
+        Important Information
+    </h1>
 
-.page-grid{
-    display:grid;
-    grid-template-columns:1fr 300px;
-    gap:24px;
-}
+    <p style="margin-bottom:30px;">
+        {{ conference.title_en }}
+    </p>
 
-.cards-grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-    gap:18px;
-    margin-top:24px;
-}
+    <h2 style="color:#0d5c2f; margin-bottom:20px;">
+        Conference Topics
+    </h2>
 
-.topic-card{
-    border:1px solid #dfe7df;
-    border-radius:18px;
-    overflow:hidden;
-    margin-top:18px;
-}
+    {% if topics %}
+        {% for topic in topics %}
+            <div style="
+                border:1px solid #ddd;
+                border-radius:15px;
+                padding:20px;
+                margin-bottom:20px;
+            ">
 
-.topic-header{
-    background:#eef8ef;
-    padding:18px;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-}
+                <div style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    margin-bottom:10px;
+                ">
+                    <h3 style="margin:0; color:#166534;">
+                        {{ topic.title }}
+                    </h3>
 
-.topic-body{
-    padding:20px;
-}
-
-.info-button{
-    display:inline-block;
-    margin-top:16px;
-    background:#14532d;
-    color:white;
-    padding:10px 16px;
-    border-radius:10px;
-    text-decoration:none;
-    font-weight:bold;
-}
-
-.topic-select{
-    width:100%;
-    padding:14px;
-    border-radius:12px;
-    border:1px solid #d7dfd7;
-    margin-top:14px;
-}
-
-@media(max-width:1000px){
-    .page-grid{
-        grid-template-columns:1fr;
-    }
-}
-</style>
-
-<div class="page-wrap">
-
-    <div class="hero-card">
-        <h1 style="color:#14532d;">Important Information</h1>
-        <p>
-            Green Building Conference 2026 brings together researchers,
-            professionals and practitioners for sustainable innovation.
-        </p>
-    </div>
-
-    <div class="page-grid">
-
-        <div>
-
-            <div class="section-card">
-
-                <h2 style="color:#14532d;">Conference Topics</h2>
-
-                <select class="topic-select">
-                    <option>Select conference topic</option>
-                    <option>T01 - Sustainable Urban Planning</option>
-                    <option>T02 - Green Buildings & Energy Efficiency</option>
-                    <option>T03 - Circular Engineering</option>
-                </select>
-
-                <div class="topic-card">
-
-                    <div class="topic-header">
-                        <strong>Green Buildings & Energy Efficiency</strong>
-                        <span>T02</span>
-                    </div>
-
-                    <div class="topic-body">
-                        <ul>
-                            <li>Green building design</li>
-                            <li>Sustainable buildings</li>
-                            <li>Passive house principles</li>
-                            <li>Energy-efficient buildings</li>
-                        </ul>
-                    </div>
-
+                    <strong style="color:#166534;">
+                        {{ topic.code }}
+                    </strong>
                 </div>
+
+                <p style="line-height:1.7;">
+                    {{ topic.description }}
+                </p>
 
             </div>
+        {% endfor %}
+    {% else %}
+        <p>No conference topics added yet.</p>
+    {% endif %}
 
-            <div class="cards-grid">
+    {% if is_manager %}
+        <a href="{% url 'conference_topics' conference.slug %}"
+           style="
+                display:inline-block;
+                margin-bottom:30px;
+                background:#2563eb;
+                color:white;
+                padding:12px 20px;
+                border-radius:10px;
+                text-decoration:none;
+                font-weight:bold;
+           ">
+            Manage Topics
+        </a>
+    {% endif %}
 
-                <div class="info-card">
-                    <h3>Paper Template</h3>
-                    <p>Download official conference template.</p>
-                    <a href="#" class="info-button">Download</a>
-                </div>
+    {% if is_manager %}
+        <div style="margin-bottom:30px;">
+            <a href="{% url 'add_info_card' conference.slug %}"
+               style="
+                    background:#16a34a;
+                    color:white;
+                    padding:12px 20px;
+                    border-radius:10px;
+                    text-decoration:none;
+                    font-weight:bold;
+               ">
+                Add information card
+            </a>
+        </div>
+    {% endif %}
 
-                <div class="info-card">
-                    <h3>First Call for Papers</h3>
-                    <p>Read official announcement and deadlines.</p>
-                    <a href="#" class="info-button">View</a>
-                </div>
+    {% for card in cards %}
+        <div style="
+            border:1px solid #ddd;
+            border-radius:15px;
+            padding:20px;
+            margin-bottom:20px;
+        ">
 
-                <div class="info-card">
-                    <h3>Author Guidelines</h3>
-                    <p>Instructions for paper preparation and submission.</p>
-                    <a href="#" class="info-button">Guidelines</a>
-                </div>
+            <h2 style="color:#0d5c2f;">
+                {{ card.title }}
+            </h2>
 
+            <div style="margin-top:15px;">
+                {{ card.content|safe }}
             </div>
+
+            {% if card.file %}
+                <div style="margin-top:15px;">
+                    <a href="{{ card.file.url }}" target="_blank">
+                        Download attachment
+                    </a>
+                </div>
+            {% endif %}
+
+            {% if is_manager %}
+                <div style="margin-top:20px;">
+                    <a href="{% url 'edit_info_card' card.id %}">
+                        Edit
+                    </a>
+
+                    |
+
+                    <a href="{% url 'delete_info_card' card.id %}">
+                        Delete
+                    </a>
+                </div>
+            {% endif %}
 
         </div>
+    {% endfor %}
 
-        <div>
-
-            <div class="side-card" style="margin-bottom:20px;">
-                <h3 style="color:#14532d;">How to submit?</h3>
-
-                <ol>
-                    <li>Choose a topic</li>
-                    <li>Prepare your paper</li>
-                    <li>Submit online</li>
-                </ol>
-            </div>
-
-            <div class="side-card">
-                <h3 style="color:#14532d;">Important Dates</h3>
-
-                <p><strong>Submission Deadline:</strong><br>15 January 2026</p>
-                <p><strong>Acceptance Notification:</strong><br>01 March 2026</p>
-                <p><strong>Conference Dates:</strong><br>20–22 May 2026</p>
-            </div>
-
-        </div>
-
+    <div style="margin-top:40px;">
+        <a href="{% url 'conference_overview' conference.slug %}">
+            ← Back to conference
+        </a>
     </div>
 
 </div>
+
+</div>
+
+{% endblock %}
