@@ -1,136 +1,593 @@
 {% block content %}
 
-<div style="font-family: Calibri, sans-serif;">
+<style>
+    .info-page {
+        font-family: Calibri, Arial, sans-serif;
+        background: linear-gradient(135deg, #f4f8f5 0%, #eef7f1 45%, #f8fafc 100%);
+        min-height: 100vh;
+        padding: 42px 18px;
+        color: #123524;
+    }
 
-<div class="container" style="max-width: 1000px; margin: 40px auto; background: white; padding: 40px; border-radius: 20px;">
+    .info-shell {
+        max-width: 1180px;
+        margin: 0 auto;
+    }
 
-    <h1 style="color:#0d5c2f; margin-bottom:20px;">
-        Important Information
-    </h1>
+    .info-hero {
+        background: linear-gradient(135deg, #0d5c2f 0%, #177245 100%);
+        color: #ffffff;
+        border-radius: 28px;
+        padding: 36px;
+        margin-bottom: 26px;
+        box-shadow: 0 24px 60px rgba(13, 92, 47, 0.22);
+        position: relative;
+        overflow: hidden;
+    }
 
-    <p style="margin-bottom:30px;">
-        {{ conference.title_en }}
-    </p>
+    .info-hero::after {
+        content: "";
+        position: absolute;
+        width: 260px;
+        height: 260px;
+        border-radius: 50%;
+        right: -90px;
+        top: -100px;
+        background: rgba(255, 255, 255, 0.12);
+    }
 
-    <h2 style="color:#0d5c2f; margin-bottom:20px;">
-        Conference Topics
-    </h2>
+    .info-back-top {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #ffffff;
+        text-decoration: none;
+        font-weight: 700;
+        margin-bottom: 28px;
+        opacity: 0.95;
+        position: relative;
+        z-index: 1;
+    }
 
-    {% if topics %}
-        {% for topic in topics %}
-            <div style="
-                border:1px solid #ddd;
-                border-radius:15px;
-                padding:20px;
-                margin-bottom:20px;
-            ">
+    .info-hero h1 {
+        margin: 0 0 12px;
+        font-size: clamp(32px, 5vw, 54px);
+        line-height: 1.05;
+        position: relative;
+        z-index: 1;
+    }
 
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    margin-bottom:10px;
-                ">
-                    <h3 style="margin:0; color:#166534;">
-                        {{ topic.title }}
-                    </h3>
+    .info-hero p {
+        max-width: 760px;
+        margin: 0;
+        font-size: 18px;
+        line-height: 1.65;
+        color: rgba(255, 255, 255, 0.9);
+        position: relative;
+        z-index: 1;
+    }
 
-                    <strong style="color:#166534;">
-                        {{ topic.code }}
-                    </strong>
-                </div>
+    .info-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 24px;
+        align-items: start;
+    }
 
-                <p style="line-height:1.7;">
-                    {{ topic.description }}
-                </p>
+    .info-section,
+    .info-sidebar-card {
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(13, 92, 47, 0.1);
+        border-radius: 24px;
+        padding: 26px;
+        box-shadow: 0 16px 45px rgba(16, 24, 40, 0.08);
+    }
 
-            </div>
-        {% endfor %}
-    {% else %}
-        <p>No conference topics added yet.</p>
-    {% endif %}
+    .info-section + .info-section,
+    .info-sidebar-card + .info-sidebar-card {
+        margin-top: 22px;
+    }
 
-    {% if is_manager %}
-        <a href="{% url 'conference_topics' conference.slug %}"
-           style="
-                display:inline-block;
-                margin-bottom:30px;
-                background:#2563eb;
-                color:white;
-                padding:12px 20px;
-                border-radius:10px;
-                text-decoration:none;
-                font-weight:bold;
-           ">
-            Manage Topics
-        </a>
-    {% endif %}
+    .section-heading {
+        display: flex;
+        justify-content: space-between;
+        gap: 18px;
+        align-items: flex-start;
+        margin-bottom: 20px;
+    }
 
-    {% if is_manager %}
-        <div style="margin-bottom:30px;">
-            <a href="{% url 'add_info_card' conference.slug %}"
-               style="
-                    background:#16a34a;
-                    color:white;
-                    padding:12px 20px;
-                    border-radius:10px;
-                    text-decoration:none;
-                    font-weight:bold;
-               ">
-                Add information card
+    .eyebrow {
+        margin: 0 0 8px;
+        color: #17804b;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 12px;
+        font-weight: 800;
+    }
+
+    .section-heading h2,
+    .info-sidebar-card h3 {
+        margin: 0;
+        color: #0d5c2f;
+        line-height: 1.2;
+    }
+
+    .muted-text {
+        color: #587568;
+        line-height: 1.65;
+        margin: 8px 0 0;
+    }
+
+    .manager-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        justify-content: flex-end;
+    }
+
+    .btn-action,
+    .btn-secondary,
+    .btn-link-card {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 10px 16px;
+        font-weight: 800;
+        text-decoration: none;
+        border: 1px solid transparent;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+        white-space: nowrap;
+    }
+
+    .btn-action {
+        color: #ffffff;
+        background: #16a34a;
+        box-shadow: 0 10px 22px rgba(22, 163, 74, 0.24);
+    }
+
+    .btn-secondary {
+        color: #0d5c2f;
+        background: #eaf7ef;
+        border-color: rgba(13, 92, 47, 0.12);
+    }
+
+    .btn-link-card {
+        color: #0d5c2f;
+        background: #ffffff;
+        border-color: rgba(13, 92, 47, 0.18);
+    }
+
+    .btn-action:hover,
+    .btn-secondary:hover,
+    .btn-link-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 12px 24px rgba(16, 24, 40, 0.12);
+    }
+
+    .topic-select-wrap {
+        display: grid;
+        gap: 12px;
+    }
+
+    .topic-select {
+        width: 100%;
+        border: 1px solid rgba(13, 92, 47, 0.18);
+        border-radius: 16px;
+        padding: 14px 16px;
+        font-size: 16px;
+        color: #123524;
+        background: #ffffff;
+        outline: none;
+    }
+
+    .topic-card {
+        display: none;
+        margin-top: 18px;
+        border-radius: 22px;
+        padding: 22px;
+        background: linear-gradient(135deg, #ffffff 0%, #f1fbf5 100%);
+        border: 1px solid rgba(13, 92, 47, 0.13);
+    }
+
+    .topic-card.is-active {
+        display: block;
+    }
+
+    .topic-card-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 16px;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .topic-card h3 {
+        margin: 0;
+        color: #0d5c2f;
+        font-size: 24px;
+    }
+
+    .topic-code {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 7px 12px;
+        background: #dcfce7;
+        color: #166534;
+        font-weight: 900;
+        font-size: 13px;
+    }
+
+    .topic-card p {
+        margin: 0;
+        color: #335f49;
+        line-height: 1.75;
+    }
+
+    .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 18px;
+    }
+
+    .info-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 220px;
+        border: 1px solid rgba(13, 92, 47, 0.11);
+        border-radius: 24px;
+        padding: 22px;
+        background: #ffffff;
+        box-shadow: 0 12px 30px rgba(16, 24, 40, 0.06);
+    }
+
+    .info-card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 14px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        background: #eaf7ef;
+        color: #0d5c2f;
+        font-weight: 900;
+        margin-bottom: 16px;
+    }
+
+    .info-card h3 {
+        margin: 0 0 10px;
+        color: #0d5c2f;
+        font-size: 22px;
+    }
+
+    .info-card-body {
+        color: #456c59;
+        line-height: 1.7;
+        flex: 1;
+    }
+
+    .info-card-body p:first-child {
+        margin-top: 0;
+    }
+
+    .info-card-footer,
+    .card-manager-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        margin-top: 18px;
+        padding-top: 16px;
+        border-top: 1px solid #edf3ef;
+    }
+
+    .card-manager-actions a {
+        color: #0d5c2f;
+        font-weight: 800;
+        text-decoration: none;
+    }
+
+    .card-manager-actions a.delete-link {
+        color: #b42318;
+    }
+
+    .empty-state {
+        border: 1px dashed rgba(13, 92, 47, 0.25);
+        border-radius: 20px;
+        padding: 22px;
+        color: #587568;
+        background: #fbfdfc;
+    }
+
+    .info-sidebar {
+        position: sticky;
+        top: 18px;
+    }
+
+    .sidebar-list {
+        list-style: none;
+        margin: 16px 0 0;
+        padding: 0;
+        display: grid;
+        gap: 12px;
+    }
+
+    .sidebar-list li {
+        padding: 14px;
+        border-radius: 16px;
+        background: #f5fbf7;
+        color: #315a45;
+        line-height: 1.45;
+    }
+
+    .sidebar-list strong {
+        display: block;
+        color: #0d5c2f;
+        margin-bottom: 4px;
+    }
+
+    .bottom-back {
+        margin-top: 28px;
+        text-align: center;
+    }
+
+    .bottom-back a {
+        color: #0d5c2f;
+        font-weight: 900;
+        text-decoration: none;
+    }
+
+    @media (max-width: 900px) {
+        .info-layout {
+            grid-template-columns: 1fr;
+        }
+
+        .info-sidebar {
+            position: static;
+        }
+
+        .cards-grid {
+            grid-template-columns: 1fr;
+        }
+
+        .section-heading {
+            flex-direction: column;
+        }
+
+        .manager-actions {
+            justify-content: flex-start;
+        }
+    }
+
+    @media (max-width: 560px) {
+        .info-page {
+            padding: 22px 12px;
+        }
+
+        .info-hero,
+        .info-section,
+        .info-sidebar-card {
+            padding: 22px;
+            border-radius: 22px;
+        }
+
+        .topic-card-header {
+            flex-direction: column;
+        }
+    }
+</style>
+
+<div class="info-page">
+    <div class="info-shell">
+        <section class="info-hero">
+            <a class="info-back-top" href="{% url 'conference_overview' conference.slug %}">
+                ← Back to conference
+            </a>
+
+            <h1>Important Information</h1>
+            <p>{{ conference.title_en }}</p>
+        </section>
+
+        <div class="info-layout">
+            <main>
+                <section class="info-section">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">Explore the programme scope</p>
+                            <h2>Conference Topics</h2>
+                            <p class="muted-text">Select a topic to view its description.</p>
+                        </div>
+
+                        {% if is_manager %}
+                            <div class="manager-actions">
+                                <a class="btn-secondary" href="{% url 'conference_topics' conference.slug %}">
+                                    Manage Topics
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if topics %}
+                        <div class="topic-select-wrap">
+                            <label for="topic-select" class="eyebrow">Choose topic</label>
+                            <select id="topic-select" class="topic-select">
+                                <option value="">Select a conference topic</option>
+                                {% for topic in topics %}
+                                    <option value="topic-{{ topic.id }}">
+                                        {{ topic.code }} — {{ topic.title }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        {% for topic in topics %}
+                            <article id="topic-{{ topic.id }}" class="topic-card">
+                                <div class="topic-card-header">
+                                    <h3>{{ topic.title }}</h3>
+                                    <span class="topic-code">{{ topic.code }}</span>
+                                </div>
+
+                                {% if topic.description %}
+                                    <p>{{ topic.description }}</p>
+                                {% else %}
+                                    <p>No description added yet.</p>
+                                {% endif %}
+                            </article>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty-state">No conference topics added yet.</div>
+                    {% endif %}
+                </section>
+
+                <section class="info-section">
+                    <div class="section-heading">
+                        <div>
+                            <p class="eyebrow">Resources</p>
+                            <h2>Documents &amp; Information</h2>
+                            <p class="muted-text">Conference materials and instructions are listed below.</p>
+                        </div>
+
+                        {% if is_manager %}
+                            <div class="manager-actions">
+                                <a class="btn-action" href="{% url 'add_info_card' conference.slug %}">
+                                    Add information card
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    {% if cards %}
+                        <div class="cards-grid">
+                            {% for card in cards %}
+                                <article class="info-card">
+                                    <div class="info-card-icon">i</div>
+                                    <h3>{{ card.title }}</h3>
+
+                                    <div class="info-card-body">
+                                        {{ card.description|safe }}
+                                    </div>
+
+                                    {% if card.file %}
+                                        <div class="info-card-footer">
+                                            <a class="btn-link-card" href="{{ card.file.url }}" target="_blank">
+                                                Download attachment
+                                            </a>
+                                        </div>
+                                    {% endif %}
+
+                                    {% if is_manager %}
+                                        <div class="card-manager-actions">
+                                            <a href="{% url 'edit_info_card' card.id %}">Edit</a>
+                                            <a class="delete-link" href="{% url 'delete_info_card' card.id %}">Delete</a>
+                                        </div>
+                                    {% endif %}
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="empty-state">No information cards added yet.</div>
+                    {% endif %}
+                </section>
+            </main>
+
+            <aside class="info-sidebar">
+                <section class="info-sidebar-card">
+                    <p class="eyebrow">Submission guide</p>
+                    <h3>How to submit</h3>
+                    <ul class="sidebar-list">
+                        <li>
+                            <strong>1. Review the topics</strong>
+                            Choose the conference topic that best matches your paper.
+                        </li>
+                        <li>
+                            <strong>2. Read the documents</strong>
+                            Use the available guidelines and templates before submitting.
+                        </li>
+                        <li>
+                            <strong>3. Follow the workflow</strong>
+                            Track your paper status from submission to final decision.
+                        </li>
+                    </ul>
+                </section>
+
+                <section class="info-sidebar-card">
+                    <p class="eyebrow">Timeline</p>
+                    <h3>Important dates</h3>
+                    <ul class="sidebar-list">
+                        {% if conference.submission_deadline %}
+                            <li>
+                                <strong>Submission deadline</strong>
+                                {{ conference.submission_deadline }}
+                            </li>
+                        {% endif %}
+
+                        {% if conference.review_deadline %}
+                            <li>
+                                <strong>Review deadline</strong>
+                                {{ conference.review_deadline }}
+                            </li>
+                        {% endif %}
+
+                        <li>
+                            <strong>Conference dates</strong>
+                            {{ conference.start_date }}{% if conference.end_date %} – {{ conference.end_date }}{% endif %}
+                        </li>
+                    </ul>
+                </section>
+
+                {% if conference.contact_email or conference.registration_url %}
+                    <section class="info-sidebar-card">
+                        <p class="eyebrow">Links</p>
+                        <h3>Useful information</h3>
+                        <ul class="sidebar-list">
+                            {% if conference.registration_url %}
+                                <li>
+                                    <strong>Registration</strong>
+                                    <a href="{{ conference.registration_url }}" target="_blank">Open registration page</a>
+                                </li>
+                            {% endif %}
+
+                            {% if conference.contact_email %}
+                                <li>
+                                    <strong>Contact</strong>
+                                    <a href="mailto:{{ conference.contact_email }}">{{ conference.contact_email }}</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </section>
+                {% endif %}
+            </aside>
+        </div>
+
+        <div class="bottom-back">
+            <a href="{% url 'conference_overview' conference.slug %}">
+                ← Back to conference
             </a>
         </div>
-    {% endif %}
-
-    {% for card in cards %}
-        <div style="
-            border:1px solid #ddd;
-            border-radius:15px;
-            padding:20px;
-            margin-bottom:20px;
-        ">
-
-            <h2 style="color:#0d5c2f;">
-                {{ card.title }}
-            </h2>
-
-            <div style="margin-top:15px;">
-                {{ card.content|safe }}
-            </div>
-
-            {% if card.file %}
-                <div style="margin-top:15px;">
-                    <a href="{{ card.file.url }}" target="_blank">
-                        Download attachment
-                    </a>
-                </div>
-            {% endif %}
-
-            {% if is_manager %}
-                <div style="margin-top:20px;">
-                    <a href="{% url 'edit_info_card' card.id %}">
-                        Edit
-                    </a>
-
-                    |
-
-                    <a href="{% url 'delete_info_card' card.id %}">
-                        Delete
-                    </a>
-                </div>
-            {% endif %}
-
-        </div>
-    {% endfor %}
-
-    <div style="margin-top:40px;">
-        <a href="{% url 'conference_overview' conference.slug %}">
-            ← Back to conference
-        </a>
     </div>
-
 </div>
 
-</div>
+<script>
+    (function () {
+        const select = document.getElementById("topic-select");
+        if (!select) return;
+
+        const topicCards = document.querySelectorAll(".topic-card");
+
+        select.addEventListener("change", function () {
+            topicCards.forEach(function (card) {
+                card.classList.remove("is-active");
+            });
+
+            if (select.value) {
+                const activeCard = document.getElementById(select.value);
+                if (activeCard) {
+                    activeCard.classList.add("is-active");
+                }
+            }
+        });
+    })();
+</script>
 
 {% endblock %}
