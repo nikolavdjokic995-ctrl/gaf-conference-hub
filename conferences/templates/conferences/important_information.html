@@ -311,6 +311,16 @@
         margin-top: 0;
     }
 
+    .info-card-description {
+        white-space: normal;
+        word-break: normal;
+        overflow-wrap: anywhere;
+    }
+
+    .info-card-description br {
+        content: "";
+    }
+
     .info-card-footer,
     .card-manager-actions {
         display: flex;
@@ -517,7 +527,7 @@
                                         </summary>
 
                                         <div class="info-card-body">
-                                            {{ card.description|safe }}
+                                            <div class="info-card-description">{{ card.description|linebreaksbr }}</div>
 
                                             {% if card.file %}
                                                 <div class="info-card-footer">
