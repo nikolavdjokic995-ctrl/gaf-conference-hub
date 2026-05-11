@@ -6,6 +6,7 @@ from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
+from django.utils import timezone
 from .models import (
     Conference,
     ConferenceRole,
@@ -551,6 +552,10 @@ def preview_email_template(request, template_id):
 def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
+    if conference.submission_deadline and timezone.now().date() > conference.submission_deadline:
+        messages.error(request, "Submission deadline has passed.")
+        return redirect("conference_overview", slug=conference.slug)
+
     if request.method == "POST":
         form = SubmissionForm(request.POST, request.FILES, conference=conference)
 
@@ -560,9 +565,11 @@ def submit_paper(request, slug):
             submission.author = request.user
             submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
             submission.save()
+
             send_event_email("paper_submitted", submission, request=request)
 
             return redirect("my_submissions")
+
     else:
         form = SubmissionForm(conference=conference)
 
@@ -570,8 +577,7 @@ def submit_paper(request, slug):
         "form": form,
         "conference": conference,
     })
-
-
+        
 @login_required
 def important_information(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
