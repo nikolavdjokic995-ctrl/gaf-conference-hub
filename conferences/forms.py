@@ -28,6 +28,9 @@ class RegisterForm(UserCreationForm):
         ("Prof. Dr.", "Prof. Dr."),
         ("Doc. dr.", "Doc. dr."),
         ("MA", "MA"),
+        ("MS", "MS"),
+        ("MSc", "MSc"),
+        ("PhD", "PhD"),
     ]
 
     title = forms.ChoiceField(choices=TITLE_CHOICES)
@@ -43,7 +46,6 @@ class RegisterForm(UserCreationForm):
 
     class Meta:
         model = User
-
         fields = [
             "username",
             "title",
@@ -61,7 +63,6 @@ class SubmissionForm(forms.ModelForm):
 
     class Meta:
         model = Submission
-
         fields = [
             "title",
             "abstract",
@@ -92,16 +93,13 @@ class SubmissionForm(forms.ModelForm):
                 "maxlength": 2500,
                 "placeholder": "Write your abstract here (maximum 2500 characters).",
             }),
-
             "keywords": forms.TextInput(attrs={
                 "placeholder": "e.g. green building, energy efficiency, sustainability",
             }),
-
             "coauthors": forms.Textarea(attrs={
                 "rows": 4,
                 "placeholder": "Enter co-authors, one per line",
             }),
-
             "coauthor_emails": forms.Textarea(attrs={
                 "rows": 4,
                 "placeholder": "Enter co-author emails, one per line",
@@ -109,31 +107,21 @@ class SubmissionForm(forms.ModelForm):
         }
 
     def __init__(self, *args, **kwargs):
-
         conference = kwargs.pop("conference", None)
-
         super().__init__(*args, **kwargs)
 
         if conference:
-
-            topics = conference.topics.filter(
-                enabled=True
-            ).order_by("order", "code")
-
+            topics = conference.topics.filter(enabled=True).order_by("order", "code")
             self.fields["topic"].queryset = topics
             self.fields["secondary_topic"].queryset = topics
-
         else:
-
             self.fields["topic"].queryset = ConferenceTopic.objects.none()
             self.fields["secondary_topic"].queryset = ConferenceTopic.objects.none()
 
         self.fields["topic"].empty_label = "Select primary topic"
         self.fields["topic"].required = True
-
         self.fields["secondary_topic"].empty_label = "Select second topic if needed"
         self.fields["secondary_topic"].required = False
-
         self.fields["abstract"].required = True
         self.fields["keywords"].required = True
         self.fields["full_paper_file"].required = True
@@ -144,7 +132,6 @@ class ReviewForm(forms.ModelForm):
 
     class Meta:
         model = Review
-
         fields = [
             "content_context",
             "research_design",
@@ -200,7 +187,6 @@ class ConferenceForm(forms.ModelForm):
 
     class Meta:
         model = Conference
-
         fields = [
             "title_en",
             "title_sr",
@@ -210,23 +196,27 @@ class ConferenceForm(forms.ModelForm):
             "location",
             "start_date",
             "end_date",
+            "submission_deadline",
+            "review_deadline",
             "submission_mode",
             "logo",
             "hero_image",
             "template_style",
         ]
 
+
 class ConferenceOverviewForm(forms.ModelForm):
 
     class Meta:
         model = Conference
-
         fields = [
             "title_en",
             "description_en",
             "location",
             "start_date",
             "end_date",
+            "submission_deadline",
+            "review_deadline",
             "organizer",
             "contact_email",
             "registration_url",
@@ -240,17 +230,17 @@ class SubmissionSettingsForm(forms.ModelForm):
 
     class Meta:
         model = Conference
-        fields = ["submission_mode"]
-        labels = {
-            "submission_mode": "Submission mode",
-        }
+        fields = [
+            "submission_mode",
+            "submission_deadline",
+            "review_deadline",
+        ]
 
 
 class ConferenceInfoCardForm(forms.ModelForm):
 
     class Meta:
         model = ConferenceInfoCard
-
         fields = [
             "title",
             "description",
@@ -265,7 +255,6 @@ class ConferenceSidebarCardForm(forms.ModelForm):
 
     class Meta:
         model = ConferenceSidebarCard
-
         fields = [
             "eyebrow",
             "title",
@@ -280,7 +269,6 @@ class ConferenceTopicForm(forms.ModelForm):
 
     class Meta:
         model = ConferenceTopic
-
         fields = [
             "code",
             "title",
@@ -294,26 +282,15 @@ class EmailTemplateForm(forms.ModelForm):
 
     class Meta:
         model = EmailTemplate
-
         fields = [
+            "event",
             "enabled",
-            "send_to_author",
-            "send_to_coauthors",
-            "send_to_reviewer",
-            "send_to_managers",
-            "send_to_layout_reviewers",
             "subject",
             "body",
         ]
 
         widgets = {
-            "body": forms.Textarea(attrs={
-                "rows": 14,
-                "placeholder": "Use placeholders such as {{ paper_title }}, {{ all_authors }}, {{ conference_name }}.",
-            }),
-            "subject": forms.TextInput(attrs={
-                "placeholder": "Example: Decision for {{ paper_title }}",
-            }),
+            "body": forms.Textarea(attrs={"rows": 14}),
         }
 
 
