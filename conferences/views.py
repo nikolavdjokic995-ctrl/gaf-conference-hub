@@ -32,6 +32,7 @@ from .forms import (
     RevisionUploadForm,
     LayoutDecisionForm,
     EmailTemplateForm,
+    SubmissionSettingsForm,
 )
 
 from .emails import send_event_email, preview_template
@@ -429,6 +430,35 @@ def conference_settings(request, slug):
 
     return render(request, "conferences/conference_settings.html", {
         "conference": conference
+    })
+
+
+@login_required
+def edit_submission_settings(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    if request.method == "POST":
+        form = SubmissionSettingsForm(request.POST, instance=conference)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Submission settings updated successfully.")
+            return redirect("conference_settings", slug=conference.slug)
+    else:
+        form = SubmissionSettingsForm(instance=conference)
+
+    return render(request, "conferences/edit_submission_settings.html", {
+        "conference": conference,
+        "form": form,
     })
 
 

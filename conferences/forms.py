@@ -235,6 +235,17 @@ class ConferenceOverviewForm(forms.ModelForm):
             "hero_image",
         ]
 
+
+class SubmissionSettingsForm(forms.ModelForm):
+
+    class Meta:
+        model = Conference
+        fields = ["submission_mode"]
+        labels = {
+            "submission_mode": "Submission mode",
+        }
+
+
 class ConferenceInfoCardForm(forms.ModelForm):
 
     class Meta:
