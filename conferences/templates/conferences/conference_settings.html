@@ -83,7 +83,7 @@
         <div class="card">
             <h3>Submission settings</h3>
             <p>Current mode: <strong>{{ conference.get_submission_mode_display }}</strong></p>
-            <a class="btn" href="{% url 'edit_conference_overview' conference.slug %}">
+            <a class="btn" href="{% url 'submission_settings' conference.slug %}">
                 Edit submission mode
             </a>
         </div>
