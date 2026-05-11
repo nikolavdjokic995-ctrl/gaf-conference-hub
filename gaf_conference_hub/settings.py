@@ -7,12 +7,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = "django-insecure-change-this-later"
 
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
+    "gaf-conference-hub.onrender.com",
     "127.0.0.1",
     "localhost",
-    ".onrender.com",
 ]
 
 
