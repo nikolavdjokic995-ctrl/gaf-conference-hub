@@ -91,7 +91,7 @@
         <div class="card">
             <h3>Email settings</h3>
             <p>Manage automatic email templates and enable/disable notifications.</p>
-            <a class="btn" href="/admin/conferences/emailtemplate/">
+            <a class="btn" href="{% url 'email_templates' conference.slug %}">
                 Open email templates
             </a>
         </div>

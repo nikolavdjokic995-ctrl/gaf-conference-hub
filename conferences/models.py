@@ -560,22 +560,62 @@ class Review(models.Model):
 
 class EmailTemplate(models.Model):
     EVENT_CHOICES = [
-        ("abstract_submitted", "Abstract submitted"),
-        ("abstract_accepted", "Abstract accepted"),
-        ("paper_submitted", "Full paper submitted"),
-        ("decision_made", "Final decision sent"),
+        ("paper_submitted", "Paper submission confirmation"),
+        ("reviewer_assigned", "Reviewer assigned"),
+        ("revision_requested", "Content revision requested"),
+        ("revision_uploaded", "Content revision uploaded"),
+        ("accepted_for_layout", "Accepted for layout review"),
+        ("layout_revision_requested", "Layout corrections requested"),
+        ("layout_revision_uploaded", "Layout corrected paper uploaded"),
+        ("final_accepted", "Final acceptance"),
+        ("rejected", "Rejected"),
     ]
 
     conference = models.ForeignKey(Conference, on_delete=models.CASCADE)
-    event = models.CharField(max_length=50, choices=EVENT_CHOICES)
+    event = models.CharField(max_length=80, choices=EVENT_CHOICES)
 
     enabled = models.BooleanField(default=True)
+
+    send_to_author = models.BooleanField(default=True)
+    send_to_coauthors = models.BooleanField(default=True)
+    send_to_reviewer = models.BooleanField(default=False)
+    send_to_managers = models.BooleanField(default=False)
+    send_to_layout_reviewers = models.BooleanField(default=False)
 
     subject = models.CharField(max_length=255)
     body = models.TextField()
 
+    class Meta:
+        ordering = ["event"]
+
     def __str__(self):
-        return f"{self.conference.title_en} — {self.event}"
+        return f"{self.conference.title_en} — {self.get_event_display()}"
+
+
+class EmailLog(models.Model):
+    STATUS_CHOICES = [
+        ("sent", "Sent"),
+        ("skipped", "Skipped"),
+        ("failed", "Failed"),
+    ]
+
+    conference = models.ForeignKey(Conference, on_delete=models.CASCADE)
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, null=True, blank=True)
+    template = models.ForeignKey(EmailTemplate, on_delete=models.SET_NULL, null=True, blank=True)
+
+    event = models.CharField(max_length=80)
+    recipient = models.EmailField(blank=True)
+    subject = models.CharField(max_length=255, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default="sent")
+    message = models.TextField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.event} — {self.recipient} — {self.status}"
 
 
 class ConferenceInfoCard(models.Model):

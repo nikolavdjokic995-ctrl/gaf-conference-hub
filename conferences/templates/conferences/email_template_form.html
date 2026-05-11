@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit email template</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; color: #102a43; }
+        .topbar { background: #1f4e79; color: white; padding: 22px 40px; }
+        .container { max-width: 1100px; margin: 35px auto; padding: 0 20px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; }
+        .panel { background: white; padding: 24px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+        label { font-weight: bold; display: block; margin-top: 14px; }
+        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #cfd8dc; border-radius: 8px; box-sizing: border-box; }
+        input[type="checkbox"] { margin-right: 8px; }
+        .checkrow label { font-weight: normal; margin: 8px 0; }
+        .btn { display: inline-block; margin-top: 16px; padding: 10px 14px; background: #1f4e79; color: white; text-decoration: none; border: 0; border-radius: 6px; cursor: pointer; }
+        .btn.secondary { background: #555; }
+        .preview { white-space: pre-wrap; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e5e7eb; line-height: 1.5; }
+        code { background: #eef2f7; padding: 2px 4px; border-radius: 4px; }
+        @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <h1>Edit email template</h1>
+    <p>{{ template.get_event_display }} — {{ conference.title_en }}</p>
+</div>
+
+<div class="container">
+    <div class="panel">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="checkrow">
+                <label>{{ form.enabled }} Enable automatic sending</label>
+                <label>{{ form.send_to_author }} Send to submitting author</label>
+                <label>{{ form.send_to_coauthors }} Send to all co-authors</label>
+                <label>{{ form.send_to_reviewer }} Send to assigned reviewer</label>
+                <label>{{ form.send_to_managers }} Send to managers</label>
+                <label>{{ form.send_to_layout_reviewers }} Send to layout reviewers</label>
+            </div>
+
+            <label>Subject</label>
+            {{ form.subject }}
+
+            <label>Email body</label>
+            {{ form.body }}
+
+            <button class="btn" type="submit">Save template</button>
+            <a class="btn secondary" href="{% url 'email_templates' conference.slug %}">Back</a>
+        </form>
+    </div>
+
+    <div class="panel">
+        <h2>Preview</h2>
+        <p><strong>Subject:</strong> {{ preview.subject }}</p>
+        <div class="preview">{{ preview.body }}</div>
+
+        <h3>Available placeholders</h3>
+        <p>
+            <code>{{ '{{ paper_title }}' }}</code>
+            <code>{{ '{{ all_authors }}' }}</code>
+            <code>{{ '{{ all_author_emails }}' }}</code>
+            <code>{{ '{{ author_name }}' }}</code>
+            <code>{{ '{{ author_email }}' }}</code>
+            <code>{{ '{{ coauthors }}' }}</code>
+            <code>{{ '{{ coauthor_emails }}' }}</code>
+            <code>{{ '{{ conference_name }}' }}</code>
+            <code>{{ '{{ reviewer_name }}' }}</code>
+            <code>{{ '{{ revision_message }}' }}</code>
+            <code>{{ '{{ layout_revision_message }}' }}</code>
+            <code>{{ '{{ upload_revision_link }}' }}</code>
+            <code>{{ '{{ submission_result_link }}' }}</code>
+            <code>{{ '{{ review_link }}' }}</code>
+            <code>{{ '{{ layout_decision_link }}' }}</code>
+        </p>
+    </div>
+</div>
+</body>
+</html>

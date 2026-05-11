@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Email settings</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; color: #102a43; }
+        .topbar { background: #1f4e79; color: white; padding: 22px 40px; }
+        .container { max-width: 1180px; margin: 35px auto; padding: 0 20px; }
+        .back { color: white; text-decoration: none; font-size: 14px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 18px; }
+        .card { background: white; padding: 22px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); border: 1px solid #e5e7eb; }
+        .card h3 { margin: 0 0 8px; color: #0b5137; }
+        .event { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: #577; }
+        .status { display: inline-block; padding: 4px 9px; border-radius: 999px; font-size: 12px; margin: 8px 0; }
+        .on { background: #dcfce7; color: #166534; }
+        .off { background: #fee2e2; color: #991b1b; }
+        .btn { display: inline-block; margin-top: 12px; margin-right: 8px; padding: 9px 13px; background: #1f4e79; color: white; text-decoration: none; border-radius: 6px; }
+        .btn.secondary { background: #555; }
+        .small { color: #52616b; font-size: 14px; line-height: 1.45; }
+        .section-title { margin: 34px 0 14px; color: #0b5137; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
+        th, td { padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; vertical-align: top; }
+        th { background: #eef2f7; }
+        code { background: #eef2f7; padding: 2px 4px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <a class="back" href="{% url 'conference_settings' conference.slug %}">← Back to settings</a>
+    <h1>Email settings</h1>
+    <p>{{ conference.title_en }}</p>
+</div>
+
+<div class="container">
+    <p class="small">
+        Edit automatic email templates, enable or disable specific notifications, and choose recipients.
+        Templates support placeholders such as <code>{{ '{{ paper_title }}' }}</code>, <code>{{ '{{ all_authors }}' }}</code>,
+        <code>{{ '{{ all_author_emails }}' }}</code>, <code>{{ '{{ conference_name }}' }}</code>, and revision links.
+    </p>
+
+    <div class="grid">
+        {% for template in templates %}
+            <div class="card">
+                <div class="event">{{ template.event }}</div>
+                <h3>{{ template.get_event_display }}</h3>
+                {% if template.enabled %}
+                    <span class="status on">Enabled</span>
+                {% else %}
+                    <span class="status off">Disabled</span>
+                {% endif %}
+                <p class="small"><strong>Subject:</strong> {{ template.subject }}</p>
+                <p class="small">
+                    Recipients:
+                    {% if template.send_to_author %}author {% endif %}
+                    {% if template.send_to_coauthors %}coauthors {% endif %}
+                    {% if template.send_to_reviewer %}reviewer {% endif %}
+                    {% if template.send_to_managers %}managers {% endif %}
+                    {% if template.send_to_layout_reviewers %}layout reviewers{% endif %}
+                </p>
+                <a class="btn" href="{% url 'edit_email_template' template.id %}">Edit</a>
+                <a class="btn secondary" href="{% url 'preview_email_template' template.id %}">Preview</a>
+            </div>
+        {% empty %}
+            <div class="card">
+                <h3>No templates</h3>
+                <p>Run migrations to create default email templates.</p>
+            </div>
+        {% endfor %}
+    </div>
+
+    <h2 class="section-title">Recent email logs</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Event</th>
+                <th>Paper</th>
+                <th>Recipient</th>
+                <th>Status</th>
+                <th>Message</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for log in logs %}
+                <tr>
+                    <td>{{ log.created_at }}</td>
+                    <td>{{ log.event }}</td>
+                    <td>{% if log.submission %}{{ log.submission.title }}{% endif %}</td>
+                    <td>{{ log.recipient }}</td>
+                    <td>{{ log.get_status_display }}</td>
+                    <td>{{ log.message }}</td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="6">No email logs yet.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+</body>
+</html>

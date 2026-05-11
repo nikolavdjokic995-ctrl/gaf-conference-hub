@@ -13,6 +13,7 @@ from .models import (
     ReviewAssignment,
     Review,
     EmailTemplate,
+    EmailLog,
     ConferenceInfoCard,
     ConferenceSidebarCard,
     ConferenceTopic,
@@ -30,7 +31,10 @@ from .forms import (
     JudgeDecisionForm,
     RevisionUploadForm,
     LayoutDecisionForm,
+    EmailTemplateForm,
 )
+
+from .emails import send_event_email, preview_template
 
 
 def home(request):
@@ -143,6 +147,13 @@ def make_decision(request, submission_id):
 
             submission.save()
 
+            if status == "revision_required":
+                send_event_email("revision_requested", submission, request=request)
+            elif status == "accepted_for_layout":
+                send_event_email("accepted_for_layout", submission, request=request)
+            elif status == "rejected":
+                send_event_email("rejected", submission, request=request)
+
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
     else:
@@ -201,11 +212,19 @@ def assign_papers(request, slug):
             conference=conference
         )
 
-        ReviewAssignment.objects.get_or_create(
+        assignment, created = ReviewAssignment.objects.get_or_create(
             submission=submission,
             reviewer=reviewer_role.user,
             role=reviewer_role.role
         )
+
+        if created:
+            send_event_email(
+                "reviewer_assigned",
+                submission,
+                request=request,
+                reviewer=reviewer_role.user,
+            )
 
         submission.status = "under_review"
         submission.save()
@@ -414,6 +433,91 @@ def conference_settings(request, slug):
 
 
 @login_required
+def email_templates(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    templates = EmailTemplate.objects.filter(
+        conference=conference
+    ).order_by("event")
+
+    logs = EmailLog.objects.filter(
+        conference=conference
+    ).select_related("submission", "template")[:40]
+
+    return render(request, "conferences/email_templates.html", {
+        "conference": conference,
+        "templates": templates,
+        "logs": logs,
+    })
+
+
+@login_required
+def edit_email_template(request, template_id):
+    template = get_object_or_404(EmailTemplate, id=template_id)
+    conference = template.conference
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    if request.method == "POST":
+        form = EmailTemplateForm(request.POST, instance=template)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Email template saved successfully.")
+            return redirect("email_templates", slug=conference.slug)
+    else:
+        form = EmailTemplateForm(instance=template)
+
+    preview = preview_template(template, request=request)
+
+    return render(request, "conferences/email_template_form.html", {
+        "conference": conference,
+        "template": template,
+        "form": form,
+        "preview": preview,
+    })
+
+
+@login_required
+def preview_email_template(request, template_id):
+    template = get_object_or_404(EmailTemplate, id=template_id)
+    conference = template.conference
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    preview = preview_template(template, request=request)
+
+    return render(request, "conferences/email_template_preview.html", {
+        "conference": conference,
+        "template": template,
+        "preview": preview,
+    })
+
+
+@login_required
 def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
@@ -426,6 +530,7 @@ def submit_paper(request, slug):
             submission.author = request.user
             submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
             submission.save()
+            send_event_email("paper_submitted", submission, request=request)
 
             return redirect("my_submissions")
     else:
@@ -874,6 +979,12 @@ def upload_revision(request, submission_id):
                 success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
             submission.save()
+
+            if submission.status == "revised_submitted":
+                send_event_email("revision_uploaded", submission, request=request)
+            elif submission.status == "layout_revision_submitted":
+                send_event_email("layout_revision_uploaded", submission, request=request)
+
             messages.success(request, success_message)
             return redirect("my_submissions")
     else:
@@ -948,6 +1059,11 @@ def layout_decision(request, submission_id):
                 submission.layout_revision_round += 1
 
             submission.save()
+
+            if status == "layout_revision_required":
+                send_event_email("layout_revision_requested", submission, request=request)
+            elif status == "final_accepted":
+                send_event_email("final_accepted", submission, request=request)
 
             messages.success(request, "Layout decision saved successfully.")
             return redirect("layout_dashboard")

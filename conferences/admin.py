@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import Conference, Submission, ConferenceRole
+
+from .models import (
+    Conference,
+    Submission,
+    ConferenceRole,
+    ReviewAssignment,
+    EmailTemplate,
+    EmailLog,
+)
 
 
 @admin.register(Conference)
@@ -16,9 +24,20 @@ class SubmissionAdmin(admin.ModelAdmin):
 class ConferenceRoleAdmin(admin.ModelAdmin):
     list_display = ("user", "conference", "role")
 
-from .models import ReviewAssignment
-admin.site.register(ReviewAssignment)
 
-from .models import EmailTemplate
+@admin.register(ReviewAssignment)
+class ReviewAssignmentAdmin(admin.ModelAdmin):
+    list_display = ("submission", "reviewer", "role", "assigned_at")
 
-admin.site.register(EmailTemplate)
+
+@admin.register(EmailTemplate)
+class EmailTemplateAdmin(admin.ModelAdmin):
+    list_display = ("conference", "event", "enabled", "send_to_author", "send_to_coauthors")
+    list_filter = ("conference", "event", "enabled")
+
+
+@admin.register(EmailLog)
+class EmailLogAdmin(admin.ModelAdmin):
+    list_display = ("created_at", "conference", "event", "recipient", "status")
+    list_filter = ("conference", "event", "status")
+    search_fields = ("recipient", "subject", "message")

@@ -11,6 +11,7 @@ from .models import (
     ConferenceInfoCard,
     ConferenceSidebarCard,
     ConferenceTopic,
+    EmailTemplate,
 )
 
 
@@ -276,6 +277,34 @@ class ConferenceTopicForm(forms.ModelForm):
             "order",
             "enabled",
         ]
+
+
+class EmailTemplateForm(forms.ModelForm):
+
+    class Meta:
+        model = EmailTemplate
+
+        fields = [
+            "enabled",
+            "send_to_author",
+            "send_to_coauthors",
+            "send_to_reviewer",
+            "send_to_managers",
+            "send_to_layout_reviewers",
+            "subject",
+            "body",
+        ]
+
+        widgets = {
+            "body": forms.Textarea(attrs={
+                "rows": 14,
+                "placeholder": "Use placeholders such as {{ paper_title }}, {{ all_authors }}, {{ conference_name }}.",
+            }),
+            "subject": forms.TextInput(attrs={
+                "placeholder": "Example: Decision for {{ paper_title }}",
+            }),
+        }
+
 
 class JudgeDecisionForm(forms.Form):
 
