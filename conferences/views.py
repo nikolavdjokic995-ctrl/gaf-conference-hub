@@ -612,7 +612,7 @@ def submit_paper(request, slug):
                         cloudinary.uploader.upload(
                             target_path,
                             resource_type="raw",
-                            public_id=f"papers/{submission.paper_code}",
+                            public_id=f"media/papers/{submission.paper_code}",
                             overwrite=True,
                             unique_filename=False,
                             use_filename=True,
