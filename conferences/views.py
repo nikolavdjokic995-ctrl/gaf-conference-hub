@@ -1,4 +1,5 @@
 from pathlib import Path
+import tempfile
 from django.core.files import File
 
 from django.shortcuts import render, redirect, get_object_or_404
@@ -575,35 +576,49 @@ def submit_paper(request, slug):
             submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
 
             next_id = Submission.objects.filter(conference=conference).count() + 1
-            conference_code = ''.join(word[0] for word in conference.title_en.split() if word[0].isalnum())[:3].upper()
+            conference_code = ''.join(
+                word[0] for word in conference.title_en.split() if word and word[0].isalnum()
+            )[:3].upper() or "GBC"
             submission.paper_code = f"{conference_code}{conference.start_date.year}-{next_id:03d}"
+
+            uploaded_file = form.cleaned_data.get("full_paper_file")
+
+            if uploaded_file:
+                extension = Path(uploaded_file.name).suffix.lower()
+                uploaded_file.name = f"{submission.paper_code}{extension}"
+                submission.full_paper_file = uploaded_file
 
             submission.save()
 
-            if submission.full_paper_file:
-                original_path = submission.full_paper_file.path
-                extension = Path(original_path).suffix
-                renamed_path = str(Path(original_path).with_name(f"{submission.paper_code}{extension}"))
-
-                Path(original_path).rename(renamed_path)
-
-                submission.full_paper_file.name = f"papers/{submission.paper_code}{extension}"
-
-                anonymous_path = str(Path(renamed_path).with_name(f"{submission.paper_code}_anonymous{extension}"))
+            if submission.full_paper_file and Path(submission.full_paper_file.name).suffix.lower() == ".docx":
+                extension = ".docx"
 
                 try:
-                    anonymize_docx(renamed_path, anonymous_path)
+                    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
+                        submission.full_paper_file.open("rb")
+                        for chunk in submission.full_paper_file.chunks():
+                            source_tmp.write(chunk)
+                        source_path = source_tmp.name
 
-                    with open(anonymous_path, "rb") as anon_file:
+                    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as target_tmp:
+                        target_path = target_tmp.name
+
+                    anonymize_docx(source_path, target_path)
+
+                    with open(target_path, "rb") as anon_file:
                         submission.anonymized_paper_file.save(
                             f"{submission.paper_code}_anonymous{extension}",
                             File(anon_file),
                             save=False,
                         )
-                except Exception:
-                    pass
 
-                submission.save()
+                    submission.save(update_fields=["anonymized_paper_file"])
+
+                except Exception as exc:
+                    messages.warning(
+                        request,
+                        f"Paper submitted, but anonymized reviewer file could not be generated: {exc}"
+                    )
 
             send_event_email("paper_submitted", submission, request=request)
 
@@ -617,6 +632,7 @@ def submit_paper(request, slug):
         "conference": conference,
     })
         
+
 @login_required
 def important_information(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
