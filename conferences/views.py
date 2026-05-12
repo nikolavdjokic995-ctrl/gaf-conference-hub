@@ -576,13 +576,13 @@ def submit_paper(request, slug):
             submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
 
             next_id = Submission.objects.filter(conference=conference).count() + 1
-            conference_code = ''.join(
+            conference_code = "".join(
                 word[0] for word in conference.title_en.split() if word and word[0].isalnum()
             )[:3].upper() or "GBC"
+
             submission.paper_code = f"{conference_code}{conference.start_date.year}-{next_id:03d}"
 
             uploaded_file = form.cleaned_data.get("full_paper_file")
-
             if uploaded_file:
                 extension = Path(uploaded_file.name).suffix.lower()
                 uploaded_file.name = f"{submission.paper_code}{extension}"
@@ -595,7 +595,6 @@ def submit_paper(request, slug):
 
                 try:
                     with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
-                        submission.full_paper_file.open("rb")
                         for chunk in submission.full_paper_file.chunks():
                             source_tmp.write(chunk)
                         source_path = source_tmp.name
@@ -605,20 +604,18 @@ def submit_paper(request, slug):
 
                     anonymize_docx(source_path, target_path)
 
-                    with open(target_path, "rb") as anon_file:
-                        submission.anonymized_paper_file.save(
-                            f"{submission.paper_code}_anonymous{extension}",
-                            File(anon_file),
-                            save=False,
+                    with open(target_path, "rb") as anonymized_file:
+                        submission.full_paper_file.save(
+                            submission.full_paper_file.name,
+                            File(anonymized_file),
+                            save=True
                         )
 
-                    submission.save(update_fields=["anonymized_paper_file"])
+                    os.remove(source_path)
+                    os.remove(target_path)
 
-                except Exception as exc:
-                    messages.warning(
-                        request,
-                        f"Paper submitted, but anonymized reviewer file could not be generated: {exc}"
-                    )
+                except Exception as e:
+                    print("DOCX anonymization error:", e)
 
             send_event_email("paper_submitted", submission, request=request)
 
