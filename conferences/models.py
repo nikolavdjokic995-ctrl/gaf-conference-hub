@@ -646,8 +646,10 @@ class ConferenceInfoCard(models.Model):
 
     file = models.FileField(
         upload_to="conference_files/",
+        storage=RawMediaCloudinaryStorage(),
         blank=True,
         null=True
+
     )
 
     order = models.PositiveIntegerField(default=0)
