@@ -1,5 +1,6 @@
 from pathlib import Path
 import tempfile
+import cloudinary.uploader
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
