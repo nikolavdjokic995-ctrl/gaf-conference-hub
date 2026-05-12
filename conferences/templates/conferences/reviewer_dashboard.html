@@ -120,13 +120,11 @@
 
                 </div>
 
-                {% if assignment.submission.full_paper_file %}
-                    <a class="btn btn-outline"
-                       href="{{ assignment.submission.full_paper_file.url }}"
-                       target="_blank">
-                        Download paper
-                    </a>
-                {% endif %}
+                <a class="btn btn-outline"
+                   href="{% url 'download_review_paper' assignment.submission.id %}"
+                   target="_blank">
+                    Download paper for review
+                </a>
 
                 <a class="btn"
    href="{% url 'review_submission' assignment.submission.id %}">

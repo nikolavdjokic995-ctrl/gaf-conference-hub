@@ -145,12 +145,6 @@
     <div class="paper-box">
         <strong>Paper:</strong> {{ submission.title }}<br>
 
-        <strong>First author:</strong> {{ submission.first_author }}<br>
-
-        {% if submission.coauthors %}
-            <strong>Co-authors:</strong> {{ submission.coauthors|linebreaksbr }}<br>
-        {% endif %}
-
         <strong>Topics:</strong>
         {% for topic in submission.topic_list %}
             {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
@@ -170,15 +164,13 @@
             <br><br>
         {% endif %}
 
-        {% if submission.full_paper_file %}
-            <strong>File:</strong>
-            <a href="{{ submission.full_paper_file.url }}" target="_blank">
-                Download paper
-            </a>
-        {% endif %}
+        <strong>File for review:</strong>
+        <a href="{% url 'download_review_paper' submission.id %}" target="_blank">
+            Download paper for review
+        </a>
     </div>
 
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
 
         <h2>Recommendations for Authors</h2>
@@ -376,6 +368,18 @@
 
         <h2>Comments for Editors</h2>
         {{ form.comments_for_editors }}
+
+
+        <h2>Commented Paper for Author (optional)</h2>
+        <div class="section-note">
+            Upload the anonymized paper with your Word/PDF comments if the author should download it for revision.
+        </div>
+        {{ form.commented_paper_file }}
+        {% if form.instance.commented_paper_file %}
+            <p>Current uploaded commented file:
+                <a href="{{ form.instance.commented_paper_file.url }}" target="_blank">Download</a>
+            </p>
+        {% endif %}
 
         <h2>Overall Recommendation</h2>
 

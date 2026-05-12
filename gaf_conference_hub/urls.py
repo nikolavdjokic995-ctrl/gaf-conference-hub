@@ -31,6 +31,7 @@ from conferences.views import (
     conference_people,
     my_reviews,
     review_submission,
+    download_review_paper,
     submission_result,
     manager_dashboard,
     make_decision,
@@ -63,6 +64,7 @@ urlpatterns = [
     path("my-submissions/", my_submissions, name="my_submissions"),
 
     path("submission/<int:submission_id>/review/", review_submission, name="review_submission"),
+    path("submission/<int:submission_id>/download-review-paper/", download_review_paper, name="download_review_paper"),
     path("submission/<int:submission_id>/result/", submission_result, name="submission_result"),
     path("submission/<int:submission_id>/decision/", make_decision, name="make_decision"),
     path("submission/<int:submission_id>/delete/", delete_submission, name="delete_submission"),

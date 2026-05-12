@@ -123,14 +123,6 @@
                     <strong>Conference:</strong>
                     {{ assignment.submission.conference.title_en }}<br>
 
-                    <strong>First author:</strong>
-                    {{ assignment.submission.first_author }}<br>
-
-                    {% if assignment.submission.coauthors %}
-                        <strong>Co-authors:</strong>
-                        {{ assignment.submission.coauthors|linebreaksbr }}<br>
-                    {% endif %}
-
                     <strong>Topics:</strong>
                     {% for topic in assignment.submission.topic_list %}
                         {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
@@ -145,13 +137,11 @@
                     </span>
                 </div>
 
-                {% if assignment.submission.full_paper_file %}
-                    <a class="btn btn-outline"
-                       href="{{ assignment.submission.full_paper_file.url }}"
-                       target="_blank">
-                        Download paper
-                    </a>
-                {% endif %}
+                <a class="btn btn-outline"
+                   href="{% url 'download_review_paper' assignment.submission.id %}"
+                   target="_blank">
+                    Download paper for review
+                </a>
 
                 <a class="btn"
                    href="{% url 'review_submission' assignment.submission.id %}">

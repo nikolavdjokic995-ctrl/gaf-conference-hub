@@ -166,6 +166,7 @@ class ReviewForm(forms.ModelForm):
             "overall_merit",
             "references_relevant",
             "comments_for_editors",
+            "commented_paper_file",
             "overall_recommendation",
             "wants_final_notification",
         ]
@@ -194,6 +195,20 @@ class ReviewForm(forms.ModelForm):
             "comments_for_authors": forms.Textarea(attrs={"rows": 4}),
             "comments_for_editors": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def clean_commented_paper_file(self):
+        file = self.cleaned_data.get("commented_paper_file")
+
+        if file:
+            allowed_extensions = [".doc", ".docx", ".pdf"]
+            file_name = file.name.lower()
+
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    "Please upload reviewer comments as .doc, .docx, or .pdf."
+                )
+
+        return file
 
 
 class ConferenceForm(forms.ModelForm):

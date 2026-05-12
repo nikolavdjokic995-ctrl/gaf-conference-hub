@@ -471,6 +471,14 @@ class Review(models.Model):
 
     auto_score = models.FloatField(default=3.0)
 
+    commented_paper_file = models.FileField(
+        upload_to="reviewer_commented_papers/",
+        storage=RawMediaCloudinaryStorage(),
+        blank=True,
+        null=True,
+        help_text="Optional reviewer-uploaded paper with comments for the author."
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

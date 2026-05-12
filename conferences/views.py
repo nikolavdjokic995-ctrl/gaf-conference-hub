@@ -1,6 +1,7 @@
 
 import os
 import tempfile
+import urllib.request
 import cloudinary.uploader
 
 from django.core.files import File
@@ -292,9 +293,9 @@ def review_submission(request, submission_id):
 
     if request.method == "POST":
         if existing_review:
-            form = ReviewForm(request.POST, instance=existing_review)
+            form = ReviewForm(request.POST, request.FILES, instance=existing_review)
         else:
-            form = ReviewForm(request.POST)
+            form = ReviewForm(request.POST, request.FILES)
 
         if form.is_valid():
             review = form.save(commit=False)
@@ -575,6 +576,8 @@ def submit_paper(request, slug):
         form = SubmissionForm(request.POST, request.FILES, conference=conference)
 
         if form.is_valid():
+            uploaded_file = form.cleaned_data.get("full_paper_file")
+
             submission = form.save(commit=False)
             submission.conference = conference
             submission.author = request.user
@@ -587,53 +590,60 @@ def submit_paper(request, slug):
             )[:3].upper() or "GBC"
 
             submission.paper_code = f"{conference_code}{conference.start_date.year}-{next_id:03d}"
-            submission.save()
 
-            uploaded_file = form.cleaned_data.get("full_paper_file")
+            source_path = None
+            anonymized_path = None
 
-            if uploaded_file:
-                extension = Path(uploaded_file.name).suffix.lower()
+            try:
+                if uploaded_file:
+                    extension = Path(uploaded_file.name).suffix.lower()
+                    original_public_id = f"media/papers/{submission.paper_code}"
 
-                if extension == ".docx":
-                    source_path = None
-                    target_path = None
+                    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
+                        for chunk in uploaded_file.chunks():
+                            source_tmp.write(chunk)
+                        source_path = source_tmp.name
 
-                    try:
-                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
-                            for chunk in uploaded_file.chunks():
-                                source_tmp.write(chunk)
-                            source_path = source_tmp.name
+                    # Save the ORIGINAL paper for judge/layout/final workflow.
+                    cloudinary.uploader.upload(
+                        source_path,
+                        resource_type="raw",
+                        public_id=original_public_id,
+                        overwrite=True,
+                        unique_filename=False,
+                        use_filename=True,
+                    )
+                    submission.full_paper_file.name = f"papers/{submission.paper_code}{extension}"
 
-                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as target_tmp:
-                            target_path = target_tmp.name
+                    # Save the ANONYMIZED paper separately for content reviewers.
+                    if extension == ".docx":
+                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
+                            anonymized_path = anonymized_tmp.name
 
-                        anonymize_docx(source_path, target_path)
+                        anonymize_docx(source_path, anonymized_path)
 
                         cloudinary.uploader.upload(
-                            target_path,
+                            anonymized_path,
                             resource_type="raw",
-                            public_id=f"media/papers/{submission.paper_code}",
+                            public_id=f"media/anonymous_papers/{submission.paper_code}",
                             overwrite=True,
                             unique_filename=False,
                             use_filename=True,
                         )
+                        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}.docx"
 
-                        submission.full_paper_file.name = f"papers/{submission.paper_code}.docx"
-                        submission.save(update_fields=["full_paper_file"])
+                submission.save()
 
-                    except Exception as e:
-                        print("DOCX anonymization error:", e)
+            except Exception as e:
+                print("Paper upload/anonymization error:", e)
+                messages.error(request, "Paper upload failed. Please try again.")
+                return redirect("submit_paper", slug=conference.slug)
 
-                    finally:
-                        if source_path and os.path.exists(source_path):
-                            os.remove(source_path)
-                        if target_path and os.path.exists(target_path):
-                            os.remove(target_path)
-
-                else:
-                    uploaded_file.name = f"{submission.paper_code}{extension}"
-                    submission.full_paper_file = uploaded_file
-                    submission.save(update_fields=["full_paper_file"])
+            finally:
+                if source_path and os.path.exists(source_path):
+                    os.remove(source_path)
+                if anonymized_path and os.path.exists(anonymized_path):
+                    os.remove(anonymized_path)
 
             send_event_email("paper_submitted", submission, request=request)
             return redirect("my_submissions")
@@ -1075,19 +1085,80 @@ def upload_revision(request, submission_id):
 
         if form.is_valid():
             uploaded_file = form.cleaned_data["full_paper_file"]
+            extension = Path(uploaded_file.name).suffix.lower()
+            source_path = None
+            anonymized_path = None
 
-            if submission.status == "revision_required":
-                submission.revised_paper_file = uploaded_file
-                submission.full_paper_file = uploaded_file
-                submission.status = "revised_submitted"
-                success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
-            else:
-                submission.layout_revised_paper_file = uploaded_file
-                submission.full_paper_file = uploaded_file
-                submission.status = "layout_revision_submitted"
-                success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
+            try:
+                with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
+                    for chunk in uploaded_file.chunks():
+                        source_tmp.write(chunk)
+                    source_path = source_tmp.name
 
-            submission.save()
+                if submission.status == "revision_required":
+                    next_round = submission.revision_round or 1
+                    revised_public_id = f"media/revised_papers/{submission.paper_code}-r{next_round}"
+
+                    cloudinary.uploader.upload(
+                        source_path,
+                        resource_type="raw",
+                        public_id=revised_public_id,
+                        overwrite=True,
+                        unique_filename=False,
+                        use_filename=True,
+                    )
+
+                    submission.revised_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
+                    submission.full_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
+
+                    if extension == ".docx":
+                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
+                            anonymized_path = anonymized_tmp.name
+
+                        anonymize_docx(source_path, anonymized_path)
+
+                        cloudinary.uploader.upload(
+                            anonymized_path,
+                            resource_type="raw",
+                            public_id=f"media/anonymous_papers/{submission.paper_code}-r{next_round}",
+                            overwrite=True,
+                            unique_filename=False,
+                            use_filename=True,
+                        )
+                        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}-r{next_round}.docx"
+
+                    submission.status = "revised_submitted"
+                    success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
+                else:
+                    next_round = submission.layout_revision_round or 1
+                    layout_public_id = f"media/layout_revised_papers/{submission.paper_code}-layout-r{next_round}"
+
+                    cloudinary.uploader.upload(
+                        source_path,
+                        resource_type="raw",
+                        public_id=layout_public_id,
+                        overwrite=True,
+                        unique_filename=False,
+                        use_filename=True,
+                    )
+
+                    submission.layout_revised_paper_file.name = f"layout_revised_papers/{submission.paper_code}-layout-r{next_round}{extension}"
+                    submission.full_paper_file.name = f"layout_revised_papers/{submission.paper_code}-layout-r{next_round}{extension}"
+                    submission.status = "layout_revision_submitted"
+                    success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
+
+                submission.save()
+
+            except Exception as e:
+                print("Revision upload/anonymization error:", e)
+                messages.error(request, "Revision upload failed. Please try again.")
+                return redirect("upload_revision", submission_id=submission.id)
+
+            finally:
+                if source_path and os.path.exists(source_path):
+                    os.remove(source_path)
+                if anonymized_path and os.path.exists(anonymized_path):
+                    os.remove(anonymized_path)
 
             if submission.status == "revised_submitted":
                 send_event_email("revision_uploaded", submission, request=request)
@@ -1212,6 +1283,77 @@ def register(request):
         "form": form
     })
 
+
+
+@login_required
+def download_review_paper(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id)
+
+    is_assigned_reviewer = ReviewAssignment.objects.filter(
+        submission=submission,
+        reviewer=request.user,
+        role="content_reviewer"
+    ).exists()
+
+    if not is_assigned_reviewer:
+        messages.error(request, "You do not have permission to download this review file.")
+        return redirect("my_reviews")
+
+    if submission.anonymized_paper_file:
+        return redirect(submission.anonymized_paper_file.url)
+
+    if not submission.full_paper_file:
+        messages.error(request, "No paper file is available for this submission.")
+        return redirect("my_reviews")
+
+    extension = Path(submission.full_paper_file.name).suffix.lower()
+
+    if extension != ".docx":
+        messages.error(
+            request,
+            "An anonymized reviewer file is not available for this submission. Please contact the conference manager."
+        )
+        return redirect("my_reviews")
+
+    source_path = None
+    anonymized_path = None
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
+            source_path = source_tmp.name
+
+        urllib.request.urlretrieve(submission.full_paper_file.url, source_path)
+
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
+            anonymized_path = anonymized_tmp.name
+
+        anonymize_docx(source_path, anonymized_path)
+
+        public_id = f"media/anonymous_papers/{submission.paper_code}"
+        cloudinary.uploader.upload(
+            anonymized_path,
+            resource_type="raw",
+            public_id=public_id,
+            overwrite=True,
+            unique_filename=False,
+            use_filename=True,
+        )
+
+        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}.docx"
+        submission.save(update_fields=["anonymized_paper_file", "updated_at"])
+
+        return redirect(submission.anonymized_paper_file.url)
+
+    except Exception as e:
+        print("Reviewer paper download/anonymization error:", e)
+        messages.error(request, "Could not prepare the anonymized reviewer file. Please contact the conference manager.")
+        return redirect("my_reviews")
+
+    finally:
+        if source_path and os.path.exists(source_path):
+            os.remove(source_path)
+        if anonymized_path and os.path.exists(anonymized_path):
+            os.remove(anonymized_path)
 
 @login_required
 def my_reviews(request):

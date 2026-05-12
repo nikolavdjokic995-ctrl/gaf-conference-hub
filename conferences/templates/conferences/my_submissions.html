@@ -47,6 +47,14 @@
                     <div class="message-box"><strong>Judge revision instructions:</strong><br>{{ submission.judge_revision_message|linebreaksbr }}</div>
                 {% endif %}
 
+                {% if submission.status == "revision_required" %}
+                    {% for review in submission.reviews.all %}
+                        {% if review.commented_paper_file %}
+                            <a class="file-link" href="{{ review.commented_paper_file.url }}" target="_blank">Download reviewer commented file {{ forloop.counter }}</a>
+                        {% endif %}
+                    {% endfor %}
+                {% endif %}
+
                 {% if submission.status == "layout_revision_required" and submission.layout_revision_message %}
                     <div class="message-box"><strong>Layout correction instructions:</strong><br>{{ submission.layout_revision_message|linebreaksbr }}</div>
                 {% endif %}
