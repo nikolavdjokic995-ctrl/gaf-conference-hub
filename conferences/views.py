@@ -1,6 +1,8 @@
-from pathlib import Path
+
+import os
 import tempfile
 import cloudinary.uploader
+
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
@@ -12,6 +14,8 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
+from pathlib import Path
+
 from .models import (
     Conference,
     ConferenceRole,
@@ -578,50 +582,60 @@ def submit_paper(request, slug):
 
             next_id = Submission.objects.filter(conference=conference).count() + 1
             conference_code = "".join(
-                word[0] for word in conference.title_en.split() if word and word[0].isalnum()
+                word[0] for word in conference.title_en.split()
+                if word and word[0].isalnum()
             )[:3].upper() or "GBC"
 
             submission.paper_code = f"{conference_code}{conference.start_date.year}-{next_id:03d}"
-
-            uploaded_file = form.cleaned_data.get("full_paper_file")
-            if uploaded_file:
-                extension = Path(uploaded_file.name).suffix.lower()
-                uploaded_file.name = f"{submission.paper_code}{extension}"
-                submission.full_paper_file = uploaded_file
-
             submission.save()
 
-            if submission.full_paper_file and Path(submission.full_paper_file.name).suffix.lower() == ".docx":
-                extension = ".docx"
+            uploaded_file = form.cleaned_data.get("full_paper_file")
 
-                try:
-                    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
-                        for chunk in submission.full_paper_file.chunks():
-                            source_tmp.write(chunk)
-                        source_path = source_tmp.name
+            if uploaded_file:
+                extension = Path(uploaded_file.name).suffix.lower()
 
-                    with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as target_tmp:
-                        target_path = target_tmp.name
+                if extension == ".docx":
+                    source_path = None
+                    target_path = None
 
-                    anonymize_docx(source_path, target_path)
+                    try:
+                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
+                            for chunk in uploaded_file.chunks():
+                                source_tmp.write(chunk)
+                            source_path = source_tmp.name
 
-                    with open(target_path, "rb") as anonymized_file:
-                        clean_filename = f"{submission.paper_code}.docx"
+                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as target_tmp:
+                            target_path = target_tmp.name
 
-                        submission.full_paper_file.save(
-                        clean_filename,
-                        ContentFile(anonymized_file.read()),
-                        save=True
-                            )
+                        anonymize_docx(source_path, target_path)
 
-                    os.remove(source_path)
-                    os.remove(target_path)
+                        cloudinary.uploader.upload(
+                            target_path,
+                            resource_type="raw",
+                            public_id=f"papers/{submission.paper_code}",
+                            overwrite=True,
+                            unique_filename=False,
+                            use_filename=True,
+                        )
 
-                except Exception as e:
-                    print("DOCX anonymization error:", e)
+                        submission.full_paper_file.name = f"papers/{submission.paper_code}.docx"
+                        submission.save(update_fields=["full_paper_file"])
+
+                    except Exception as e:
+                        print("DOCX anonymization error:", e)
+
+                    finally:
+                        if source_path and os.path.exists(source_path):
+                            os.remove(source_path)
+                        if target_path and os.path.exists(target_path):
+                            os.remove(target_path)
+
+                else:
+                    uploaded_file.name = f"{submission.paper_code}{extension}"
+                    submission.full_paper_file = uploaded_file
+                    submission.save(update_fields=["full_paper_file"])
 
             send_event_email("paper_submitted", submission, request=request)
-
             return redirect("my_submissions")
 
     else:
@@ -631,7 +645,6 @@ def submit_paper(request, slug):
         "form": form,
         "conference": conference,
     })
-        
 
 @login_required
 def important_information(request, slug):
