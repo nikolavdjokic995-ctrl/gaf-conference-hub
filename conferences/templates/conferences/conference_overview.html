@@ -54,6 +54,13 @@
             font-weight:600;
         }
 
+        .nav-btn.disabled {
+            background: #777;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.75;
+        }  
+
         .nav-links span{
             font-weight:500;
         }
@@ -210,7 +217,7 @@
         }
 
         @media(max-width:900px){
-
+ 
             .navbar{
                 flex-direction:column;
                 gap:18px;
@@ -369,10 +376,13 @@
                 Important Information
             </a>
 
-            <a class="hero-btn"
-               href="{% url 'submit_paper' conference.slug %}">
-                Submit Paper
+            {% if submission_closed and not is_manager %}
+                <span class="hero-btn disabled">Submission closed</span>
+            {% else %}
+                <a class="hero-btn" href="{% url 'submit_paper' conference.slug %}">
+                    Submit Paper
             </a>
+            {% endif %}
 
             {% if is_manager or is_judge %}
 

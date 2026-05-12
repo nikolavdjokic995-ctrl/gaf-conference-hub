@@ -79,6 +79,10 @@ def home(request):
 
 def conference_overview(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
+    submission_closed = (
+    conference.submission_deadline
+    and timezone.now().date() > conference.submission_deadline
+)
 
     can_submit = request.user.is_authenticated
     is_manager = False
@@ -118,6 +122,7 @@ def conference_overview(request, slug):
         "is_reviewer": is_reviewer,
         "is_judge": is_judge,
         "is_layout_reviewer": is_layout_reviewer,
+        "submission_closed": submission_closed,
     })
 
 @login_required
