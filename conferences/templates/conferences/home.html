@@ -12,11 +12,15 @@
         body {
             font-family: Arial, sans-serif;
             margin: 0;
+            min-height: 100vh;
+
             background:
                 linear-gradient(rgba(10,20,30,0.58), rgba(10,20,30,0.58)),
                 url('{% static "conferences/images/gaf-building.jpg" %}')
-                center/95% fixed no-repeat;
-             min-height: 100vh;
+                center/contain fixed no-repeat;
+
+            background-color: #1f4e79;
+}
         }
 
         .header {
