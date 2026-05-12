@@ -75,6 +75,19 @@ class SubmissionForm(forms.ModelForm):
             "full_paper_file",
         ]
 
+    def clean_full_paper_file(self):
+        file = self.cleaned_data.get("full_paper_file")
+
+        if file:
+            allowed_extensions = [".doc", ".docx"]
+            file_name = file.name.lower()
+
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    "Please upload your paper in Word format only (.doc or .docx)."
+                )
+    
+        return file
         labels = {
             "title": "Paper title",
             "abstract": "Abstract",
