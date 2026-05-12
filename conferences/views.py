@@ -1,7 +1,7 @@
 from pathlib import Path
 import tempfile
 from django.core.files import File
-
+from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg
@@ -605,11 +605,13 @@ def submit_paper(request, slug):
                     anonymize_docx(source_path, target_path)
 
                     with open(target_path, "rb") as anonymized_file:
+                        clean_filename = f"{submission.paper_code}.docx"
+
                         submission.full_paper_file.save(
-                            submission.full_paper_file.name,
-                            File(anonymized_file),
-                            save=True
-                        )
+                        clean_filename,
+                        ContentFile(anonymized_file.read()),
+                        save=True
+                            )
 
                     os.remove(source_path)
                     os.remove(target_path)
