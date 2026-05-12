@@ -1,3 +1,6 @@
+from pathlib import Path
+from django.core.files import File
+
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg
@@ -37,6 +40,7 @@ from .forms import (
 )
 
 from .emails import send_event_email, preview_template
+from .utils import anonymize_docx
 
 
 def home(request):
@@ -569,7 +573,37 @@ def submit_paper(request, slug):
             submission.conference = conference
             submission.author = request.user
             submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
+
+            next_id = Submission.objects.filter(conference=conference).count() + 1
+            conference_code = ''.join(word[0] for word in conference.title_en.split() if word[0].isalnum())[:3].upper()
+            submission.paper_code = f"{conference_code}{conference.start_date.year}-{next_id:03d}"
+
             submission.save()
+
+            if submission.full_paper_file:
+                original_path = submission.full_paper_file.path
+                extension = Path(original_path).suffix
+                renamed_path = str(Path(original_path).with_name(f"{submission.paper_code}{extension}"))
+
+                Path(original_path).rename(renamed_path)
+
+                submission.full_paper_file.name = f"papers/{submission.paper_code}{extension}"
+
+                anonymous_path = str(Path(renamed_path).with_name(f"{submission.paper_code}_anonymous{extension}"))
+
+                try:
+                    anonymize_docx(renamed_path, anonymous_path)
+
+                    with open(anonymous_path, "rb") as anon_file:
+                        submission.anonymized_paper_file.save(
+                            f"{submission.paper_code}_anonymous{extension}",
+                            File(anon_file),
+                            save=False,
+                        )
+                except Exception:
+                    pass
+
+                submission.save()
 
             send_event_email("paper_submitted", submission, request=request)
 

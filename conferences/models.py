@@ -119,6 +119,8 @@ class Submission(models.Model):
 
     first_author = models.CharField(max_length=255)
 
+    paper_code = models.CharField(max_length=50, blank=True, unique=True)
+
     coauthors = models.TextField(
         blank=True,
         help_text="Separate co-authors with commas or new lines."
@@ -190,6 +192,13 @@ class Submission(models.Model):
 
     layout_revised_paper_file = models.FileField(
         upload_to="layout_revised_papers/",
+        storage=RawMediaCloudinaryStorage(),
+        blank=True,
+        null=True
+    )
+
+    anonymized_paper_file = models.FileField(
+        upload_to="anonymous_papers/",
         storage=RawMediaCloudinaryStorage(),
         blank=True,
         null=True

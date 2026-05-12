@@ -28,14 +28,14 @@
     {% if data %}
         <table>
             <tr>
-                <th>Paper</th><th>Conference</th><th>Avg score</th><th>Reviews</th><th>Status</th><th>Actions</th>
+                <th>Paper ID</th><th>Paper</th><th>Conference</th><th>Avg score</th><th>Reviews</th><th>Reviewers</th><th>Status</th><th>Actions</th>
             </tr>
             {% for item in data %}
                 <tr>
-                    <td><div class="paper-title">{{ item.submission.title }}</div><div class="author">{{ item.submission.first_author }}</div></td>
+                    <td><strong>{{ item.submission.paper_code }}</strong></td><td><div class="paper-title">{{ item.submission.title }}</div><div class="author">{{ item.submission.first_author }}</div></td>
                     <td>{{ item.submission.conference.title_en }}</td>
                     <td><span class="score-badge">{{ item.avg_score|default:"-" }}</span></td>
-                    <td><span class="review-count">{{ item.review_count }}</span></td>
+                    <td><span class="review-count">{{ item.review_count }}</span></td><td>{% for assignment in item.submission.review_assignments.all %}{{ assignment.reviewer.first_name }} {{ assignment.reviewer.last_name }}{% if not forloop.last %}, {% endif %}{% endfor %}</td>
                     <td>
                         {% if item.status == "final_accepted" or item.status == "accepted_for_layout" %}
                             <span class="status status-good">{{ item.status_display }}</span>
