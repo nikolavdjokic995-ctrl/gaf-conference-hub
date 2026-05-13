@@ -29,7 +29,6 @@ from .models import (
     ConferenceSidebarCard,
     ConferenceTopic,
     UserProfile,
-    PaperSubmission,
 )
 
 from .forms import (
@@ -636,7 +635,7 @@ def submit_paper(request, slug):
 
                 # Generate paper code
                 existing_count = (
-                    PaperSubmission.objects.filter(conference=conference).count() + 1
+                    Submission.objects.filter(conference=conference).count() + 1
                 )
 
                 submission.paper_code = (
