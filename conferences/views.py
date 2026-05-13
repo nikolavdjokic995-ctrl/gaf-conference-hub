@@ -29,6 +29,7 @@ from .models import (
     ConferenceSidebarCard,
     ConferenceTopic,
     UserProfile,
+    PaperSubmission,
 )
 
 from .forms import (
@@ -630,6 +631,7 @@ def submit_paper(request, slug):
                 submission = form.save(commit=False)
                 submission.conference = conference
                 submission.author = request.user
+                submission.submitted_by = request.user
                 submission.status = "submitted"
 
                 # Generate paper code
