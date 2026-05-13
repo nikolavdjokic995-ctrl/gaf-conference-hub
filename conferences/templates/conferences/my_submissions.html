@@ -172,7 +172,13 @@
                         <a class="btn btn-orange" href="{% url 'upload_revision' submission.id %}">
                             Upload revised paper
                         </a>
+
+                    {% elif submission.status == "layout_revision_required" %}
+                        <a class="btn btn-orange" href="{% url 'upload_revision' submission.id %}">
+                            Upload layout corrected paper
+                        </a>
                     {% endif %}
+
                 </div>
 
                 <h3>Reviewer feedback</h3>
