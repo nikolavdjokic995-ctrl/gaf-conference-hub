@@ -605,14 +605,17 @@ def submit_paper(request, slug):
                         source_path = source_tmp.name
 
                     # Save the ORIGINAL paper for judge/layout/final workflow.
-                    cloudinary.uploader.upload(
-                        source_path,
+                    uploaded_file.seek(0)
+
+                    original_upload = cloudinary.uploader.upload(
+                        uploaded_file,
                         resource_type="raw",
-                        public_id=original_public_id,
+                        public_id=f"media/papers/originals/{submission.paper_code}",
                         overwrite=True,
                         unique_filename=False,
                         use_filename=True,
                     )
+                   
                     submission.full_paper_file.name = f"papers/{submission.paper_code}{extension}"
 
                     # Save the ANONYMIZED paper separately for content reviewers.
