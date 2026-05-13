@@ -623,7 +623,7 @@ def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
    
     if request.method == "POST":
-        form = PaperSubmissionForm(request.POST, request.FILES, conference=conference)
+        form = SubmissionForm(request.POST, request.FILES, conference=conference)
 
         if form.is_valid():
             try:
@@ -746,7 +746,7 @@ def submit_paper(request, slug):
                 messages.error(request, f"Paper upload failed: {e}")
 
     else:
-        form = PaperSubmissionForm(conference=conference)
+        form = SubmissionForm(conference=conference)
 
     return render(
         request,
