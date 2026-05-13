@@ -68,6 +68,10 @@
             background: #16a34a;
         }
 
+        .btn-orange {
+            background: #ea580c;
+        }
+
         .btn-outline {
             background: white;
             color: #14532d;
@@ -164,8 +168,8 @@
                         </a>
                     {% endif %}
 
-                    {% if submission.can_author_upload_revision %}
-                        <a class="btn btn-green" href="{% url 'upload_revised_paper' submission.id %}">
+                    {% if submission.status == "revision_required" %}
+                        <a class="btn btn-orange" href="{% url 'upload_revision' submission.id %}">
                             Upload revised paper
                         </a>
                     {% endif %}
@@ -173,31 +177,29 @@
 
                 <h3>Reviewer feedback</h3>
 
-                {% with has_reviews=False %}
-                    {% for review in submission.reviews.all %}
-                        {% if review.comments_for_authors or review.commented_paper_file %}
-                            <div class="review-box">
-                                <p><strong>Reviewer {{ forloop.counter }}</strong></p>
+                {% for review in submission.reviews.all %}
+                    {% if review.comments_for_authors or review.commented_paper_file %}
+                        <div class="review-box">
+                            <p><strong>Reviewer {{ forloop.counter }}</strong></p>
 
-                                {% if review.get_overall_recommendation_display %}
-                                    <p><strong>Recommendation:</strong> {{ review.get_overall_recommendation_display }}</p>
-                                {% endif %}
+                            {% if review.get_overall_recommendation_display %}
+                                <p><strong>Recommendation:</strong> {{ review.get_overall_recommendation_display }}</p>
+                            {% endif %}
 
-                                {% if review.comments_for_authors %}
-                                    <p><strong>Comments for authors:</strong><br>{{ review.comments_for_authors|linebreaksbr }}</p>
-                                {% endif %}
+                            {% if review.comments_for_authors %}
+                                <p><strong>Comments for authors:</strong><br>{{ review.comments_for_authors|linebreaksbr }}</p>
+                            {% endif %}
 
-                                {% if review.commented_paper_file %}
-                                    <a class="btn btn-green" href="{{ review.commented_paper_file.url }}" target="_blank">
-                                        Download reviewer commented paper
-                                    </a>
-                                {% endif %}
-                            </div>
-                        {% endif %}
-                    {% empty %}
-                        <p class="muted">No reviewer feedback available yet.</p>
-                    {% endfor %}
-                {% endwith %}
+                            {% if review.commented_paper_file %}
+                                <a class="btn btn-green" href="{{ review.commented_paper_file.url }}" target="_blank">
+                                    Download reviewer commented paper
+                                </a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <p class="muted">No reviewer feedback available yet.</p>
+                {% endfor %}
 
             </div>
 
