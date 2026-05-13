@@ -638,9 +638,10 @@ def submit_paper(request, slug):
                     Submission.objects.filter(conference=conference).count() + 1
                 )
 
-                submission.paper_code = (
-                    f"{conference.short_name.upper()}"
-                    f"{conference.year}-{existing_count:03d}"
+                conference_code = conference.slug.replace("-", "").upper()[:6]
+
+                    submission.paper_code = (
+                        f"{conference_code}-{existing_count:03d}"
                 )
 
                 submission.save()
