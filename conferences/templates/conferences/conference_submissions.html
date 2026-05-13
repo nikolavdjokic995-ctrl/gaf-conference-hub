@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1250px;
+            max-width: 1650px;
             margin: 45px auto;
             background: white;
             padding: 38px;
@@ -47,26 +47,64 @@
             background: #e8f8ef;
             color: #064e3b;
             text-align: left;
-            padding: 14px;
+            padding: 16px;
             font-size: 14px;
         }
 
         td {
-            padding: 14px;
+            padding: 16px;
             border-bottom: 1px solid #e5e7eb;
             vertical-align: top;
             font-size: 14px;
         }
 
+        .paper-col {
+            width: 34%;
+        }
+
+        .authors-col {
+            width: 16%;
+        }
+
+        .topic-col {
+            width: 18%;
+        }
+
+        .status-col {
+            width: 10%;
+        }
+
+        .submitted-col {
+            width: 8%;
+        }
+
+        .days-col {
+            width: 8%;
+        }
+
+        .actions-col {
+            width: 16%;
+        }
+
         .paper-title {
             font-weight: bold;
             color: #000;
+            font-size: 17px;
+            margin-bottom: 10px;
         }
 
-        .submitted-by {
-            font-size: 12px;
-            color: #555;
-            margin-top: 4px;
+        .meta-row {
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+
+        .meta-label {
+            font-weight: bold;
+            color: #14532d;
+        }
+
+        .keywords {
+            color: #374151;
         }
 
         .status {
@@ -111,7 +149,7 @@
         .actions {
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
             align-items: flex-start;
         }
 
@@ -164,6 +202,16 @@
             color: #555;
             text-align: center;
         }
+
+        .days-badge {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #eef2ff;
+            color: #3730a3;
+            font-weight: bold;
+            font-size: 13px;
+        }
     </style>
 </head>
 
@@ -185,88 +233,93 @@
 
         <table>
             <tr>
-                <th>Paper</th>
-                <th>Authors</th>
-                <th>Topic</th>
-                <th>Status</th>
-                <th>Submitted</th>
-                <th>File</th>
-                <th>Actions</th>
+                <th class="paper-col">Paper</th>
+                <th class="authors-col">Authors</th>
+                <th class="topic-col">Topic</th>
+                <th class="status-col">Status</th>
+                <th class="submitted-col">Submitted</th>
+                <th class="days-col">Days since submit</th>
+                <th class="actions-col">Actions</th>
             </tr>
 
             {% for submission in submissions %}
 
                 <tr>
-                    <td>
+
+                    <td class="paper-col">
+
                         <div class="paper-title">
                             {{ submission.title }}
                         </div>
 
-                        <div class="submitted-by">
-                            Submitted by:<br>
-                            {{ submission.author.username }}
-                        </div>
-
-                        {% if submission.abstract %}
-                            <div class="submitted-by">
-                                <strong>Abstract:</strong><br>
-                                {{ submission.abstract|truncatechars:220 }}
-                            </div>
-                        {% endif %}
-
                         {% if submission.keywords %}
-                            <div class="submitted-by">
-                                <strong>Keywords:</strong><br>
-                                {{ submission.keywords }}
+                            <div class="meta-row">
+                                <span class="meta-label">Keywords:</span>
+                                <span class="keywords">{{ submission.keywords }}</span>
                             </div>
                         {% endif %}
+
                     </td>
 
-                    <td>
+                    <td class="authors-col">
+
                         <strong>{{ submission.first_author }}</strong>
 
                         {% if submission.coauthors %}
-                            <br>
+                            <br><br>
                             {{ submission.coauthors|linebreaksbr }}
                         {% endif %}
+
                     </td>
 
-                    <td>
+                    <td class="topic-col">
+
                         {% for topic in submission.topic_list %}
-                            {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                            {{ topic.code }} — {{ topic.title }}
+                            {% if not forloop.last %}<br><br>{% endif %}
                         {% empty %}
                             -
                         {% endfor %}
+
                     </td>
 
-                    <td>
+                    <td class="status-col">
+
                         <span class="status status-{{ submission.status }}">
                             {{ submission.get_status_display }}
                         </span>
+
                     </td>
 
-                    <td>
+                    <td class="submitted-col">
+
                         {{ submission.created_at|date:"d.m.Y." }}<br>
                         {{ submission.created_at|date:"H:i" }}
+
                     </td>
 
-                    <td>
-                        {% if submission.full_paper_file %}
-                            <a class="download-link"
-                               href="{{ submission.full_paper_file.url }}">
-                                Download
-                            </a>
-                        {% else %}
-                            -
-                        {% endif %}
+                    <td class="days-col">
+
+                        <span class="days-badge">
+                            {{ submission.created_at|timesince }}
+                        </span>
+
                     </td>
 
-                    <td>
+                    <td class="actions-col">
+
                         <div class="actions">
 
+                            {% if submission.full_paper_file %}
+                                <a class="download-link"
+                                   href="{{ submission.full_paper_file.url }}">
+                                    Download paper
+                                </a>
+                            {% endif %}
+
                             <a class="assign-btn"
-                                href="{% url 'assign_papers' conference.slug %}">
-                                 Assign reviewers
+                               href="{% url 'assign_papers' conference.slug %}">
+                                Assign reviewers
                             </a>
 
                             <a class="delete-btn"
@@ -275,7 +328,9 @@
                             </a>
 
                         </div>
+
                     </td>
+
                 </tr>
 
             {% endfor %}
