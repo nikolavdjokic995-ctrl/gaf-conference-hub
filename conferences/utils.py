@@ -95,25 +95,33 @@ def anonymize_docx(source_path, target_path):
         except Exception:
             pass
 
-    email_pattern = re.compile(r"[\w\.-]+@[\w\.-]+")
+    email_pattern = re.compile(r"[\w\.-]+@[\w\.-]+\.\w+")
+
+    passed_title = False
+    reached_abstract = False
 
     for para in doc.paragraphs:
         text = para.text.strip()
         lower = text.lower()
 
-        if email_pattern.search(text):
+        if "title of the paper" in lower or lower.startswith("title"):
+            passed_title = True
+            continue
+
+        if lower.startswith("abstract"):
+            reached_abstract = True
+            continue
+
+        # Delete only author block between title and abstract
+        if passed_title and not reached_abstract:
             para.text = ""
             continue
 
-        if len(text) < 250 and any(word in lower for word in [
-            "affiliation",
-            "faculty",
-            "department",
-            "university",
-            "institute",
-        ]):
+        # Delete only clear email lines, not normal text
+        if email_pattern.search(text):
             para.text = ""
 
+    # Clean headers/footers only
     for section in doc.sections:
         for para in section.header.paragraphs:
             para.text = ""
