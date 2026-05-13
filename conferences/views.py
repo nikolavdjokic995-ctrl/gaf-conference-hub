@@ -621,7 +621,7 @@ def preview_email_template(request, template_id):
 @login_required
 def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
-   
+
     if request.method == "POST":
         form = SubmissionForm(request.POST, request.FILES, conference=conference)
 
@@ -633,12 +633,13 @@ def submit_paper(request, slug):
                 submission.status = "submitted"
 
                 # Generate paper code
-                existing_count = PaperSubmission.objects.filter(
-                    conference=conference
-                ).count() + 1
+                existing_count = (
+                    PaperSubmission.objects.filter(conference=conference).count() + 1
+                )
 
                 submission.paper_code = (
-                    f"{conference.short_name.upper()}{conference.year}-{existing_count:03d}"
+                    f"{conference.short_name.upper()}"
+                    f"{conference.year}-{existing_count:03d}"
                 )
 
                 submission.save()
@@ -744,6 +745,10 @@ def submit_paper(request, slug):
             except Exception as e:
                 print("Paper upload/anonymization error:", e)
                 messages.error(request, f"Paper upload failed: {e}")
+
+        else:
+            print("FORM ERRORS:", form.errors)
+            messages.error(request, f"Form errors: {form.errors}")
 
     else:
         form = SubmissionForm(conference=conference)
