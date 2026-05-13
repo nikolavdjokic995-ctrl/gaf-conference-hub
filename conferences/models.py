@@ -102,7 +102,7 @@ class Submission(models.Model):
         ("accepted_for_layout", "Accepted for layout review"),
         ("layout_revision_required", "Layout corrections requested"),
         ("layout_revision_submitted", "Layout corrected paper submitted"),
-        ("final_accepted", "Final accepted"),
+        ("final_accepted", "Accepted for publication"),
         ("accepted", "Accepted (legacy)"),
         ("rejected", "Rejected"),
     ]
