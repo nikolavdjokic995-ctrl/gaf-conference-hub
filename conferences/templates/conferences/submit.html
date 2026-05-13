@@ -466,6 +466,21 @@
     </div>
 
     <form method="post" enctype="multipart/form-data" id="submissionForm">
+        {% if messages %}
+    <div style="background:#fff7ed; border:1px solid #fdba74; color:#9a3412; padding:15px; border-radius:12px; margin-bottom:20px;">
+        {% for message in messages %}
+            <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if form.errors %}
+    <div style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:15px; border-radius:12px; margin-bottom:20px;">
+        <strong>Form errors:</strong>
+        {{ form.errors }}
+    </div>
+{% endif %}
+
         {% csrf_token %}
 
         {% if form.non_field_errors %}
