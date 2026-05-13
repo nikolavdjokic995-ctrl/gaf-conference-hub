@@ -109,10 +109,11 @@
                     </td>
 
                     <td>
-                        {% if submission.status == "revision_requested" %}
+                        {% if submission.status == "revision_required" %}
                             <a href="{% url 'upload_revision' submission.id %}" class="revision-btn">
                                 Upload revised paper
                             </a>
+                        
                         {% else %}
                             —
                         {% endif %}
