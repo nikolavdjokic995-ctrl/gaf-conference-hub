@@ -40,6 +40,7 @@ from conferences.views import (
     delete_submission,
     reviewer_dashboard,
     upload_revision,
+    send_revision_to_reviewers,
     layout_dashboard,
     layout_decision,
 )
@@ -69,6 +70,7 @@ urlpatterns = [
     path("submission/<int:submission_id>/decision/", make_decision, name="make_decision"),
     path("submission/<int:submission_id>/delete/", delete_submission, name="delete_submission"),
     path("submission/<int:submission_id>/upload-revision/", upload_revision, name="upload_revision"),
+    path("submission/<int:submission_id>/send-revision-to-reviewers/", send_revision_to_reviewers, name="send_revision_to_reviewers"),
     path("submission/<int:submission_id>/layout-decision/", layout_decision, name="layout_decision"),
 
     path("conference/<slug:slug>/overview/", conference_overview, name="conference_overview"),

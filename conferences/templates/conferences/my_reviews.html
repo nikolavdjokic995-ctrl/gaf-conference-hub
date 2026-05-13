@@ -134,7 +134,13 @@
                     <strong>Your role:</strong>
                     <span class="badge">
                         {{ assignment.get_role_display }}
-                    </span>
+                    </span><br>
+
+                    <strong>Status:</strong>
+                    {{ assignment.submission.get_status_display }}<br>
+
+                    <strong>Review round:</strong>
+                    {{ assignment.submission.revision_round }}
                 </div>
 
                 <a class="btn btn-outline"

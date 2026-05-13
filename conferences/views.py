@@ -280,15 +280,19 @@ def review_submission(request, submission_id):
 
     assigned = ReviewAssignment.objects.filter(
         submission=submission,
-        reviewer=request.user
+        reviewer=request.user,
+        role="content_reviewer"
     ).exists()
 
     if not assigned:
         return redirect("/")
 
+    current_round = submission.revision_round or 0
+
     existing_review = Review.objects.filter(
         submission=submission,
-        reviewer=request.user
+        reviewer=request.user,
+        review_round=current_round
     ).first()
 
     if request.method == "POST":
@@ -301,8 +305,10 @@ def review_submission(request, submission_id):
             review = form.save(commit=False)
             review.submission = submission
             review.reviewer = request.user
+            review.review_round = current_round
             review.save()
 
+            messages.success(request, f"Review for round {current_round} saved successfully.")
             return redirect("/my-reviews/")
     else:
         form = ReviewForm(instance=existing_review)
@@ -310,23 +316,71 @@ def review_submission(request, submission_id):
     return render(request, "conferences/review_form.html", {
         "form": form,
         "submission": submission,
+        "current_round": current_round,
+        "existing_review": existing_review,
     })
 
 @login_required
 def submission_result(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
 
-    reviews = Review.objects.filter(submission=submission)
+    reviews = Review.objects.filter(submission=submission).select_related("reviewer").order_by("review_round", "reviewer__username")
     avg_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
 
     decision = submission.get_status_display()
+
+    can_manage = ConferenceRole.objects.filter(
+        user=request.user,
+        conference=submission.conference,
+        role__in=["judge", "manager"]
+    ).exists()
 
     return render(request, "conferences/submission_result.html", {
         "submission": submission,
         "reviews": reviews,
         "avg_score": avg_score,
-        "decision": decision
+        "decision": decision,
+        "can_manage": can_manage,
     })
+
+
+@login_required
+def send_revision_to_reviewers(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id)
+
+    can_manage = ConferenceRole.objects.filter(
+        user=request.user,
+        conference=submission.conference,
+        role__in=["judge", "manager"]
+    ).exists()
+
+    if not can_manage:
+        return redirect("/")
+
+    if request.method != "POST":
+        return redirect("submission_result", submission_id=submission.id)
+
+    if submission.status != "revised_submitted":
+        messages.error(request, "This submission does not have a revised paper waiting for content review.")
+        return redirect("submission_result", submission_id=submission.id)
+
+    reviewer_count = ReviewAssignment.objects.filter(
+        submission=submission,
+        role="content_reviewer"
+    ).count()
+
+    if reviewer_count == 0:
+        messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
+        return redirect("submission_result", submission_id=submission.id)
+
+    submission.status = "under_review"
+    submission.save(update_fields=["status", "updated_at"])
+
+    messages.success(
+        request,
+        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s)."
+    )
+    return redirect("submission_result", submission_id=submission.id)
 
 
 @login_required
@@ -1390,13 +1444,14 @@ def download_review_paper(request, submission_id):
 def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user,
-        role="content_reviewer"
+        role="content_reviewer",
+        submission__status__in=["under_review", "revised_submitted", "revision_required"]
     ).select_related(
         "submission",
         "submission__conference",
         "submission__topic",
         "submission__secondary_topic",
-    )
+    ).order_by("submission__conference__title_en", "submission__title")
 
     return render(request, "conferences/my_reviews.html", {
         "assignments": assignments,
@@ -1405,13 +1460,14 @@ def my_reviews(request):
 def reviewer_dashboard(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user,
-        role="content_reviewer"
+        role="content_reviewer",
+        submission__status__in=["under_review", "revised_submitted", "revision_required"]
     ).select_related(
         "submission",
         "submission__conference",
         "submission__topic",
         "submission__secondary_topic",
-    )
+    ).order_by("submission__conference__title_en", "submission__title")
 
     return render(request, "conferences/reviewer_dashboard.html", {
         "assignments": assignments,

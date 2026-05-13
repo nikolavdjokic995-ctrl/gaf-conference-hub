@@ -86,6 +86,25 @@
                 Download original paper
             </a>
         {% endif %}
+        {% if can_manage and submission.status == "revised_submitted" %}
+            <form method="post"
+                  action="{% url 'send_revision_to_reviewers' submission.id %}"
+                  style="display:inline-block; margin-top:15px; margin-left:10px;">
+                {% csrf_token %}
+                <button type="submit"
+                        style="
+                            background:#16a34a;
+                            color:white;
+                            padding:12px 18px;
+                            border:0;
+                            border-radius:10px;
+                            font-weight:bold;
+                            cursor:pointer;
+                        ">
+                    Send revised paper to reviewers
+                </button>
+            </form>
+        {% endif %}
     </div>
 
     <h2 style="
@@ -124,11 +143,11 @@
                             color:#0d5c2f;
                             font-size:28px;
                         ">
-                            Reviewer: {{ review.reviewer.username }}
+                            Reviewer: {{ review.reviewer.username }} — Round {{ review.review_round }}
                         </h3>
 
                         <p style="margin:8px 0 0;">
-                            <strong>Overall recommendation:</strong>
+                            <strong>Review round:</strong> {{ review.review_round }}<br><strong>Overall recommendation:</strong>
                             <span style="
                                 background:#dbeafe;
                                 color:#1d4ed8;

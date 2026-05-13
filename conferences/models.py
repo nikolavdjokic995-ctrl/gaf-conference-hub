@@ -345,6 +345,11 @@ class Review(models.Model):
         related_name="reviews"
     )
 
+    review_round = models.PositiveSmallIntegerField(
+        default=0,
+        help_text="Content review round for this review. Initial submission is round 0; author revisions use round 1, 2, etc."
+    )
+
     content_context = models.CharField(
         max_length=30,
         choices=AUTHOR_SCALE_CHOICES,
@@ -483,7 +488,7 @@ class Review(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ("submission", "reviewer")
+        unique_together = ("submission", "reviewer", "review_round")
 
     def calculate_auto_score(self):
         """Calculate a balanced 1-5 review score from reviewer answers.
