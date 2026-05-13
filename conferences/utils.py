@@ -1,9 +1,12 @@
 from docx import Document
+from lxml import etree
+
+import zipfile
+import tempfile
+import shutil
 import os
 import re
-import shutil
-import tempfile
-import zipfile
+
 
 AUTHOR_KEYWORDS = (
     "affiliation", "email", "e-mail", "university", "faculty", "department",
@@ -81,51 +84,65 @@ def anonymize_docx(source_path, target_path):
     doc = Document(source_path)
 
     props = doc.core_properties
-    for field in [
-        "author",
-        "last_modified_by",
-        "comments",
-        "title",
-        "subject",
-        "category",
-        "keywords",
-    ]:
+    for field in ["author", "last_modified_by", "comments", "title", "subject", "category", "keywords"]:
         try:
             setattr(props, field, "")
         except Exception:
             pass
 
-    email_pattern = re.compile(r"[\w\.-]+@[\w\.-]+\.\w+")
+    paragraphs = list(doc.paragraphs)
 
-    passed_title = False
-    reached_abstract = False
+    abstract_index = None
+    for i, para in enumerate(paragraphs):
+        if para.text.strip().lower().startswith("abstract"):
+            abstract_index = i
+            break
 
-    for para in doc.paragraphs:
-        text = para.text.strip()
-        lower = text.lower()
+    if abstract_index is not None:
+        # Briše samo nekoliko pasusa neposredno iznad Abstract-a: autori/coauthors
+        removed = 0
+        for j in range(abstract_index - 1, -1, -1):
+            text = paragraphs[j].text.strip()
 
-        if "title of the paper" in lower or lower.startswith("title"):
-            passed_title = True
-            continue
+            if not text:
+                continue
 
-        if lower.startswith("abstract"):
-            reached_abstract = True
-            continue
+            if "title of the paper" in text.lower():
+                break
 
-        # Delete only author block between title and abstract
-        if passed_title and not reached_abstract:
-            para.text = ""
-            continue
+            if removed >= 4:
+                break
 
-        # Delete only clear email lines, not normal text
-        if email_pattern.search(text):
-            para.text = ""
+            paragraphs[j].text = ""
+            removed += 1
 
-    # Clean headers/footers only
     for section in doc.sections:
         for para in section.header.paragraphs:
             para.text = ""
         for para in section.footer.paragraphs:
             para.text = ""
 
-    doc.save(target_path)
+    temp_docx = target_path + ".tmp.docx"
+    doc.save(temp_docx)
+
+    # Briše tekst fusnota, ali ne dira separator/crtu fusnote
+    with zipfile.ZipFile(temp_docx, "r") as zin:
+        with zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+
+                if item.filename == "word/footnotes.xml":
+                    root = etree.fromstring(data)
+                    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+
+                    for footnote in root.findall("w:footnote", ns):
+                        fid = footnote.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id")
+                        if fid not in ("-1", "0"):
+                            for t in footnote.findall(".//w:t", ns):
+                                t.text = ""
+
+                    data = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone="yes")
+
+                zout.writestr(item, data)
+
+    os.remove(temp_docx)
