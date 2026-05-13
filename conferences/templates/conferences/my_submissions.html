@@ -177,7 +177,7 @@
                     {% for review in submission.reviews.all %}
                         {% if review.comments_for_authors or review.commented_paper_file %}
                             <div class="review-box">
-                                <p><strong>Reviewer:</strong> {{ review.reviewer.username }}</p>
+                                <p><strong>Reviewer {{ forloop.counter }}</strong></p>
 
                                 {% if review.get_overall_recommendation_display %}
                                     <p><strong>Recommendation:</strong> {{ review.get_overall_recommendation_display }}</p>
