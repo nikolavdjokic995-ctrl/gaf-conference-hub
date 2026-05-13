@@ -67,6 +67,7 @@
                 <th>Status</th>
                 <th>Submitted</th>
                 <th>File</th>
+                <th>Reviewer file</th>
             </tr>
 
             {% for submission in submissions %}
@@ -83,6 +84,16 @@
                         {% else %}
                             No file
                         {% endif %}
+                    </td>
+
+                    <td>
+                        {% for review in submission.reviews.all %}
+                            {% if review.commented_paper_file %}
+                                <a href="{{ review.commented_paper_file.url }}">
+                                    Download comments
+                                </a><br>
+                            {% endif %}
+                        {% endfor %}
                     </td>
                 </tr>
             {% endfor %}
