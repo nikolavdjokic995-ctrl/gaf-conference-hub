@@ -621,11 +621,7 @@ def preview_email_template(request, template_id):
 @login_required
 def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
-
-    if not conference.is_submission_open:
-        messages.error(request, "Paper submission is closed.")
-        return redirect("conference_detail", slug=conference.slug)
-
+   
     if request.method == "POST":
         form = PaperSubmissionForm(request.POST, request.FILES, conference=conference)
 
