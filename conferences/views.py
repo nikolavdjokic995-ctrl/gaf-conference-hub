@@ -622,124 +622,144 @@ def preview_email_template(request, template_id):
 def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
-    if conference.submission_deadline and timezone.now().date() > conference.submission_deadline:
-        messages.error(request, "Submission deadline has passed.")
-        return redirect("conference_overview", slug=conference.slug)
+    if not conference.is_submission_open:
+        messages.error(request, "Paper submission is closed.")
+        return redirect("conference_detail", slug=conference.slug)
 
     if request.method == "POST":
-        form = SubmissionForm(request.POST, request.FILES, conference=conference)
+        form = PaperSubmissionForm(request.POST, request.FILES, conference=conference)
 
-        if not form.is_valid():
-            for field, errors in form.errors.items():
-                label = form.fields[field].label if field in form.fields else field
-                for error in errors:
-                    messages.error(request, f"{label}: {error}")
-            return render(request, "conferences/submit.html", {
-                "form": form,
-                "conference": conference,
-            })
+        if form.is_valid():
+            try:
+                submission = form.save(commit=False)
+                submission.conference = conference
+                submission.submitted_by = request.user
+                submission.status = "submitted"
 
-        uploaded_file = form.cleaned_data.get("full_paper_file")
-        if not uploaded_file:
-            messages.error(request, "Paper upload failed: no file was received.")
-            return render(request, "conferences/submit.html", {
-                "form": form,
-                "conference": conference,
-            })
+                # Generate paper code
+                existing_count = PaperSubmission.objects.filter(
+                    conference=conference
+                ).count() + 1
 
-        submission = form.save(commit=False)
-        submission.conference = conference
-        submission.author = request.user
-        submission.first_author = f"{request.user.first_name} {request.user.last_name}".strip()
-
-        next_id = Submission.objects.filter(conference=conference).count() + 1
-        conference_code = "".join(
-            word[0] for word in conference.title_en.split()
-            if word and word[0].isalnum()
-        )[:3].upper() or "GBC"
-        submission.paper_code = f"{conference_code}{conference.start_date.year}-{next_id:03d}"
-
-        # Prevent Django's FileField from trying to upload the same file implicitly.
-        # We upload manually to Cloudinary as raw assets below and only store the public IDs.
-        submission.full_paper_file = None
-        submission.anonymized_paper_file = None
-
-        source_path = None
-        anonymized_path = None
-
-        try:
-            extension = Path(uploaded_file.name).suffix.lower()
-            if extension not in [".doc", ".docx", ".pdf"]:
-                raise ValueError("Please upload a Word or PDF file.")
-
-            with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
-                for chunk in uploaded_file.chunks():
-                    source_tmp.write(chunk)
-                source_path = source_tmp.name
-
-            if not source_path or os.path.getsize(source_path) == 0:
-                raise ValueError("Uploaded file is empty after saving temporary copy.")
-
-            # Save the ORIGINAL paper for judge/layout/final workflow.
-            original_public_id = f"media/papers/originals/{submission.paper_code}{extension}"
-            cloudinary.uploader.upload(
-                source_path,
-                resource_type="raw",
-                public_id=original_public_id,
-                overwrite=True,
-                unique_filename=False,
-                use_filename=False,
-            )
-            submission.full_paper_file.name = original_public_id
-
-            # Save the ANONYMIZED paper separately for content reviewers.
-            # DOC/DOCX: DOCX can be anonymized. PDF/DOC are kept away from reviewers unless anonymized exists.
-            if extension == ".docx":
-                with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
-                    anonymized_path = anonymized_tmp.name
-
-                anonymize_docx(source_path, anonymized_path)
-
-                if not anonymized_path or os.path.getsize(anonymized_path) == 0:
-                    raise ValueError("Anonymized DOCX was not created correctly.")
-
-                anonymous_public_id = f"media/anonymous_papers/{submission.paper_code}.docx"
-                cloudinary.uploader.upload(
-                    anonymized_path,
-                    resource_type="raw",
-                    public_id=anonymous_public_id,
-                    overwrite=True,
-                    unique_filename=False,
-                    use_filename=False,
+                submission.paper_code = (
+                    f"{conference.short_name.upper()}{conference.year}-{existing_count:03d}"
                 )
-                submission.anonymized_paper_file.name = anonymous_public_id
 
-            submission.save()
+                submission.save()
 
-        except Exception as e:
-            print("Paper upload/anonymization error:", e)
-            messages.error(request, f"Paper upload failed: {e}")
-            return redirect("submit_paper", slug=conference.slug)
+                uploaded_file = request.FILES.get("full_paper_file")
 
-        finally:
-            if source_path and os.path.exists(source_path):
-                os.remove(source_path)
-            if anonymized_path and os.path.exists(anonymized_path):
-                os.remove(anonymized_path)
+                if uploaded_file:
+                    extension = os.path.splitext(uploaded_file.name)[1].lower()
 
-        try:
-            send_event_email("paper_submitted", submission, request=request)
-        except Exception as e:
-            print("Paper submitted, but email notification failed:", e)
+                    source_path = None
+                    anonymized_path = None
 
-        messages.success(request, "Paper submitted successfully.")
-        return redirect("my_submissions")
+                    try:
+                        # Save uploaded file temporarily
+                        with tempfile.NamedTemporaryFile(
+                            suffix=extension,
+                            delete=False
+                        ) as source_tmp:
 
-    form = SubmissionForm(conference=conference)
-    return render(request, "conferences/submit.html", {
-        "form": form,
-        "conference": conference,
-    })
+                            for chunk in uploaded_file.chunks():
+                                source_tmp.write(chunk)
+
+                            source_path = source_tmp.name
+
+                        # =========================
+                        # SAVE ORIGINAL PAPER
+                        # =========================
+
+                        original_public_id = (
+                            f"media/papers/originals/"
+                            f"{submission.paper_code}_submission_{submission.id}"
+                        )
+
+                        cloudinary.uploader.upload(
+                            source_path,
+                            resource_type="raw",
+                            public_id=original_public_id,
+                            overwrite=True,
+                            invalidate=True,
+                            unique_filename=False,
+                            use_filename=False,
+                        )
+
+                        submission.full_paper_file.name = (
+                            f"{original_public_id}{extension}"
+                        )
+
+                        # =========================
+                        # SAVE ANONYMIZED VERSION
+                        # =========================
+
+                        if extension == ".docx":
+
+                            with tempfile.NamedTemporaryFile(
+                                suffix=".docx",
+                                delete=False
+                            ) as anonymized_tmp:
+
+                                anonymized_path = anonymized_tmp.name
+
+                            anonymize_docx(source_path, anonymized_path)
+
+                            if (
+                                not anonymized_path
+                                or not os.path.exists(anonymized_path)
+                                or os.path.getsize(anonymized_path) == 0
+                            ):
+                                raise ValueError(
+                                    "Anonymized DOCX was not created correctly."
+                                )
+
+                            anonymous_public_id = (
+                                f"media/anonymous_papers/"
+                                f"{submission.paper_code}_submission_{submission.id}"
+                            )
+
+                            cloudinary.uploader.upload(
+                                anonymized_path,
+                                resource_type="raw",
+                                public_id=anonymous_public_id,
+                                overwrite=True,
+                                invalidate=True,
+                                unique_filename=False,
+                                use_filename=False,
+                            )
+
+                            submission.anonymized_paper_file.name = (
+                                f"{anonymous_public_id}.docx"
+                            )
+
+                        submission.save()
+
+                    finally:
+                        if source_path and os.path.exists(source_path):
+                            os.remove(source_path)
+
+                        if anonymized_path and os.path.exists(anonymized_path):
+                            os.remove(anonymized_path)
+
+                messages.success(request, "Paper submitted successfully.")
+                return redirect("my_submissions")
+
+            except Exception as e:
+                print("Paper upload/anonymization error:", e)
+                messages.error(request, f"Paper upload failed: {e}")
+
+    else:
+        form = PaperSubmissionForm(conference=conference)
+
+    return render(
+        request,
+        "conferences/submit.html",
+        {
+            "conference": conference,
+            "form": form,
+        },
+    )
 
 @login_required
 def important_information(request, slug):
