@@ -640,8 +640,8 @@ def submit_paper(request, slug):
 
                 conference_code = conference.slug.replace("-", "").upper()[:6]
 
-                    submission.paper_code = (
-                        f"{conference_code}-{existing_count:03d}"
+                submission.paper_code = (
+                    f"{conference_code}-{existing_count:03d}"
                 )
 
                 submission.save()
