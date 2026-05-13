@@ -2,24 +2,20 @@ from docx import Document
 from lxml import etree
 import zipfile
 import os
+import re
 
 
-def _clear_paragraph_keep_structure(paragraph):
+def _clear_paragraph_text_only(paragraph):
     """
-    Clear visible text from a paragraph while preserving paragraph/style structure
-    as much as python-docx allows.
+    Clear visible text from a paragraph while keeping the paragraph object/style.
     """
-    if paragraph.runs:
-        for run in paragraph.runs:
-            run.text = ""
-    else:
-        paragraph.text = ""
+    for run in paragraph.runs:
+        run.text = ""
 
 
-def _clear_docx_footnote_text(input_docx_path, output_docx_path):
+def _clear_docx_review_xml_text(input_docx_path, output_docx_path):
     """
-    Remove user-visible footnote/endnote/comment text from DOCX XML while preserving
-    separator footnotes and document structure.
+    Clear footnote/endnote/comment text, but preserve footnote separator notes.
     """
     word_ns = "http://schemas.openxmlformats.org/wordprocessingml/2006/main"
     ns = {"w": word_ns}
@@ -29,31 +25,26 @@ def _clear_docx_footnote_text(input_docx_path, output_docx_path):
             for item in zin.infolist():
                 data = zin.read(item.filename)
 
-                if item.filename in {
-                    "word/footnotes.xml",
-                    "word/endnotes.xml",
-                    "word/comments.xml",
-                }:
+                if item.filename in {"word/footnotes.xml", "word/endnotes.xml", "word/comments.xml"}:
                     try:
                         root = etree.fromstring(data)
 
-                        # For footnotes/endnotes keep separator notes (-1, 0).
                         if item.filename in {"word/footnotes.xml", "word/endnotes.xml"}:
-                            note_tag = "footnote" if "footnotes" in item.filename else "endnote"
+                            note_tag = "footnote" if item.filename == "word/footnotes.xml" else "endnote"
 
                             for note in root.findall(f"w:{note_tag}", ns):
                                 note_id = note.get(f"{{{word_ns}}}id")
 
+                                # Word uses -1 and 0 for separator/continuation separator.
                                 if note_id in ("-1", "0"):
                                     continue
 
-                                for text_node in note.findall(".//w:t", ns):
-                                    text_node.text = ""
+                                for t in note.findall(".//w:t", ns):
+                                    t.text = ""
 
-                        # Comments do not have separator notes, so clear all text nodes.
                         if item.filename == "word/comments.xml":
-                            for text_node in root.findall(".//w:t", ns):
-                                text_node.text = ""
+                            for t in root.findall(".//w:t", ns):
+                                t.text = ""
 
                         data = etree.tostring(
                             root,
@@ -62,28 +53,63 @@ def _clear_docx_footnote_text(input_docx_path, output_docx_path):
                             standalone="yes",
                         )
                     except Exception:
-                        # If XML parsing fails, leave this part unchanged rather than corrupting the DOCX.
+                        # Do not corrupt the DOCX if an XML part cannot be parsed.
                         pass
 
                 zout.writestr(item, data)
 
 
+def _normal_text(paragraph):
+    return " ".join((paragraph.text or "").strip().split())
+
+
+def _looks_like_author_line(text):
+    """
+    Conservative detection for the author line in the GBC template.
+    It should not match abstract/body text.
+    """
+    if not text:
+        return False
+
+    lower = text.lower()
+
+    if lower.startswith("abstract"):
+        return False
+
+    if len(text) > 220:
+        return False
+
+    # Typical author blocks contain several names separated by commas
+    # and often superscript numbers are flattened as digits by python-docx.
+    has_digit = any(ch.isdigit() for ch in text)
+    has_comma = "," in text
+    words = [w for w in re.split(r"[\s,;]+", text) if w]
+    capitalized_words = sum(1 for w in words if w[:1].isupper())
+
+    if has_digit and has_comma and capitalized_words >= 2:
+        return True
+
+    # Fallback for a short comma-separated list of names without visible numbers.
+    if has_comma and len(words) <= 18 and capitalized_words >= max(2, len(words) // 2):
+        return True
+
+    return False
+
+
 def anonymize_docx(source_path, target_path):
     """
-    Blind-review anonymization.
+    Very conservative blind-review anonymization.
 
-    This function intentionally does NOT delete paragraphs by broad keywords
-    such as "university", "author", "conference", commas, or digits because that
-    can remove Abstract/Introduction/body text.
+    It removes only:
+    - DOCX metadata,
+    - the author line directly between the title and Abstract,
+    - footnote/endnote/comment text.
 
-    It only removes:
-    1. DOCX metadata.
-    2. Author block between the paper title and Abstract.
-    3. Footnote/endnote/comment text.
+    It does NOT remove abstract, introduction, body paragraphs, tables, figures,
+    headers, or footers.
     """
     doc = Document(source_path)
 
-    # Clear core properties / metadata.
     props = doc.core_properties
     for field in [
         "author",
@@ -105,7 +131,7 @@ def anonymize_docx(source_path, target_path):
     abstract_index = None
 
     for i, paragraph in enumerate(paragraphs):
-        text = " ".join(paragraph.text.strip().split()).lower()
+        text = _normal_text(paragraph).lower()
 
         if title_index is None and (
             text.startswith("title of the paper")
@@ -117,41 +143,36 @@ def anonymize_docx(source_path, target_path):
             abstract_index = i
             break
 
-    # Remove only paragraphs between title and abstract.
-    # This is where the author list normally appears in the GBC template.
+    # Best case: title and abstract were found. Only inspect the small area between them.
     if title_index is not None and abstract_index is not None and title_index < abstract_index:
         for paragraph in paragraphs[title_index + 1:abstract_index]:
-            _clear_paragraph_keep_structure(paragraph)
+            text = _normal_text(paragraph)
+            if _looks_like_author_line(text):
+                _clear_paragraph_text_only(paragraph)
 
-    # Backup safety: if the template title was edited and not found, remove only
-    # a very small block directly above Abstract, never below Abstract.
+    # Fallback: title text was edited. Clear only the nearest author-looking line above Abstract.
     elif abstract_index is not None:
-        removed = 0
-
+        checked = 0
         for j in range(abstract_index - 1, -1, -1):
-            text = paragraphs[j].text.strip()
+            text = _normal_text(paragraphs[j])
 
             if not text:
                 continue
 
-            # Stop as soon as we encounter a likely title/heading line.
-            lower = text.lower()
-            if "title" in lower or len(text) > 180:
+            checked += 1
+
+            if _looks_like_author_line(text):
+                _clear_paragraph_text_only(paragraphs[j])
                 break
 
-            _clear_paragraph_keep_structure(paragraphs[j])
-            removed += 1
-
-            if removed >= 3:
+            # Never search too far upward, to avoid deleting body/title/template content.
+            if checked >= 4:
                 break
-
-    # Do not clear all headers/footers. They may contain conference logo/template data.
-    # Only metadata and author block are removed above.
 
     temp_docx = target_path + ".tmp.docx"
     doc.save(temp_docx)
 
-    _clear_docx_footnote_text(temp_docx, target_path)
+    _clear_docx_review_xml_text(temp_docx, target_path)
 
     try:
         os.remove(temp_docx)
