@@ -90,23 +90,35 @@ def anonymize_docx(source_path, target_path):
     props.company = ""
     props.keywords = ""
 
-    before_main_text = True
+    email_pattern = re.compile(r'[\w\.-]+@[\w\.-]+')
 
-    for para in _iter_paragraphs(doc):
-        text = para.text.strip()
-        lower = text.lower()
+    for para in doc.paragraphs:
+        text = para.text.strip().lower()
 
-        if any(lower.startswith(word) for word in STOP_SECTION_WORDS):
-            before_main_text = False
+        # remove explicit emails
+        if email_pattern.search(text):
+            para.text = ""
+            continue
 
-        if _looks_like_identity_line(text, before_main_text=before_main_text):
-            _blank_paragraph(para)
+        # remove affiliation lines only
+        affiliation_keywords = [
+            "faculty",
+            "department",
+            "university",
+            "institute",
+            "affiliation",
+        ]
 
+        if any(keyword in text for keyword in affiliation_keywords):
+            if len(text) < 200:
+                para.text = ""
+
+    # clean headers/footers
     for section in doc.sections:
-        for para in _iter_paragraphs(section.header):
-            _blank_paragraph(para)
-        for para in _iter_paragraphs(section.footer):
-            _blank_paragraph(para)
+        for para in section.header.paragraphs:
+            para.text = ""
+
+        for para in section.footer.paragraphs:
+            para.text = ""
 
     doc.save(target_path)
-    _strip_docx_xml_text(target_path)
