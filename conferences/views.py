@@ -597,7 +597,6 @@ def submit_paper(request, slug):
             try:
                 if uploaded_file:
                     extension = Path(uploaded_file.name).suffix.lower()
-                    original_public_id = f"media/papers/{submission.paper_code}"
 
                     with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
                         for chunk in uploaded_file.chunks():
@@ -605,18 +604,16 @@ def submit_paper(request, slug):
                         source_path = source_tmp.name
 
                     # Save the ORIGINAL paper for judge/layout/final workflow.
-                    uploaded_file.seek(0)
-
-                    original_upload = cloudinary.uploader.upload(
-                        uploaded_file,
+                    original_public_id = f"media/papers/originals/{submission.paper_code}"
+                    cloudinary.uploader.upload(
+                        source_path,
                         resource_type="raw",
-                        public_id=f"media/papers/originals/{submission.paper_code}",
+                        public_id=original_public_id,
                         overwrite=True,
                         unique_filename=False,
                         use_filename=True,
                     )
-                   
-                    submission.full_paper_file.name = f"papers/{submission.paper_code}{extension}"
+                    submission.full_paper_file.name = f"papers/originals/{submission.paper_code}{extension}"
 
                     # Save the ANONYMIZED paper separately for content reviewers.
                     if extension == ".docx":
@@ -625,10 +622,11 @@ def submit_paper(request, slug):
 
                         anonymize_docx(source_path, anonymized_path)
 
+                        anonymous_public_id = f"media/anonymous_papers/{submission.paper_code}"
                         cloudinary.uploader.upload(
                             anonymized_path,
                             resource_type="raw",
-                            public_id=f"media/anonymous_papers/{submission.paper_code}",
+                            public_id=anonymous_public_id,
                             overwrite=True,
                             unique_filename=False,
                             use_filename=True,
