@@ -629,7 +629,7 @@ def submit_paper(request, slug):
             try:
                 submission = form.save(commit=False)
                 submission.conference = conference
-                submission.submitted_by = request.user
+                submission.author = request.user
                 submission.status = "submitted"
 
                 # Generate paper code
