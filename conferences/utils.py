@@ -81,43 +81,42 @@ def anonymize_docx(source_path, target_path):
     doc = Document(source_path)
 
     props = doc.core_properties
-    props.author = ""
-    props.last_modified_by = ""
-    props.comments = ""
-    props.title = ""
-    props.subject = ""
-    props.category = ""
-    props.company = ""
-    props.keywords = ""
+    for field in [
+        "author",
+        "last_modified_by",
+        "comments",
+        "title",
+        "subject",
+        "category",
+        "keywords",
+    ]:
+        try:
+            setattr(props, field, "")
+        except Exception:
+            pass
 
-    email_pattern = re.compile(r'[\w\.-]+@[\w\.-]+')
+    email_pattern = re.compile(r"[\w\.-]+@[\w\.-]+")
 
     for para in doc.paragraphs:
-        text = para.text.strip().lower()
+        text = para.text.strip()
+        lower = text.lower()
 
-        # remove explicit emails
         if email_pattern.search(text):
             para.text = ""
             continue
 
-        # remove affiliation lines only
-        affiliation_keywords = [
+        if len(text) < 250 and any(word in lower for word in [
+            "affiliation",
             "faculty",
             "department",
             "university",
             "institute",
-            "affiliation",
-        ]
+        ]):
+            para.text = ""
 
-        if any(keyword in text for keyword in affiliation_keywords):
-            if len(text) < 200:
-                para.text = ""
-
-    # clean headers/footers
     for section in doc.sections:
         for para in section.header.paragraphs:
             para.text = ""
-
         for para in section.footer.paragraphs:
             para.text = ""
 
