@@ -1,148 +1,189 @@
 from docx import Document
 from lxml import etree
 
-import zipfile
-import tempfile
-import shutil
 import os
 import re
+import shutil
+import tempfile
+import zipfile
 
 
-AUTHOR_KEYWORDS = (
-    "affiliation", "email", "e-mail", "university", "faculty", "department",
-    "institute", "college", "school", "laboratory", "centre", "center",
-    "author", "coauthor", "co-author", "corresponding author", "orcid",
-)
-STOP_SECTION_WORDS = ("abstract", "keywords", "key words", "introduction")
+EMAIL_RE = re.compile(r"[\w\.-]+@[\w\.-]+\.\w+")
 
 
-def _iter_paragraphs(parent):
-    """Yield normal paragraphs and paragraphs nested inside tables."""
-    for para in parent.paragraphs:
-        yield para
-
-    for table in parent.tables:
-        for row in table.rows:
-            for cell in row.cells:
-                yield from _iter_paragraphs(cell)
+def _clear_paragraph_keep_structure(para):
+    """Clear paragraph text but keep the paragraph/runs/styles in the DOCX."""
+    for run in para.runs:
+        run.text = ""
+    if not para.runs:
+        para.text = ""
 
 
-def _blank_paragraph(para):
-    """Clear paragraph text while keeping the document structure valid."""
-    para.text = ""
+def _normalize_text(value):
+    return " ".join((value or "").split()).strip()
 
 
-def _looks_like_identity_line(text, before_main_text=False):
-    clean = " ".join(text.split())
-    lower = clean.lower()
+def _is_abstract_paragraph(text):
+    lower = _normalize_text(text).lower()
+    return lower.startswith("abstract")
 
+
+def _is_title_placeholder(text):
+    lower = _normalize_text(text).lower()
+    return "title of the paper" in lower or lower.startswith("title of the paper")
+
+
+def _looks_like_author_block(text):
+    """
+    Detect only short author-name blocks, not normal body text.
+    Example: Nikola Nikolic1, Nenad Simic2, Marko Markovic3
+    """
+    clean = _normalize_text(text)
     if not clean:
         return False
 
-    if any(word in lower for word in AUTHOR_KEYWORDS):
+    lower = clean.lower()
+
+    if EMAIL_RE.search(clean):
         return True
 
-    if "@" in clean or "http" in lower or "www." in lower:
+    if any(word in lower for word in ["corresponding author", "co-author", "coauthor", "orcid"]):
         return True
 
-    # Common affiliation markers: superscript numbers are often flattened by python-docx.
-    if "," in clean and any(char.isdigit() for char in clean) and len(clean) < 300:
-        return True
+    # Author lines are usually short, before abstract, contain separators or superscript digits,
+    # and do not look like a real sentence.
+    if len(clean) > 220:
+        return False
 
-    # Author/co-author line near the top: short comma-separated list of names.
-    if before_main_text and "," in clean and len(clean) < 180:
-        words = [w for w in re.split(r"[\s,;]+", clean) if w]
-        capitalized = sum(1 for w in words if w[:1].isupper())
-        if len(words) >= 2 and capitalized >= max(2, len(words) // 2):
-            return True
+    sentence_markers = [". ", ";", " should ", " is ", " are ", " provides ", " international "]
+    if any(marker in lower for marker in sentence_markers):
+        return False
 
-    return False
+    has_digit = any(ch.isdigit() for ch in clean)
+    has_comma = "," in clean
+    words = [w for w in re.split(r"[\s,]+", clean) if w]
+    capitalized_words = sum(1 for w in words if w[:1].isupper())
+
+    return len(words) >= 2 and capitalized_words >= 2 and (has_digit or has_comma)
 
 
-def _strip_docx_xml_text(docx_path):
-    """Remove identity text from DOCX XML parts not fully exposed by python-docx."""
-    tmp_fd, tmp_path = tempfile.mkstemp(suffix=".docx")
-    os.close(tmp_fd)
+def _blank_author_block_before_abstract(doc):
+    """
+    Remove only the author block immediately above Abstract.
+    This avoids deleting Abstract, Introduction, tables, or body paragraphs.
+    """
+    paragraphs = list(doc.paragraphs)
 
-    text_pattern = re.compile(r"(<w:t(?:\s+[^>]*)?>)(.*?)(</w:t>)", re.DOTALL)
+    abstract_index = None
+    for i, para in enumerate(paragraphs):
+        if _is_abstract_paragraph(para.text):
+            abstract_index = i
+            break
 
-    with zipfile.ZipFile(docx_path, "r") as zin, zipfile.ZipFile(tmp_path, "w", zipfile.ZIP_DEFLATED) as zout:
-        for item in zin.infolist():
-            data = zin.read(item.filename)
+    if abstract_index is None:
+        return
 
-            if item.filename in {"word/footnotes.xml", "word/endnotes.xml", "word/comments.xml"}:
-                xml = data.decode("utf-8", errors="ignore")
-                xml = text_pattern.sub(r"\1\3", xml)
-                data = xml.encode("utf-8")
+    # Walk upwards from Abstract and delete only likely author lines.
+    deleted_any = False
+    for j in range(abstract_index - 1, -1, -1):
+        text = _normalize_text(paragraphs[j].text)
 
-            zout.writestr(item, data)
+        if not text:
+            continue
 
-    shutil.move(tmp_path, docx_path)
+        if _is_title_placeholder(text):
+            break
+
+        if _looks_like_author_block(text):
+            _clear_paragraph_keep_structure(paragraphs[j])
+            deleted_any = True
+            continue
+
+        # If we already deleted the author block and reached another non-author line, stop.
+        if deleted_any:
+            break
+
+        # For conference templates, the author line is normally the first non-empty line above Abstract.
+        # If it is not an author-looking line, do not delete anything else.
+        break
+
+
+def _clear_docx_identity_xml(source_docx, target_docx):
+    """
+    Clear footnote/endnote/comment text while preserving Word's separator footnotes.
+    This keeps the footnote line/marker structure but removes affiliation/email content.
+    """
+    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
+    w_id = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id"
+
+    with zipfile.ZipFile(source_docx, "r") as zin:
+        with zipfile.ZipFile(target_docx, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+
+                if item.filename in {"word/footnotes.xml", "word/endnotes.xml"}:
+                    try:
+                        root = etree.fromstring(data)
+                        note_tag = "w:footnote" if item.filename.endswith("footnotes.xml") else "w:endnote"
+
+                        for note in root.findall(note_tag, ns):
+                            note_id = note.get(w_id)
+                            # -1 and 0 are Word separator/continuation separator notes. Keep them intact.
+                            if note_id in ("-1", "0"):
+                                continue
+                            for text_node in note.findall(".//w:t", ns):
+                                text_node.text = ""
+
+                        data = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone="yes")
+                    except Exception:
+                        pass
+
+                elif item.filename == "word/comments.xml":
+                    try:
+                        root = etree.fromstring(data)
+                        for text_node in root.findall(".//w:t", ns):
+                            text_node.text = ""
+                        data = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone="yes")
+                    except Exception:
+                        pass
+
+                zout.writestr(item, data)
 
 
 def anonymize_docx(source_path, target_path):
     doc = Document(source_path)
 
     props = doc.core_properties
-    for field in ["author", "last_modified_by", "comments", "title", "subject", "category", "keywords"]:
+    for field in [
+        "author",
+        "last_modified_by",
+        "comments",
+        "title",
+        "subject",
+        "category",
+        "keywords",
+    ]:
         try:
             setattr(props, field, "")
         except Exception:
             pass
 
-    paragraphs = list(doc.paragraphs)
+    _blank_author_block_before_abstract(doc)
 
-    abstract_index = None
-    for i, para in enumerate(paragraphs):
-        if para.text.strip().lower().startswith("abstract"):
-            abstract_index = i
-            break
-
-    if abstract_index is not None:
-        # Briše samo nekoliko pasusa neposredno iznad Abstract-a: autori/coauthors
-        removed = 0
-        for j in range(abstract_index - 1, -1, -1):
-            text = paragraphs[j].text.strip()
-
-            if not text:
-                continue
-
-            if "title of the paper" in text.lower():
-                break
-
-            if removed >= 4:
-                break
-
-            paragraphs[j].text = ""
-            removed += 1
-
+    # Do not clear headers/footers blindly: the template logo/header should remain.
+    # Only remove explicit emails from headers/footers, if present.
     for section in doc.sections:
-        for para in section.header.paragraphs:
-            para.text = ""
-        for para in section.footer.paragraphs:
-            para.text = ""
+        for part in [section.header, section.footer]:
+            for para in part.paragraphs:
+                if EMAIL_RE.search(para.text or ""):
+                    _clear_paragraph_keep_structure(para)
 
-    temp_docx = target_path + ".tmp.docx"
-    doc.save(temp_docx)
+    tmp_fd, tmp_docx = tempfile.mkstemp(suffix=".docx")
+    os.close(tmp_fd)
 
-    # Briše tekst fusnota, ali ne dira separator/crtu fusnote
-    with zipfile.ZipFile(temp_docx, "r") as zin:
-        with zipfile.ZipFile(target_path, "w", zipfile.ZIP_DEFLATED) as zout:
-            for item in zin.infolist():
-                data = zin.read(item.filename)
-
-                if item.filename == "word/footnotes.xml":
-                    root = etree.fromstring(data)
-                    ns = {"w": "http://schemas.openxmlformats.org/wordprocessingml/2006/main"}
-
-                    for footnote in root.findall("w:footnote", ns):
-                        fid = footnote.get("{http://schemas.openxmlformats.org/wordprocessingml/2006/main}id")
-                        if fid not in ("-1", "0"):
-                            for t in footnote.findall(".//w:t", ns):
-                                t.text = ""
-
-                    data = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone="yes")
-
-                zout.writestr(item, data)
-
-    os.remove(temp_docx)
+    try:
+        doc.save(tmp_docx)
+        _clear_docx_identity_xml(tmp_docx, target_path)
+    finally:
+        if os.path.exists(tmp_docx):
+            os.remove(tmp_docx)
