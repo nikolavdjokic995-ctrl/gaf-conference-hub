@@ -1,117 +1,309 @@
 {% block content %}
 
-<div style="
-    max-width:1200px;
-    margin:40px auto;
-    padding:0 20px;
-">
+<style>
+    .page-wrap {
+        max-width: 1250px;
+        margin: 40px auto;
+        padding: 0 20px;
+        font-family: Arial, sans-serif;
+        color: #111827;
+    }
 
-    <h1 style="
-        color:#0d5c2f;
-        margin-bottom:20px;
-        font-size:42px;
-    ">
+    .page-title {
+        color: #0d5c2f;
+        font-size: 42px;
+        margin: 0 0 18px;
+    }
+
+    .card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 20px;
+        padding: 28px;
+        margin-bottom: 26px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+    }
+
+    .card h2,
+    .card h3 {
+        color: #0d5c2f;
+        margin-top: 0;
+    }
+
+    .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 18px;
+    }
+
+    .mini-card {
+        background: #f9fafb;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 18px;
+    }
+
+    .status-badge {
+        display: inline-block;
+        background: #fef3c7;
+        color: #92400e;
+        padding: 7px 12px;
+        border-radius: 999px;
+        font-weight: bold;
+    }
+
+    .revision-badge {
+        display: inline-block;
+        background: #dcfce7;
+        color: #166534;
+        padding: 8px 13px;
+        border-radius: 999px;
+        font-weight: bold;
+        margin-left: 8px;
+    }
+
+    .btn {
+        display: inline-block;
+        color: white;
+        padding: 12px 18px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-weight: bold;
+        border: 0;
+        cursor: pointer;
+        margin: 6px 8px 6px 0;
+    }
+
+    .btn-blue { background: #2563eb; }
+    .btn-green { background: #16a34a; }
+    .btn-dark { background: #374151; }
+    .btn-red { background: #dc2626; }
+
+    .timeline {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+    }
+
+    .timeline-item {
+        background: #f8fafc;
+        border: 1px solid #e5e7eb;
+        border-radius: 14px;
+        padding: 15px;
+    }
+
+    .timeline-label {
+        color: #6b7280;
+        font-size: 13px;
+        margin-bottom: 5px;
+    }
+
+    .timeline-value {
+        font-weight: bold;
+        color: #111827;
+    }
+
+    details.review-details {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 18px;
+        margin-bottom: 18px;
+        overflow: hidden;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+    }
+
+    details.review-details summary {
+        cursor: pointer;
+        list-style: none;
+        padding: 20px 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
+        background: #f8fafc;
+    }
+
+    details.review-details summary::-webkit-details-marker {
+        display: none;
+    }
+
+    .summary-title {
+        color: #0d5c2f;
+        font-size: 22px;
+        font-weight: bold;
+    }
+
+    .summary-meta {
+        color: #374151;
+        font-size: 14px;
+    }
+
+    .review-body {
+        padding: 24px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 24px;
+    }
+
+    th {
+        background: #f1f5f9;
+        text-align: left;
+        padding: 12px;
+    }
+
+    td {
+        border-top: 1px solid #e5e7eb;
+        padding: 12px;
+    }
+
+    .score-box {
+        background: #ecfdf5;
+        color: #065f46;
+        padding: 10px 15px;
+        border-radius: 14px;
+        font-weight: bold;
+    }
+</style>
+
+<div class="page-wrap">
+
+    <h1 class="page-title">
         {{ submission.title }}
     </h1>
 
-    <!-- CARD 1: ORIGINAL SUBMISSION -->
-    <div style="
-        background:white;
-        border:1px solid #e5e7eb;
-        padding:30px;
-        border-radius:20px;
-        margin-bottom:30px;
-        box-shadow:0 10px 25px rgba(0,0,0,0.05);
-    ">
-        <h2 style="color:#0d5c2f; margin-top:0; margin-bottom:20px;">
-            Original submission
-        </h2>
+    <div class="card">
+        <h2>Action center</h2>
 
-        <p><strong>Conference:</strong> {{ submission.conference.title_en }}</p>
-        <p><strong>First author:</strong> {{ submission.first_author }}</p>
+        <p>
+            <strong>Status:</strong>
+            <span class="status-badge">{{ submission.get_status_display }}</span>
 
-        <p><strong>Topics:</strong>
-            {% for topic in submission.topic_list %}
-                {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
-            {% empty %}
-                No topic assigned
-            {% endfor %}
+            {% if submission.status == "revised_submitted" %}
+                <span class="revision-badge">Revised version available</span>
+            {% endif %}
         </p>
+
+        <div class="grid">
+            <div class="mini-card">
+                <h3>Files</h3>
+
+                {% if submission.full_paper_file %}
+                    <a class="btn btn-blue" href="{{ submission.full_paper_file.url }}" target="_blank">
+                        Download original paper
+                    </a>
+                {% endif %}
+
+                {% if submission.revised_paper_file %}
+                    <a class="btn btn-green" href="{{ submission.revised_paper_file.url }}" target="_blank">
+                        Download revised paper
+                    </a>
+                {% endif %}
+
+                {% if not submission.full_paper_file and not submission.revised_paper_file %}
+                    <p>No files available.</p>
+                {% endif %}
+            </div>
+
+            <div class="mini-card">
+                <h3>Judge actions</h3>
+
+                {% if can_manage and submission.status == "revised_submitted" %}
+                    <form method="post"
+                          action="{% url 'send_revision_to_reviewers' submission.id %}"
+                          style="display:inline-block;">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-green">
+                            Send revised paper to reviewers
+                        </button>
+                    </form>
+                {% endif %}
+
+                <a class="btn btn-dark" href="{% url 'make_decision' submission.id %}">
+                    Judge decision
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h2>Submission overview</h2>
+
+        <div class="grid">
+            <div>
+                <p><strong>Conference:</strong> {{ submission.conference.title_en }}</p>
+                <p><strong>First author:</strong> {{ submission.first_author }}</p>
+
+                <p><strong>Topics:</strong>
+                    {% for topic in submission.topic_list %}
+                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                        No topic assigned
+                    {% endfor %}
+                </p>
+
+                {% if submission.keywords %}
+                    <p><strong>Keywords:</strong> {{ submission.keywords }}</p>
+                {% endif %}
+            </div>
+
+            <div>
+                <p><strong>Content revision round:</strong> {{ submission.revision_round }}</p>
+                <p><strong>Layout revision round:</strong> {{ submission.layout_revision_round }}</p>
+                <p><strong>Submitted:</strong> {{ submission.created_at|date:"d.m.Y. H:i" }}</p>
+                <p><strong>Last updated:</strong> {{ submission.updated_at|date:"d.m.Y. H:i" }}</p>
+            </div>
+        </div>
 
         {% if submission.abstract %}
             <p><strong>Abstract:</strong><br>{{ submission.abstract|linebreaksbr }}</p>
         {% endif %}
 
-        {% if submission.keywords %}
-            <p><strong>Keywords:</strong> {{ submission.keywords }}</p>
-        {% endif %}
-
-        <p>
-            <strong>Status:</strong>
-            <span style="
-                background:#fef3c7;
-                color:#92400e;
-                padding:6px 12px;
-                border-radius:999px;
-                font-weight:bold;
-            ">
-                {{ submission.get_status_display }}
-            </span>
-        </p>
-
-        <p><strong>Content revision round:</strong> {{ submission.revision_round }}</p>
-        <p><strong>Layout revision round:</strong> {{ submission.layout_revision_round }}</p>
-
         {% if submission.judge_revision_message %}
-            <p><strong>Judge revision message:</strong><br>{{ submission.judge_revision_message|linebreaksbr }}</p>
+            <div class="mini-card">
+                <h3>Judge revision message</h3>
+                <p>{{ submission.judge_revision_message|linebreaksbr }}</p>
+            </div>
         {% endif %}
 
         {% if submission.layout_revision_message %}
-            <p><strong>Layout revision message:</strong><br>{{ submission.layout_revision_message|linebreaksbr }}</p>
-        {% endif %}
-
-        {% if submission.full_paper_file %}
-            <a href="{{ submission.full_paper_file.url }}"
-               target="_blank"
-               style="
-                    display:inline-block;
-                    margin-top:15px;
-                    background:#2563eb;
-                    color:white;
-                    padding:12px 18px;
-                    border-radius:10px;
-                    text-decoration:none;
-                    font-weight:bold;
-               ">
-                Download original paper
-            </a>
-        {% endif %}
-        {% if can_manage and submission.status == "revised_submitted" %}
-            <form method="post"
-                  action="{% url 'send_revision_to_reviewers' submission.id %}"
-                  style="display:inline-block; margin-top:15px; margin-left:10px;">
-                {% csrf_token %}
-                <button type="submit"
-                        style="
-                            background:#16a34a;
-                            color:white;
-                            padding:12px 18px;
-                            border:0;
-                            border-radius:10px;
-                            font-weight:bold;
-                            cursor:pointer;
-                        ">
-                    Send revised paper to reviewers
-                </button>
-            </form>
+            <div class="mini-card">
+                <h3>Layout revision message</h3>
+                <p>{{ submission.layout_revision_message|linebreaksbr }}</p>
+            </div>
         {% endif %}
     </div>
 
-    <h2 style="
-        color:#0d5c2f;
-        margin:35px 0 20px;
-        font-size:32px;
-    ">
+    <div class="card">
+        <h2>Timeline</h2>
+
+        <div class="timeline">
+            <div class="timeline-item">
+                <div class="timeline-label">Submitted</div>
+                <div class="timeline-value">{{ submission.created_at|date:"d.m.Y. H:i" }}</div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-label">Last activity</div>
+                <div class="timeline-value">{{ submission.updated_at|date:"d.m.Y. H:i" }}</div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-label">Content revision round</div>
+                <div class="timeline-value">{{ submission.revision_round }}</div>
+            </div>
+
+            <div class="timeline-item">
+                <div class="timeline-label">Layout revision round</div>
+                <div class="timeline-value">{{ submission.layout_revision_round }}</div>
+            </div>
+        </div>
+    </div>
+
+    <h2 style="color:#0d5c2f; margin:35px 0 20px; font-size:32px;">
         Reviewer reports
     </h2>
 
@@ -119,237 +311,130 @@
 
         {% for review in reviews %}
 
-            <!-- CARD 2+: ONE CARD PER REVIEWER -->
-            <div style="
-                background:white;
-                border:1px solid #e5e7eb;
-                border-radius:20px;
-                padding:30px;
-                margin-bottom:30px;
-                box-shadow:0 10px 25px rgba(0,0,0,0.05);
-            ">
-
-                <div style="
-                    display:flex;
-                    justify-content:space-between;
-                    align-items:center;
-                    gap:15px;
-                    flex-wrap:wrap;
-                    margin-bottom:20px;
-                ">
+            <details class="review-details">
+                <summary>
                     <div>
-                        <h3 style="
-                            margin:0;
-                            color:#0d5c2f;
-                            font-size:28px;
-                        ">
-                            Reviewer: {{ review.reviewer.username }} — Round {{ review.review_round }}
-                        </h3>
-
-                        <p style="margin:8px 0 0;">
-                            <strong>Review round:</strong> {{ review.review_round }}<br><strong>Overall recommendation:</strong>
-                            <span style="
-                                background:#dbeafe;
-                                color:#1d4ed8;
-                                padding:7px 12px;
-                                border-radius:999px;
-                                font-weight:bold;
-                                display:inline-block;
-                                margin-left:6px;
-                            ">
-                                {{ review.get_overall_recommendation_display }}
-                            </span>
-                        </p>
+                        <div class="summary-title">
+                            + Reviewer: {{ review.reviewer.username }} — Round {{ review.review_round }}
+                        </div>
+                        <div class="summary-meta">
+                            Recommendation: {{ review.get_overall_recommendation_display }}
+                            {% if review.updated_at %}
+                                · Updated: {{ review.updated_at|date:"d.m.Y. H:i" }}
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div style="
-                        background:#ecfdf5;
-                        color:#065f46;
-                        padding:12px 18px;
-                        border-radius:14px;
-                        font-weight:bold;
-                        font-size:20px;
-                    ">
-                        Score: {{ review.auto_score }}/5
+                    <div class="score-box">
+                        Score: {{ review.auto_score|floatformat:1 }}/5
                     </div>
+                </summary>
+
+                <div class="review-body">
+
+                    {% if review.commented_paper_file %}
+                        <a class="btn btn-green" href="{{ review.commented_paper_file.url }}" target="_blank">
+                            Download reviewer commented paper
+                        </a>
+                    {% endif %}
+
+                    <h3>Reviewer evaluation</h3>
+
+                    <table>
+                        <tr>
+                            <th>Criterion</th>
+                            <th>Reviewer answer</th>
+                        </tr>
+                        <tr>
+                            <td>Content context</td>
+                            <td>{{ review.get_content_context_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Research design</td>
+                            <td>{{ review.get_research_design_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Arguments and discussion</td>
+                            <td>{{ review.get_arguments_discussion_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Results presented</td>
+                            <td>{{ review.get_results_presented_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>References adequate</td>
+                            <td>{{ review.get_references_adequate_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Conclusions supported</td>
+                            <td>{{ review.get_conclusions_supported_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>English quality</td>
+                            <td>{{ review.get_english_quality_display }}</td>
+                        </tr>
+                    </table>
+
+                    <h3>Scientific ratings</h3>
+
+                    <table>
+                        <tr>
+                            <th>Category</th>
+                            <th>Rating</th>
+                        </tr>
+                        <tr>
+                            <td>Originality</td>
+                            <td>{{ review.get_originality_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Contribution</td>
+                            <td>{{ review.get_contribution_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Structure clarity</td>
+                            <td>{{ review.get_structure_clarity_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Logical coherence</td>
+                            <td>{{ review.get_logical_coherence_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Engagement with sources</td>
+                            <td>{{ review.get_engagement_sources_display }}</td>
+                        </tr>
+                        <tr>
+                            <td>Overall merit</td>
+                            <td>{{ review.get_overall_merit_display }}</td>
+                        </tr>
+                    </table>
+
+                    <div class="grid">
+                        <div class="mini-card">
+                            <h3>Comments for authors</h3>
+                            <p>{{ review.comments_for_authors|default:"No comments."|linebreaksbr }}</p>
+                        </div>
+
+                        <div class="mini-card">
+                            <h3>Comments for editors</h3>
+                            <p>{{ review.comments_for_editors|default:"No comments."|linebreaksbr }}</p>
+                        </div>
+                    </div>
+
                 </div>
-
-                {% if review.commented_paper_file %}
-                    <a href="{{ review.commented_paper_file.url }}"
-                       target="_blank"
-                       style="
-                            display:inline-block;
-                            margin-bottom:25px;
-                            background:#16a34a;
-                            color:white;
-                            padding:12px 18px;
-                            border-radius:10px;
-                            text-decoration:none;
-                            font-weight:bold;
-                       ">
-                        Download reviewer commented paper
-                    </a>
-                {% endif %}
-
-                <h3 style="color:#0d5c2f; margin-bottom:15px;">
-                    Reviewer evaluation
-                </h3>
-
-                <table style="
-                    width:100%;
-                    border-collapse:collapse;
-                    margin-bottom:30px;
-                    background:white;
-                ">
-                    <tr style="background:#f1f5f9;">
-                        <th style="padding:12px; text-align:left;">Criterion</th>
-                        <th style="padding:12px; text-align:left;">Reviewer answer</th>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Content context</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_content_context_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Research design</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_research_design_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Arguments and discussion</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_arguments_discussion_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Results presented</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_results_presented_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">References adequate</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_references_adequate_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Conclusions supported</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_conclusions_supported_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">English quality</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_english_quality_display }}</td>
-                    </tr>
-                </table>
-
-                <h3 style="color:#0d5c2f; margin-bottom:15px;">
-                    Scientific ratings
-                </h3>
-
-                <table style="
-                    width:100%;
-                    border-collapse:collapse;
-                    margin-bottom:30px;
-                    background:white;
-                ">
-                    <tr style="background:#f1f5f9;">
-                        <th style="padding:12px; text-align:left;">Category</th>
-                        <th style="padding:12px; text-align:left;">Rating</th>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Originality</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_originality_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Contribution</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_contribution_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Structure clarity</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_structure_clarity_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Logical coherence</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_logical_coherence_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Engagement with sources</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_engagement_sources_display }}</td>
-                    </tr>
-
-                    <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Overall merit</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_overall_merit_display }}</td>
-                    </tr>
-                </table>
-
-                <div style="
-                    display:grid;
-                    grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
-                    gap:20px;
-                ">
-                    <div style="
-                        background:#f9fafb;
-                        border:1px solid #e5e7eb;
-                        border-radius:14px;
-                        padding:20px;
-                    ">
-                        <h3 style="margin-top:0; color:#0d5c2f;">
-                            Comments for authors
-                        </h3>
-                        <p style="line-height:1.7;">
-                            {{ review.comments_for_authors|default:"No comments."|linebreaksbr }}
-                        </p>
-                    </div>
-
-                    <div style="
-                        background:#f9fafb;
-                        border:1px solid #e5e7eb;
-                        border-radius:14px;
-                        padding:20px;
-                    ">
-                        <h3 style="margin-top:0; color:#0d5c2f;">
-                            Comments for editors
-                        </h3>
-                        <p style="line-height:1.7;">
-                            {{ review.comments_for_editors|default:"No comments."|linebreaksbr }}
-                        </p>
-                    </div>
-                </div>
-
-            </div>
+            </details>
 
         {% endfor %}
 
     {% else %}
 
-        <div style="
-            background:#fff7ed;
-            border:1px solid #fdba74;
-            color:#9a3412;
-            padding:20px;
-            border-radius:14px;
-        ">
+        <div class="card" style="background:#fff7ed; border-color:#fdba74; color:#9a3412;">
             No reviews yet.
         </div>
 
     {% endif %}
 
     <div style="margin-top:30px;">
-        <a href="/judge-dashboard/"
-           style="
-                background:#2563eb;
-                color:white;
-                padding:12px 20px;
-                border-radius:10px;
-                text-decoration:none;
-                font-weight:bold;
-           ">
+        <a href="/judge-dashboard/" class="btn btn-blue">
             ← Back to Judge Dashboard
         </a>
     </div>
