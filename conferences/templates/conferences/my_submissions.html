@@ -3,76 +3,215 @@
 <head>
     <title>My submissions</title>
     <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:20px 40px;font-size:28px;font-weight:bold}.container{max-width:1000px;margin:50px auto;background:white;padding:40px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.1)}h1{margin-top:0;color:#14532d}.submission-card{border:1px solid #e5e7eb;border-radius:12px;padding:22px;margin-bottom:18px;background:#fff}.submission-title{font-size:20px;font-weight:bold;color:#14532d;margin-bottom:10px}.authors-box,.message-box{background:#f9fafb;border-radius:10px;padding:12px 14px;margin-bottom:14px;color:#444;line-height:1.6}.message-box{background:#fff7ed;border:1px solid #fed7aa}.meta{color:#444;line-height:1.7;margin-bottom:8px}.badge{display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-size:13px;font-weight:bold}.file-link,.back-link{display:inline-block;margin-top:14px;margin-right:16px;color:#2563eb;text-decoration:none;font-weight:bold}.btn{display:inline-block;margin-top:14px;margin-right:12px;background:#16a34a;color:white;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}.empty{padding:25px;background:#f9fafb;border-radius:12px;color:#555}
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f7fa;
+            margin: 0;
+            color: #111827;
+        }
+
+        .header {
+            background: #14532d;
+            color: white;
+            padding: 22px 40px;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 40px auto;
+            background: white;
+            padding: 35px;
+            border-radius: 18px;
+            box-shadow: 0 18px 35px rgba(0,0,0,0.08);
+        }
+
+        .submission-card {
+            border: 1px solid #dbe3ea;
+            border-radius: 14px;
+            padding: 22px;
+            margin-bottom: 25px;
+            background: #ffffff;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+            margin: 14px 0;
+        }
+
+        .review-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 16px;
+            margin-top: 14px;
+        }
+
+        .btn {
+            display: inline-block;
+            background: #14532d;
+            color: white;
+            padding: 10px 14px;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 6px 6px 6px 0;
+            font-weight: bold;
+        }
+
+        .btn-blue {
+            background: #2563eb;
+        }
+
+        .btn-green {
+            background: #16a34a;
+        }
+
+        .btn-outline {
+            background: white;
+            color: #14532d;
+            border: 1px solid #14532d;
+        }
+
+        .status {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 6px 11px;
+            border-radius: 999px;
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        h1, h2, h3 {
+            color: #0d5c2f;
+        }
+
+        .muted {
+            color: #6b7280;
+        }
     </style>
 </head>
 <body>
-<div class="topbar">GAF Conference Hub</div>
-<div class="container">
-    <h1>My submissions</h1>
 
-    {% if messages %}
-        {% for message in messages %}
-            <div class="message-box">{{ message }}</div>
-        {% endfor %}
-    {% endif %}
+<div class="header">
+    <h1>My submissions</h1>
+</div>
+
+<div class="container">
 
     {% if submissions %}
+
         {% for submission in submissions %}
+
             <div class="submission-card">
-                <div class="submission-title">{{ submission.title }}</div>
 
-                <div class="authors-box">
-                    <strong>First author:</strong> {{ submission.first_author }}
-                    {% if submission.coauthors %}<br><strong>Co-authors:</strong> {{ submission.coauthors|linebreaksbr }}{% endif %}
+                <h2 style="margin-top:0;">{{ submission.title }}</h2>
+
+                <div class="info-box">
+                    <p><strong>First author:</strong> {{ submission.first_author }}</p>
+
+                    {% if submission.abstract %}
+                        <p><strong>Abstract:</strong><br>{{ submission.abstract|linebreaksbr }}</p>
+                    {% endif %}
+
+                    {% if submission.keywords %}
+                        <p><strong>Keywords:</strong> {{ submission.keywords }}</p>
+                    {% endif %}
+
+                    <p><strong>Conference:</strong> {{ submission.conference.title_en }}</p>
+
+                    <p><strong>Topics:</strong>
+                        {% for topic in submission.topic_list %}
+                            {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                        {% empty %}
+                            No topic assigned
+                        {% endfor %}
+                    </p>
+
+                    <p>
+                        <strong>Status:</strong>
+                        <span class="status">{{ submission.get_status_display }}</span>
+                    </p>
+
+                    <p><strong>Content revision round:</strong> {{ submission.revision_round }}</p>
+                    <p><strong>Layout revision round:</strong> {{ submission.layout_revision_round }}</p>
                 </div>
 
-                {% if submission.abstract %}<div class="meta"><strong>Abstract:</strong><br>{{ submission.abstract|linebreaksbr }}</div>{% endif %}
-                {% if submission.keywords %}<div class="meta"><strong>Keywords:</strong> {{ submission.keywords }}</div>{% endif %}
-
-                <div class="meta">
-                    <strong>Conference:</strong> {{ submission.conference.title_en }}<br>
-                    <strong>Topics:</strong>
-                    {% for topic in submission.topic_list %}
-                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
-                    {% empty %}
-                        No topic selected
-                    {% endfor %}<br>
-                    <strong>Status:</strong> <span class="badge">{{ submission.get_status_display }}</span><br>
-                    <strong>Content revision round:</strong> {{ submission.revision_round }}<br>
-                    <strong>Layout revision round:</strong> {{ submission.layout_revision_round }}
-                </div>
-
-                {% if submission.status == "revision_required" and submission.judge_revision_message %}
-                    <div class="message-box"><strong>Judge revision instructions:</strong><br>{{ submission.judge_revision_message|linebreaksbr }}</div>
+                {% if submission.judge_revision_message %}
+                    <div class="info-box">
+                        <h3 style="margin-top:0;">Judge message for revision</h3>
+                        <p>{{ submission.judge_revision_message|linebreaksbr }}</p>
+                    </div>
                 {% endif %}
 
-                {% if submission.status == "revision_required" %}
+                {% if submission.layout_revision_message %}
+                    <div class="info-box">
+                        <h3 style="margin-top:0;">Layout revision message</h3>
+                        <p>{{ submission.layout_revision_message|linebreaksbr }}</p>
+                    </div>
+                {% endif %}
+
+                <div>
+                    {% if submission.full_paper_file %}
+                        <a class="btn btn-blue" href="{{ submission.full_paper_file.url }}" target="_blank">
+                            Download current paper
+                        </a>
+                    {% elif submission.abstract_file %}
+                        <a class="btn btn-blue" href="{{ submission.abstract_file.url }}" target="_blank">
+                            Download file
+                        </a>
+                    {% endif %}
+
+                    {% if submission.can_author_upload_revision %}
+                        <a class="btn btn-green" href="{% url 'upload_revised_paper' submission.id %}">
+                            Upload revised paper
+                        </a>
+                    {% endif %}
+                </div>
+
+                <h3>Reviewer feedback</h3>
+
+                {% with has_reviews=False %}
                     {% for review in submission.reviews.all %}
-                        {% if review.commented_paper_file %}
-                            <a class="file-link" href="{{ review.commented_paper_file.url }}" target="_blank">Download reviewer commented file {{ forloop.counter }}</a>
+                        {% if review.comments_for_authors or review.commented_paper_file %}
+                            <div class="review-box">
+                                <p><strong>Reviewer:</strong> {{ review.reviewer.username }}</p>
+
+                                {% if review.get_overall_recommendation_display %}
+                                    <p><strong>Recommendation:</strong> {{ review.get_overall_recommendation_display }}</p>
+                                {% endif %}
+
+                                {% if review.comments_for_authors %}
+                                    <p><strong>Comments for authors:</strong><br>{{ review.comments_for_authors|linebreaksbr }}</p>
+                                {% endif %}
+
+                                {% if review.commented_paper_file %}
+                                    <a class="btn btn-green" href="{{ review.commented_paper_file.url }}" target="_blank">
+                                        Download reviewer commented paper
+                                    </a>
+                                {% endif %}
+                            </div>
                         {% endif %}
+                    {% empty %}
+                        <p class="muted">No reviewer feedback available yet.</p>
                     {% endfor %}
-                {% endif %}
+                {% endwith %}
 
-                {% if submission.status == "layout_revision_required" and submission.layout_revision_message %}
-                    <div class="message-box"><strong>Layout correction instructions:</strong><br>{{ submission.layout_revision_message|linebreaksbr }}</div>
-                {% endif %}
-
-                {% if submission.full_paper_file %}
-                    <a class="file-link" href="{{ submission.full_paper_file.url }}" target="_blank">Download current paper</a>
-                {% endif %}
-
-                {% if submission.status == "revision_required" or submission.status == "layout_revision_required" %}
-                    <a class="btn" href="{% url 'upload_revision' submission.id %}">Upload revised paper</a>
-                {% endif %}
             </div>
+
         {% endfor %}
+
     {% else %}
-        <div class="empty">You have not submitted any papers yet.</div>
+
+        <p>You have not submitted any papers yet.</p>
+
     {% endif %}
 
-    <a class="back-link" href="/">← Back home</a>
+    <a href="/" class="btn btn-outline">← Back home</a>
+
 </div>
+
 </body>
 </html>
