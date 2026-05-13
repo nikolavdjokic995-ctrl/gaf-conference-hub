@@ -636,7 +636,7 @@ def submit_paper(request, slug):
 
             except Exception as e:
                 print("Paper upload/anonymization error:", e)
-                messages.error(request, "Paper upload failed. Please try again.")
+                messages.error(request, f"Paper upload failed: {e}")
                 return redirect("submit_paper", slug=conference.slug)
 
             finally:
