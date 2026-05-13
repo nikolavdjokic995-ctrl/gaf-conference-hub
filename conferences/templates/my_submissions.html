@@ -47,6 +47,16 @@
             border-radius: 5px;
             margin-bottom: 20px;
         }
+
+        .revision-btn {
+            display: inline-block;
+            background: #198754;
+            color: white;
+            padding: 8px 12px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
@@ -68,6 +78,7 @@
                 <th>Submitted</th>
                 <th>File</th>
                 <th>Reviewer file</th>
+                <th>Revision</th>
             </tr>
 
             {% for submission in submissions %}
@@ -76,6 +87,7 @@
                     <td>{{ submission.conference.title_en }}</td>
                     <td>{{ submission.get_status_display }}</td>
                     <td>{{ submission.created_at }}</td>
+
                     <td>
                         {% if submission.full_paper_file %}
                             <a href="{{ submission.full_paper_file.url }}">Download</a>
@@ -95,6 +107,17 @@
                             {% endif %}
                         {% endfor %}
                     </td>
+
+                    <td>
+                        {% if submission.status == "revision_requested" %}
+                            <a href="{% url 'upload_revision' submission.id %}" class="revision-btn">
+                                Upload revised paper
+                            </a>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+
                 </tr>
             {% endfor %}
         </table>
