@@ -33,7 +33,9 @@
     <a class="back" href="{% url 'my_submissions' %}">← Back to my submissions</a>
 
     <div style="margin-top:18px;">
-        <a class="back" href="/">← Back home</a>
+        <a class="back" href="/conference/{{ submission.conference.slug }}/overview/">
+            ← Back to conference overview
+        </a>
     </div>
 
 </div>
