@@ -87,27 +87,6 @@ class Conference(models.Model):
         null=True
     )
 
-    # Public overview page layout settings
-    overview_section_padding = models.PositiveIntegerField(default=40)
-    overview_section_radius = models.PositiveIntegerField(default=26)
-    overview_grid_min_width = models.PositiveIntegerField(default=280)
-    overview_grid_gap = models.PositiveIntegerField(default=26)
-
-    overview_card_padding = models.PositiveIntegerField(default=28)
-    overview_card_radius = models.PositiveIntegerField(default=20)
-    overview_card_title_size = models.PositiveIntegerField(default=20)
-    overview_card_text_size = models.PositiveIntegerField(default=16)
-
-    overview_stats_card_padding = models.PositiveIntegerField(default=28)
-    overview_stats_card_radius = models.PositiveIntegerField(default=22)
-    overview_stats_number_size = models.PositiveIntegerField(default=38)
-    overview_stats_label_size = models.PositiveIntegerField(default=15)
-
-    overview_about_padding = models.PositiveIntegerField(default=38)
-    overview_about_radius = models.PositiveIntegerField(default=24)
-    overview_about_title_size = models.PositiveIntegerField(default=42)
-    overview_about_text_size = models.PositiveIntegerField(default=18)
-
     def __str__(self):
         return self.title_en
 
@@ -135,6 +114,11 @@ class ConferenceTopic(models.Model):
 
 
 class Submission(models.Model):
+    ARTICLE_TYPE_CHOICES = [
+        ("research_paper", "Research paper"),
+        ("review_paper", "Review paper"),
+    ]
+
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under content review"),
@@ -180,6 +164,13 @@ class Submission(models.Model):
     keywords = models.CharField(
         max_length=255,
         help_text="Enter keywords separated by commas."
+    )
+
+    article_type = models.CharField(
+        max_length=30,
+        choices=ARTICLE_TYPE_CHOICES,
+        default="research_paper",
+        help_text="Select whether this is a research paper or a review paper."
     )
 
     abstract_file = models.FileField(
@@ -363,6 +354,21 @@ class Review(models.Model):
         ("no", "No"),
     ]
 
+    QUALITY_CHOICES = [
+        ("poor", "Poor"),
+        ("normal", "Normal"),
+        ("good", "Good"),
+        ("excellent", "Excellent"),
+    ]
+
+    PAPER_CLASSIFICATION_CHOICES = [
+        ("review_paper", "Review paper"),
+        ("research_paper", "Research paper"),
+        ("preliminary_report", "Preliminary report/Short communication"),
+        ("professional_paper", "Professional paper"),
+        ("none", "None of above"),
+    ]
+
     RATING_CHOICES = [
         ("high", "High"),
         ("average", "Average"),
@@ -433,6 +439,48 @@ class Review(models.Model):
         max_length=30,
         choices=AUTHOR_SCALE_CHOICES,
         default="can_be_improved"
+    )
+
+    quality_originality = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_scientific_contribution = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_methodological_approach = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_references = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_clarity_expression = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    paper_classification = models.CharField(
+        max_length=30,
+        choices=PAPER_CLASSIFICATION_CHOICES,
+        default="research_paper"
+    )
+
+    reviewer_competency = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
     )
 
     english_quality = models.CharField(
@@ -540,86 +588,43 @@ class Review(models.Model):
         unique_together = ("submission", "reviewer", "review_round")
 
     def calculate_auto_score(self):
-        """Calculate a balanced 1-5 review score from reviewer answers.
+        """Calculate avg. score from the redesigned reviewer form.
 
-        Author-scale answers and scientific ratings are scored equally:
-        yes/high = 5, can_be_improved/average = 3.5, must_be_improved/low = 2.
-        Non-applicable/no-answer fields are ignored instead of being counted as zero.
-        Small penalties/bonuses are then applied for recommendation and red flags.
+        Poor=1, Normal=2, Good=3, Excellent=4. The score is normalized to
+        the existing 1-5 scale so dashboards using auto_score continue to work.
+        Reviewer competency is displayed in the form but is not counted in paper quality.
         """
-        total = 0.0
-        count = 0
-
-        author_score_map = {
-            "yes": 5.0,
-            "can_be_improved": 3.5,
-            "must_be_improved": 2.0,
+        quality_score_map = {
+            "poor": 1.0,
+            "normal": 2.0,
+            "good": 3.0,
+            "excellent": 4.0,
         }
 
-        rating_score_map = {
-            "high": 5.0,
-            "average": 3.5,
-            "low": 2.0,
-        }
-
-        author_fields = [
-            self.content_context,
-            self.research_design,
-            self.arguments_discussion,
-            self.results_presented,
-            self.references_adequate,
-            self.conclusions_supported,
+        fields = [
+            self.quality_originality,
+            self.quality_scientific_contribution,
+            self.quality_methodological_approach,
+            self.quality_references,
+            self.quality_clarity_expression,
         ]
 
-        for value in author_fields:
-            mapped_score = author_score_map.get(value)
-            if mapped_score is not None:
-                total += mapped_score
-                count += 1
+        scores = [quality_score_map[value] for value in fields if value in quality_score_map]
+        if not scores:
+            return 3.0
 
-        rating_fields = [
-            self.originality,
-            self.contribution,
-            self.structure_clarity,
-            self.logical_coherence,
-            self.engagement_sources,
-            self.overall_merit,
-        ]
-
-        for value in rating_fields:
-            mapped_score = rating_score_map.get(value)
-            if mapped_score is not None:
-                total += mapped_score
-                count += 1
-
-        score = total / count if count else 3.0
-
-        if self.english_quality == "needs_improvement":
-            score -= 0.3
-
-        if self.references_relevant == "no":
-            score -= 0.3
-
-        editor_flags = [
-            self.conflict_of_interest,
-            self.plagiarism_detected,
-            self.inappropriate_self_citations,
-            self.ethical_concerns,
-        ]
-
-        for value in editor_flags:
-            if value == "yes":
-                score -= 0.8
+        raw_average = sum(scores) / len(scores)
+        normalized_score = 1.0 + ((raw_average - 1.0) / 3.0) * 4.0
 
         recommendation_adjustments = {
-            "accept": 0.5,
-            "minor_revision": -0.2,
-            "major_revision": -0.7,
-            "reject": -1.5,
+            "accept": 0.4,
+            "minor_revision": 0.0,
+            "major_revision": -0.5,
+            "reject": -1.0,
         }
-        score += recommendation_adjustments.get(self.overall_recommendation, 0.0)
+        normalized_score += recommendation_adjustments.get(self.overall_recommendation, 0.0)
 
-        return max(1.0, min(5.0, round(score, 1)))
+        return max(1.0, min(5.0, round(normalized_score, 1)))
 
     def save(self, *args, **kwargs):
         self.auto_score = self.calculate_auto_score()

@@ -557,6 +557,13 @@
                         <span>🏷️</span> SECTION 3: Conference Classification
                     </h2>
 
+                    <div class="field">
+                        <label for="{{ form.article_type.id_for_label }}">Article type</label>
+                        {{ form.article_type }}
+                        {{ form.article_type.errors }}
+                        <div class="help">Authors must select whether the submission is a research paper or a review paper.</div>
+                    </div>
+
                     <div class="field-grid">
                         <div class="field">
                             <label for="{{ form.topic.id_for_label }}">{{ form.topic.label }}</label>
