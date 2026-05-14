@@ -4,23 +4,24 @@
     <title>Edit email template</title>
     <style>
         body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; color: #102a43; }
-        .topbar { background: #1f4e79; color: white; padding: 22px 40px; }
-        .container { max-width: 1100px; margin: 35px auto; padding: 0 20px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; }
-        .panel { background: white; padding: 24px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.08); }
-        label { font-weight: bold; display: block; margin-top: 14px; }
-        input[type="text"], textarea { width: 100%; padding: 10px; border: 1px solid #cfd8dc; border-radius: 8px; box-sizing: border-box; }
+        .topbar { background: #14532d; color: white; padding: 24px 42px; }
+        .container { max-width: 1180px; margin: 35px auto; padding: 0 20px; display: grid; grid-template-columns: 1.1fr .9fr; gap: 22px; }
+        .panel { background: white; padding: 24px; border-radius: 16px; box-shadow: 0 6px 18px rgba(0,0,0,0.08); border:1px solid #dcfce7; }
+        label { font-weight: bold; display: block; margin-top: 14px; color:#14532d; }
+        input[type="text"], textarea { width: 100%; padding: 11px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-family: Arial, sans-serif; }
+        textarea { line-height:1.45; }
         input[type="checkbox"] { margin-right: 8px; }
-        .checkrow label { font-weight: normal; margin: 8px 0; }
-        .btn { display: inline-block; margin-top: 16px; padding: 10px 14px; background: #1f4e79; color: white; text-decoration: none; border: 0; border-radius: 6px; cursor: pointer; }
-        .btn.secondary { background: #555; }
-        .preview { white-space: pre-wrap; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e5e7eb; line-height: 1.5; }
-        code { background: #eef2f7; padding: 2px 4px; border-radius: 4px; }
+        .checkrow label { font-weight: normal; margin: 8px 0; color:#102a43; }
+        .btn { display: inline-block; margin-top: 16px; padding: 10px 14px; background: #16a34a; color: white; text-decoration: none; border: 0; border-radius: 8px; cursor: pointer; font-weight:700; }
+        .btn.secondary { background: #64748b; }
+        .preview { white-space: pre-wrap; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e5e7eb; line-height: 1.5; max-height: 520px; overflow:auto; }
+        code { display:inline-block; background: #ecfdf5; color:#14532d; padding: 3px 6px; border-radius: 5px; margin:3px; border:1px solid #bbf7d0; }
         @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 <div class="topbar">
-    <h1>Edit email template</h1>
+    <h1>Edit email card</h1>
     <p>{{ template.get_event_display }} — {{ conference.title_en }}</p>
 </div>
 
@@ -28,10 +29,9 @@
     <div class="panel">
         <form method="post">
             {% csrf_token %}
-
             <div class="checkrow">
                 <label>{{ form.enabled }} Enable automatic sending</label>
-                <label>{{ form.send_to_author }} Send to submitting author</label>
+                <label>{{ form.send_to_author }} Send to first/submitting author</label>
                 <label>{{ form.send_to_coauthors }} Send to all co-authors</label>
                 <label>{{ form.send_to_reviewer }} Send to assigned reviewer</label>
                 <label>{{ form.send_to_managers }} Send to managers</label>
@@ -56,23 +56,14 @@
 
         <h3>Available placeholders</h3>
         <p>
-            <code>&#123;&#123; paper_title &#125;&#125;</code>
-            <code>&#123;&#123; all_authors &#125;&#125;</code>
-            <code>&#123;&#123; all_author_emails &#125;&#125;</code>
-            <code>&#123;&#123; author_name &#125;&#125;</code>
-            <code>&#123;&#123; author_email &#125;&#125;</code>
-            <code>&#123;&#123; first_author_email &#125;&#125;</code>
-            <code>&#123;&#123; submitter_email &#125;&#125;</code>
-            <code>&#123;&#123; coauthors &#125;&#125;</code>
-            <code>&#123;&#123; coauthor_emails &#125;&#125;</code>
-            <code>&#123;&#123; conference_name &#125;&#125;</code>
-            <code>&#123;&#123; reviewer_name &#125;&#125;</code>
-            <code>&#123;&#123; revision_message &#125;&#125;</code>
-            <code>&#123;&#123; layout_revision_message &#125;&#125;</code>
-            <code>&#123;&#123; upload_revision_link &#125;&#125;</code>
-            <code>&#123;&#123; submission_result_link &#125;&#125;</code>
-            <code>&#123;&#123; review_link &#125;&#125;</code>
-            <code>&#123;&#123; layout_decision_link &#125;&#125;</code>
+            <code>&#123;&#123; paper_title &#125;&#125;</code><code>&#123;&#123; paper_code &#125;&#125;</code><code>&#123;&#123; article_type &#125;&#125;</code>
+            <code>&#123;&#123; abstract &#125;&#125;</code><code>&#123;&#123; keywords &#125;&#125;</code><code>&#123;&#123; submitted_on &#125;&#125;</code>
+            <code>&#123;&#123; first_author &#125;&#125;</code><code>&#123;&#123; first_author_email &#125;&#125;</code><code>&#123;&#123; coauthors &#125;&#125;</code><code>&#123;&#123; coauthor_emails &#125;&#125;</code>
+            <code>&#123;&#123; all_authors &#125;&#125;</code><code>&#123;&#123; all_author_emails &#125;&#125;</code>
+            <code>&#123;&#123; reviewer_name &#125;&#125;</code><code>&#123;&#123; reviewer_email &#125;&#125;</code>
+            <code>&#123;&#123; conference_name &#125;&#125;</code><code>&#123;&#123; conference_contact_email &#125;&#125;</code>
+            <code>&#123;&#123; review_link &#125;&#125;</code><code>&#123;&#123; upload_revision_link &#125;&#125;</code><code>&#123;&#123; layout_decision_link &#125;&#125;</code>
+            <code>&#123;&#123; review_deadline &#125;&#125;</code><code>&#123;&#123; editor_decision &#125;&#125;</code><code>&#123;&#123; editor_comments &#125;&#125;</code><code>&#123;&#123; reviewer_comments &#125;&#125;</code>
         </p>
     </div>
 </div>

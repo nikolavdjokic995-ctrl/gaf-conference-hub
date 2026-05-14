@@ -531,14 +531,13 @@
                         <label for="{{ form.first_author.id_for_label }}">{{ form.first_author.label }}</label>
                         {{ form.first_author }}
                         {{ form.first_author.errors }}
-                        <div class="help">Enter the real first author of the paper, even if another user is submitting the form.</div>
                     </div>
 
                     <div class="field">
                         <label for="{{ form.first_author_email.id_for_label }}">{{ form.first_author_email.label }}</label>
                         {{ form.first_author_email }}
                         {{ form.first_author_email.errors }}
-                        <div class="help">This email will be used for future automatic notifications to authors.</div>
+                        <div class="help">Enter the first author's email address, even if the form is submitted by another person.</div>
                     </div>
 
                     <div class="field">
@@ -552,11 +551,11 @@
                         <label for="{{ form.coauthor_emails.id_for_label }}">{{ form.coauthor_emails.label }}</label>
                         {{ form.coauthor_emails }}
                         {{ form.coauthor_emails.errors }}
-                        <div class="help">Enter co-author emails, one per line, preferably in the same order as the co-author names.</div>
+                        <div class="help">Enter co-author emails, one per line.</div>
                     </div>
 
                     <div class="info-box">
-                        ℹ️ Enter author emails carefully. Later, automatic messages can be sent to the first author and to each co-author email listed here.
+                        ℹ️ Enter author and co-author email addresses carefully. These emails will be used later for automatic conference notifications.
                     </div>
                 </section>
 
@@ -564,13 +563,6 @@
                     <h2 class="section-title">
                         <span>🏷️</span> SECTION 3: Conference Classification
                     </h2>
-
-                    <div class="field">
-                        <label for="{{ form.article_type.id_for_label }}">Article type</label>
-                        {{ form.article_type }}
-                        {{ form.article_type.errors }}
-                        <div class="help">Authors must select whether the submission is a research paper or a review paper.</div>
-                    </div>
 
                     <div class="field-grid">
                         <div class="field">

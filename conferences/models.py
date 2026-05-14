@@ -114,11 +114,6 @@ class ConferenceTopic(models.Model):
 
 
 class Submission(models.Model):
-    ARTICLE_TYPE_CHOICES = [
-        ("research_paper", "Research paper"),
-        ("review_paper", "Review paper"),
-    ]
-
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under content review"),
@@ -144,16 +139,16 @@ class Submission(models.Model):
 
     first_author = models.CharField(max_length=255)
 
-    first_author_email = models.EmailField(
-        blank=True,
-        help_text="Email address of the first author. This may be different from the account submitting the paper."
-    )
-
     paper_code = models.CharField(max_length=50, blank=True, unique=True)
 
     coauthors = models.TextField(
         blank=True,
         help_text="Separate co-authors with commas or new lines."
+    )
+
+    first_author_email = models.EmailField(
+        blank=True,
+        help_text="Email address of the first author. This can be different from the submitting user email."
     )
 
     coauthor_emails = models.TextField(
@@ -169,13 +164,6 @@ class Submission(models.Model):
     keywords = models.CharField(
         max_length=255,
         help_text="Enter keywords separated by commas."
-    )
-
-    article_type = models.CharField(
-        max_length=30,
-        choices=ARTICLE_TYPE_CHOICES,
-        default="research_paper",
-        help_text="Select whether this is a research paper or a review paper."
     )
 
     abstract_file = models.FileField(
@@ -251,44 +239,6 @@ class Submission(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-
-    def coauthor_name_list(self):
-        if not self.coauthors:
-            return []
-        import re
-        return [part.strip() for part in re.split(r"[\n,;]+", self.coauthors) if part.strip()]
-
-    def coauthor_email_list(self):
-        if not self.coauthor_emails:
-            return []
-        import re
-        emails = [part.strip() for part in re.split(r"[\n,;\s]+", self.coauthor_emails) if part.strip()]
-        clean = []
-        for email in emails:
-            if "@" in email and email not in clean:
-                clean.append(email)
-        return clean
-
-    def author_email_list(self):
-        emails = []
-        if self.first_author_email:
-            emails.append(self.first_author_email)
-        elif self.author and self.author.email:
-            emails.append(self.author.email)
-        emails.extend(self.coauthor_email_list())
-
-        clean = []
-        for email in emails:
-            if email and email not in clean:
-                clean.append(email)
-        return clean
-
-    def all_author_names(self):
-        names = []
-        if self.first_author:
-            names.append(self.first_author)
-        names.extend(self.coauthor_name_list())
-        return names
 
     def topic_list(self):
         topics = []
@@ -397,18 +347,6 @@ class Review(models.Model):
         ("no", "No"),
     ]
 
-    QUALITY_CHOICES = [
-        ("poor", "Poor"),
-        ("normal", "Normal"),
-        ("good", "Good"),
-        ("excellent", "Excellent"),
-    ]
-
-    PAPER_CLASSIFICATION_CHOICES = [
-        ("review_paper", "Review paper"),
-        ("research_paper", "Research paper"),
-    ]
-
     RATING_CHOICES = [
         ("high", "High"),
         ("average", "Average"),
@@ -481,48 +419,6 @@ class Review(models.Model):
         default="can_be_improved"
     )
 
-    quality_originality = models.CharField(
-        max_length=20,
-        choices=QUALITY_CHOICES,
-        default="normal"
-    )
-
-    quality_scientific_contribution = models.CharField(
-        max_length=20,
-        choices=QUALITY_CHOICES,
-        default="normal"
-    )
-
-    quality_methodological_approach = models.CharField(
-        max_length=20,
-        choices=QUALITY_CHOICES,
-        default="normal"
-    )
-
-    quality_references = models.CharField(
-        max_length=20,
-        choices=QUALITY_CHOICES,
-        default="normal"
-    )
-
-    quality_clarity_expression = models.CharField(
-        max_length=20,
-        choices=QUALITY_CHOICES,
-        default="normal"
-    )
-
-    paper_classification = models.CharField(
-        max_length=30,
-        choices=PAPER_CLASSIFICATION_CHOICES,
-        default="research_paper"
-    )
-
-    reviewer_competency = models.CharField(
-        max_length=20,
-        choices=QUALITY_CHOICES,
-        default="normal"
-    )
-
     english_quality = models.CharField(
         max_length=30,
         choices=ENGLISH_CHOICES,
@@ -530,22 +426,6 @@ class Review(models.Model):
     )
 
     comments_for_authors = models.TextField(blank=True)
-
-    no_conflict_confirmed = models.BooleanField(
-        default=False,
-        help_text="Reviewer confirms there is no conflict of interest for this paper."
-    )
-
-    extension_requested = models.BooleanField(
-        default=False,
-        help_text="Reviewer requests an extension of the review deadline."
-    )
-
-    requested_deadline = models.DateField(
-        null=True,
-        blank=True,
-        help_text="Requested new review deadline, if an extension is requested."
-    )
 
     conflict_of_interest = models.CharField(
         max_length=10,
@@ -644,43 +524,86 @@ class Review(models.Model):
         unique_together = ("submission", "reviewer", "review_round")
 
     def calculate_auto_score(self):
-        """Calculate avg. score from the redesigned reviewer form.
+        """Calculate a balanced 1-5 review score from reviewer answers.
 
-        Poor=1, Normal=2, Good=3, Excellent=4. The score is normalized to
-        the existing 1-5 scale so dashboards using auto_score continue to work.
-        Reviewer competency is displayed in the form but is not counted in paper quality.
+        Author-scale answers and scientific ratings are scored equally:
+        yes/high = 5, can_be_improved/average = 3.5, must_be_improved/low = 2.
+        Non-applicable/no-answer fields are ignored instead of being counted as zero.
+        Small penalties/bonuses are then applied for recommendation and red flags.
         """
-        quality_score_map = {
-            "poor": 1.0,
-            "normal": 2.0,
-            "good": 3.0,
-            "excellent": 4.0,
+        total = 0.0
+        count = 0
+
+        author_score_map = {
+            "yes": 5.0,
+            "can_be_improved": 3.5,
+            "must_be_improved": 2.0,
         }
 
-        fields = [
-            self.quality_originality,
-            self.quality_scientific_contribution,
-            self.quality_methodological_approach,
-            self.quality_references,
-            self.quality_clarity_expression,
+        rating_score_map = {
+            "high": 5.0,
+            "average": 3.5,
+            "low": 2.0,
+        }
+
+        author_fields = [
+            self.content_context,
+            self.research_design,
+            self.arguments_discussion,
+            self.results_presented,
+            self.references_adequate,
+            self.conclusions_supported,
         ]
 
-        scores = [quality_score_map[value] for value in fields if value in quality_score_map]
-        if not scores:
-            return 3.0
+        for value in author_fields:
+            mapped_score = author_score_map.get(value)
+            if mapped_score is not None:
+                total += mapped_score
+                count += 1
 
-        raw_average = sum(scores) / len(scores)
-        normalized_score = 1.0 + ((raw_average - 1.0) / 3.0) * 4.0
+        rating_fields = [
+            self.originality,
+            self.contribution,
+            self.structure_clarity,
+            self.logical_coherence,
+            self.engagement_sources,
+            self.overall_merit,
+        ]
+
+        for value in rating_fields:
+            mapped_score = rating_score_map.get(value)
+            if mapped_score is not None:
+                total += mapped_score
+                count += 1
+
+        score = total / count if count else 3.0
+
+        if self.english_quality == "needs_improvement":
+            score -= 0.3
+
+        if self.references_relevant == "no":
+            score -= 0.3
+
+        editor_flags = [
+            self.conflict_of_interest,
+            self.plagiarism_detected,
+            self.inappropriate_self_citations,
+            self.ethical_concerns,
+        ]
+
+        for value in editor_flags:
+            if value == "yes":
+                score -= 0.8
 
         recommendation_adjustments = {
-            "accept": 0.4,
-            "minor_revision": 0.0,
-            "major_revision": -0.5,
-            "reject": -1.0,
+            "accept": 0.5,
+            "minor_revision": -0.2,
+            "major_revision": -0.7,
+            "reject": -1.5,
         }
-        normalized_score += recommendation_adjustments.get(self.overall_recommendation, 0.0)
+        score += recommendation_adjustments.get(self.overall_recommendation, 0.0)
 
-        return max(1.0, min(5.0, round(normalized_score, 1)))
+        return max(1.0, min(5.0, round(score, 1)))
 
     def save(self, *args, **kwargs):
         self.auto_score = self.calculate_auto_score()
@@ -692,15 +615,30 @@ class Review(models.Model):
 
 class EmailTemplate(models.Model):
     EVENT_CHOICES = [
-        ("paper_submitted", "Paper submission confirmation"),
-        ("reviewer_assigned", "Reviewer assigned"),
-        ("revision_requested", "Content revision requested"),
-        ("revision_uploaded", "Content revision uploaded"),
-        ("accepted_for_layout", "Accepted for layout review"),
-        ("layout_revision_requested", "Layout corrections requested"),
-        ("layout_revision_uploaded", "Layout corrected paper uploaded"),
-        ("final_accepted", "Accepted for publication"),
-        ("rejected", "Rejected"),
+        ("committee_login_info", "1. Scientific Committee login information"),
+        ("paper_submitted", "2. Submission confirmation – author"),
+        ("coauthor_submission_confirmation", "3. Submission confirmation – co-author"),
+        ("review_invitation", "4. Invitation to review manuscript"),
+        ("review_request_accepted", "5. Review request accepted"),
+        ("review_initiated", "6. Review initiated – author notification"),
+        ("review_due_soon", "7. Reminder: review due soon"),
+        ("review_overdue", "8. Reminder: review overdue"),
+        ("review_received", "9. Confirmation of review receipt"),
+        ("rereview_invitation", "10. Invitation to re-evaluate revised manuscript"),
+        ("reviewer_editor_decision", "11. Reviewer notification of editor decision"),
+        ("review_completed_author", "12. Review completed – author decision"),
+        ("manuscript_accepted", "13. Manuscript accepted for publication"),
+        ("layout_correction_needed", "14. Layout correction needed"),
+        ("layout_correction_submitted", "15. Author correction submitted"),
+        # Legacy/internal workflow events kept for existing code paths.
+        ("reviewer_assigned", "Legacy: reviewer assigned"),
+        ("revision_requested", "Legacy: content revision requested"),
+        ("revision_uploaded", "Legacy: content revision uploaded"),
+        ("accepted_for_layout", "Legacy: accepted for layout review"),
+        ("layout_revision_requested", "Legacy: layout corrections requested"),
+        ("layout_revision_uploaded", "Legacy: layout corrected paper uploaded"),
+        ("final_accepted", "Legacy: final accepted"),
+        ("rejected", "Legacy: rejected"),
     ]
 
     conference = models.ForeignKey(Conference, on_delete=models.CASCADE)

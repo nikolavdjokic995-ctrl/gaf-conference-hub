@@ -46,17 +46,20 @@ def absolute_url(request, name, *args, **kwargs):
 def build_email_context(submission=None, reviewer=None, request=None, extra=None):
     conference = submission.conference if submission else None
     first_author = submission.first_author if submission else ""
+    first_author_email = submission.first_author_email if submission else ""
     coauthors = split_people(submission.coauthors) if submission else []
     coauthor_emails = split_emails(submission.coauthor_emails) if submission else []
 
-    author_name = user_full_name(submission.author) if submission else ""
-    submitter_email = submission.author.email if submission and submission.author else ""
-    first_author_email = submission.first_author_email if submission else ""
-    author_email = first_author_email or submitter_email
-    all_authors = [first_author or author_name] + coauthors
+    submitting_author_name = user_full_name(submission.author) if submission else ""
+    submitting_author_email = submission.author.email if submission and submission.author else ""
+    all_authors = [first_author or submitting_author_name] + coauthors
     all_authors = [name for name in all_authors if name]
-    all_author_emails = [author_email] + coauthor_emails
+    all_author_emails = [first_author_email or submitting_author_email] + coauthor_emails
     all_author_emails = [email for email in all_author_emails if email]
+
+    article_type = getattr(submission, "article_type", "") if submission else ""
+    if not article_type:
+        article_type = "Research paper"
 
     context = {
         "conference_name": conference.title_en if conference else "",
@@ -65,10 +68,12 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "conference_contact_email": conference.contact_email if conference else "",
         "paper_title": submission.title if submission else "",
         "submission_id": submission.id if submission else "",
+        "paper_code": submission.paper_code if submission else "",
         "submission_status": submission.get_status_display() if submission else "",
-        "author_name": author_name,
-        "author_email": author_email,
-        "submitter_email": submitter_email,
+        "submitting_author_name": submitting_author_name,
+        "submitting_author_email": submitting_author_email,
+        "author_name": first_author or submitting_author_name,
+        "author_email": first_author_email or submitting_author_email,
         "first_author": first_author,
         "first_author_email": first_author_email,
         "coauthors": ", ".join(coauthors),
@@ -85,6 +90,20 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "review_link": absolute_url(request, "review_submission", submission.id) if submission else "",
         "layout_decision_link": absolute_url(request, "layout_decision", submission.id) if submission else "",
         "conference_link": absolute_url(request, "conference_overview", conference.slug) if conference else "",
+        "article_type": article_type,
+        "abstract": submission.abstract if submission else "",
+        "keywords": submission.keywords if submission else "",
+        "submitted_on": submission.created_at.strftime("%d.%m.%Y.") if submission and submission.created_at else "",
+        "review_deadline": conference.review_deadline.strftime("%d.%m.%Y.") if conference and conference.review_deadline else "",
+        "review_days": "10",
+        "days_until_due": "2",
+        "date_agreed": "",
+        "editor_decision": submission.get_status_display() if submission else "",
+        "editor_comments": submission.final_comment if submission else "",
+        "reviewer_comments": "",
+        "revision_deadline": "",
+        "layout_deadline": "",
+        "temporary_password": "",
     }
     if extra:
         context.update(extra)
@@ -99,7 +118,7 @@ def recipients_for_template(template, submission=None, reviewer=None):
     recipients = []
     if submission:
         if template.send_to_author:
-            if submission.first_author_email:
+            if getattr(submission, "first_author_email", ""):
                 recipients.append(submission.first_author_email)
             elif submission.author and submission.author.email:
                 recipients.append(submission.author.email)
@@ -214,12 +233,15 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "conference_location": template.conference.location,
             "conference_dates": f"{template.conference.start_date} — {template.conference.end_date}",
             "paper_title": "Example paper title",
-            "submission_id": "TEST-001",
+            "submission_id": "1",
+            "paper_code": "GBC2026-001",
             "author_name": "Example Author",
             "author_email": "author@example.com",
+            "submitting_author_name": "Submitting User",
+            "submitting_author_email": "submitter@example.com",
             "first_author": "Example Author",
+            "first_author_email": "author@example.com",
             "coauthors": "Coauthor One, Coauthor Two",
-            "first_author_email": "first.author@example.com",
             "coauthor_emails": "coauthor1@example.com, coauthor2@example.com",
             "all_authors": "Example Author, Coauthor One, Coauthor Two",
             "all_author_emails": "author@example.com, coauthor1@example.com, coauthor2@example.com",
@@ -233,6 +255,20 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "review_link": "https://example.com/review/",
             "layout_decision_link": "https://example.com/layout-decision/",
             "conference_link": "https://example.com/conference/",
+            "article_type": "Research paper",
+            "abstract": "Example abstract text.",
+            "keywords": "green building, sustainability",
+            "submitted_on": "20.02.2026.",
+            "review_deadline": "18.04.2026.",
+            "review_days": "10",
+            "days_until_due": "2",
+            "date_agreed": "05.04.2026.",
+            "editor_decision": "Minor revision",
+            "editor_comments": "There are no comments.",
+            "reviewer_comments": "Reviewer comments will appear here.",
+            "revision_deadline": "01.05.2026.",
+            "layout_deadline": "22.03.2026.",
+            "temporary_password": "temporary-password",
         })
     return {
         "subject": render_template_text(template.subject, context).strip(),

@@ -50,6 +50,7 @@ from .forms import (
 )
 
 from .emails import send_event_email, preview_template
+from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .utils import anonymize_docx
 
 
@@ -221,7 +222,7 @@ def make_decision(request, submission_id):
 
 
 @login_required
-def assign_papers(request, slug, submission_id=None):
+def assign_papers(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
     can_assign = ConferenceRole.objects.filter(
@@ -235,17 +236,7 @@ def assign_papers(request, slug, submission_id=None):
 
     submissions = Submission.objects.filter(
         conference=conference
-    )
-
-    selected_submission = None
-    if submission_id is not None:
-        selected_submission = get_object_or_404(
-            submissions,
-            id=submission_id
-        )
-        submissions = submissions.filter(id=selected_submission.id)
-
-    submissions = submissions.select_related(
+    ).select_related(
         "author",
         "topic",
         "secondary_topic"
@@ -282,7 +273,7 @@ def assign_papers(request, slug, submission_id=None):
 
         if created:
             send_event_email(
-                "reviewer_assigned",
+                "review_invitation",
                 submission,
                 request=request,
                 reviewer=reviewer_role.user,
@@ -291,8 +282,6 @@ def assign_papers(request, slug, submission_id=None):
         submission.status = "under_review"
         submission.save()
 
-        if submission_id is not None:
-            return redirect("assign_paper_single", slug=conference.slug, submission_id=submission.id)
         return redirect("assign_papers", slug=conference.slug)
 
     submission_data = []
@@ -318,7 +307,6 @@ def assign_papers(request, slug, submission_id=None):
     return render(request, "conferences/assign_papers.html", {
         "conference": conference,
         "submission_data": submission_data,
-        "selected_submission": selected_submission,
     })
 
 @login_required
@@ -593,9 +581,12 @@ def email_templates(request, slug):
     if not is_manager:
         return redirect("/")
 
-    templates = EmailTemplate.objects.filter(
-        conference=conference
-    ).order_by("event")
+    templates_qs = EmailTemplate.objects.filter(
+        conference=conference,
+        event__in=OFFICIAL_EMAIL_EVENTS,
+    )
+    templates_by_event = {template.event: template for template in templates_qs}
+    templates = [templates_by_event[event] for event in OFFICIAL_EMAIL_EVENTS if event in templates_by_event]
 
     logs = EmailLog.objects.filter(
         conference=conference
@@ -787,6 +778,9 @@ def submit_paper(request, slug):
 
                         if anonymized_path and os.path.exists(anonymized_path):
                             os.remove(anonymized_path)
+
+                send_event_email("paper_submitted", submission, request=request)
+                send_event_email("coauthor_submission_confirmation", submission, request=request)
 
                 messages.success(request, "Paper submitted successfully.")
                 return redirect("my_submissions")
@@ -1318,7 +1312,7 @@ def upload_revision(request, submission_id):
             if submission.status == "revised_submitted":
                 send_event_email("revision_uploaded", submission, request=request)
             elif submission.status == "layout_revision_submitted":
-                send_event_email("layout_revision_uploaded", submission, request=request)
+                send_event_email("layout_correction_submitted", submission, request=request)
 
             messages.success(request, success_message)
             return redirect("my_submissions")
@@ -1396,9 +1390,9 @@ def layout_decision(request, submission_id):
             submission.save()
 
             if status == "layout_revision_required":
-                send_event_email("layout_revision_requested", submission, request=request)
+                send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted":
-                send_event_email("final_accepted", submission, request=request)
+                send_event_email("manuscript_accepted", submission, request=request)
 
             messages.success(request, "Layout decision saved successfully.")
             return redirect("layout_dashboard")
