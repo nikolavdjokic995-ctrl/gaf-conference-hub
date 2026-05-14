@@ -372,3 +372,9 @@ class LayoutDecisionForm(forms.Form):
         }),
         required=False,
     )
+
+    final_publication_file = forms.FileField(
+        label="Upload final print-ready paper",
+        required=False,
+        help_text="Optional. Upload the final version prepared for publication/printing."
+    )

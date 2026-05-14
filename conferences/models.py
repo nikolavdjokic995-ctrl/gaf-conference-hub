@@ -102,7 +102,7 @@ class Submission(models.Model):
         ("accepted_for_layout", "Accepted for layout review"),
         ("layout_revision_required", "Layout corrections requested"),
         ("layout_revision_submitted", "Layout corrected paper submitted"),
-        ("final_accepted", "Accepted for publication"),
+        ("final_accepted", "Final accepted"),
         ("accepted", "Accepted (legacy)"),
         ("rejected", "Rejected"),
     ]
@@ -195,6 +195,14 @@ class Submission(models.Model):
         storage=RawMediaCloudinaryStorage(),
         blank=True,
         null=True
+    )
+
+    final_publication_file = models.FileField(
+        upload_to="final_publication_papers/",
+        storage=RawMediaCloudinaryStorage(),
+        blank=True,
+        null=True,
+        help_text="Final print-ready paper uploaded by the layout reviewer."
     )
 
     anonymized_paper_file = models.FileField(
@@ -589,7 +597,7 @@ class EmailTemplate(models.Model):
         ("accepted_for_layout", "Accepted for layout review"),
         ("layout_revision_requested", "Layout corrections requested"),
         ("layout_revision_uploaded", "Layout corrected paper uploaded"),
-        ("final_accepted", "Final acceptance"),
+        ("final_accepted", "Accepted for publication"),
         ("rejected", "Rejected"),
     ]
 

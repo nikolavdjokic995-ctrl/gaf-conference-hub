@@ -1328,16 +1328,21 @@ def layout_decision(request, submission_id):
     if not can_layout_review:
         return redirect("/")
 
-    if submission.status not in ["accepted_for_layout", "layout_revision_submitted", "layout_revision_required"]:
+    if submission.status not in [
+        "accepted_for_layout",
+        "layout_revision_submitted",
+        "layout_revision_required",
+    ]:
         messages.error(request, "This submission is not currently in layout review.")
         return redirect("layout_dashboard")
 
     if request.method == "POST":
-        form = LayoutDecisionForm(request.POST)
+        form = LayoutDecisionForm(request.POST, request.FILES)
 
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
+            final_file = form.cleaned_data.get("final_publication_file")
 
             submission.status = status
             submission.final_comment = comment
@@ -1345,6 +1350,12 @@ def layout_decision(request, submission_id):
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
                 submission.layout_revision_round += 1
+
+            if status == "final_accepted":
+                # Layout reviewer may upload the final print-ready file.
+                # If no final file is uploaded, the current available paper remains the reference file.
+                if final_file:
+                    submission.final_publication_file = final_file
 
             submission.save()
 

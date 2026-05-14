@@ -3,7 +3,22 @@
 <head>
     <title>Layout Review Dashboard</title>
     <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}.container{max-width:1150px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}h1{color:#14532d;margin-top:0}.card{border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:18px}.title{font-size:22px;font-weight:bold;color:#14532d;margin-bottom:10px}.meta{line-height:1.8;color:#444}.badge{display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-weight:bold;font-size:13px}.btn{display:inline-block;margin-top:14px;margin-right:10px;background:#16a34a;color:white;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}.btn-outline{background:white;color:#14532d;border:1px solid #14532d}.empty{padding:26px;background:#f9fafb;border-radius:12px;color:#555}
+        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}
+        .topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}
+        .container{max-width:1250px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
+        h1{color:#14532d;margin-top:0}
+        .card{border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:18px;background:white}
+        .title{font-size:22px;font-weight:bold;color:#14532d;margin-bottom:10px}
+        .meta{line-height:1.8;color:#444}
+        .badge{display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-weight:bold;font-size:13px}
+        .badge-revision{background:#dbeafe;color:#1d4ed8}
+        .badge-final{background:#fef3c7;color:#92400e}
+        .btn{display:inline-block;margin-top:14px;margin-right:10px;background:#16a34a;color:white;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}
+        .btn-outline{background:white;color:#14532d;border:1px solid #14532d}
+        .btn-blue{background:#2563eb;color:white}
+        .btn-dark{background:#374151;color:white}
+        .empty{padding:26px;background:#f9fafb;border-radius:12px;color:#555}
+        .file-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-top:16px}
     </style>
 </head>
 <body>
@@ -15,6 +30,7 @@
         {% for submission in submissions %}
             <div class="card">
                 <div class="title">{{ submission.title }}</div>
+
                 <div class="meta">
                     <strong>Conference:</strong> {{ submission.conference.title_en }}<br>
                     <strong>First author:</strong> {{ submission.first_author }}<br>
@@ -24,15 +40,46 @@
                     {% empty %}
                         No topic selected
                     {% endfor %}<br>
-                    <strong>Status:</strong> <span class="badge">{{ submission.get_status_display }}</span><br>
-                    <strong>Layout revision round:</strong> {{ submission.layout_revision_round }}
+
+                    <strong>Status:</strong>
+                    {% if submission.status == "final_accepted" %}
+                        <span class="badge badge-final">{{ submission.get_status_display }}</span>
+                    {% elif submission.status == "layout_revision_required" or submission.status == "layout_revision_submitted" %}
+                        <span class="badge badge-revision">{{ submission.get_status_display }}</span>
+                    {% else %}
+                        <span class="badge">{{ submission.get_status_display }}</span>
+                    {% endif %}
+                    <br>
+
+                    <strong>Layout revision round:</strong> {{ submission.layout_revision_round }}<br>
+                    <strong>Last updated:</strong> {{ submission.updated_at|date:"d.m.Y. H:i" }}
                 </div>
 
-                {% if submission.full_paper_file %}
-                    <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">Download paper</a>
-                {% endif %}
+                <div class="file-box">
+                    <strong>Files</strong><br>
 
-                <a class="btn" href="{% url 'layout_decision' submission.id %}">Open layout decision</a>
+                    {% if submission.layout_revised_paper_file %}
+                        <a class="btn btn-outline" href="{{ submission.layout_revised_paper_file.url }}" target="_blank">
+                            Download author corrected layout version
+                        </a>
+                    {% endif %}
+
+                    {% if submission.full_paper_file %}
+                        <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
+                            Download judge-approved/current paper
+                        </a>
+                    {% endif %}
+
+                    {% if submission.final_publication_file %}
+                        <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">
+                            Download final print-ready paper
+                        </a>
+                    {% endif %}
+                </div>
+
+                <a class="btn" href="{% url 'layout_decision' submission.id %}">
+                    Open layout decision / upload final paper
+                </a>
             </div>
         {% endfor %}
     {% else %}
