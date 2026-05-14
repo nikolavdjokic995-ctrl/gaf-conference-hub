@@ -3,23 +3,124 @@
 <head>
     <title>Layout Review Dashboard</title>
     <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}
-        .topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}
-        .container{max-width:1350px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
-        h1,h2{color:#14532d;margin-top:0}
-        h2{margin-top:35px}
-        .card{border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:18px;background:white}
-        .title{font-size:22px;font-weight:bold;color:#14532d;margin-bottom:10px}
-        .meta{line-height:1.8;color:#444}
-        .badge{display:inline-block;background:#dcfce7;color:#166534;padding:5px 10px;border-radius:999px;font-weight:bold;font-size:13px}
-        .badge-revision{background:#dbeafe;color:#1d4ed8}
-        .badge-final{background:#fef3c7;color:#92400e}
-        .btn{display:inline-block;margin-top:14px;margin-right:10px;background:#16a34a;color:white;text-decoration:none;padding:10px 16px;border-radius:8px;font-weight:bold}
-        .btn-outline{background:white;color:#14532d;border:1px solid #14532d}
-        .btn-blue{background:#2563eb;color:white}
-        .btn-dark{background:#374151;color:white}
-        .empty{padding:26px;background:#f9fafb;border-radius:12px;color:#555}
-        .file-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-top:16px}
+        body{
+            margin:0;
+            font-family:Arial,sans-serif;
+            background:#f4f6f8;
+            color:#111827;
+        }
+
+        .topbar{
+            background:#14532d;
+            color:white;
+            padding:22px 45px;
+            font-size:28px;
+            font-weight:bold;
+        }
+
+        .container{
+            max-width:1350px;
+            margin:45px auto;
+            background:white;
+            padding:38px;
+            border-radius:18px;
+            box-shadow:0 10px 30px rgba(0,0,0,.10);
+        }
+
+        h1,h2{
+            color:#14532d;
+            margin-top:0;
+        }
+
+        h2{
+            margin-top:35px;
+        }
+
+        .card{
+            border:1px solid #e5e7eb;
+            border-radius:14px;
+            padding:22px;
+            margin-bottom:18px;
+            background:white;
+        }
+
+        .title{
+            font-size:22px;
+            font-weight:bold;
+            color:#14532d;
+            margin-bottom:10px;
+        }
+
+        .meta{
+            line-height:1.8;
+            color:#444;
+        }
+
+        .badge{
+            display:inline-block;
+            background:#dcfce7;
+            color:#166534;
+            padding:5px 10px;
+            border-radius:999px;
+            font-weight:bold;
+            font-size:13px;
+        }
+
+        .badge-revision{
+            background:#dbeafe;
+            color:#1d4ed8;
+        }
+
+        .badge-final{
+            background:#fef3c7;
+            color:#92400e;
+        }
+
+        .btn{
+            display:inline-block;
+            margin-top:14px;
+            margin-right:10px;
+            background:#16a34a;
+            color:white;
+            text-decoration:none;
+            padding:10px 16px;
+            border-radius:8px;
+            font-weight:bold;
+            border:0;
+            cursor:pointer;
+        }
+
+        .btn-outline{
+            background:white;
+            color:#14532d;
+            border:1px solid #14532d;
+        }
+
+        .btn-blue{
+            background:#2563eb;
+            color:white;
+        }
+
+        .btn-dark{
+            background:#374151;
+            color:white;
+        }
+
+        .empty{
+            padding:26px;
+            background:#f9fafb;
+            border-radius:12px;
+            color:#555;
+        }
+
+        .file-box{
+            background:#f8fafc;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:14px;
+            margin-top:16px;
+        }
+
         table{
             width:100%;
             table-layout:auto;
@@ -44,12 +145,36 @@
             vertical-align:middle;
             line-height:1.6;
         }
-        tr:hover{background:#f9fafb}
-        .paper-title{font-weight:bold;color:#14532d}
-        .small{font-size:13px;color:#555;line-height:1.5}
-        .section-note{color:#555;margin-bottom:18px}
+
+        tr:hover{
+            background:#f9fafb;
+        }
+
+        .paper-title{
+            font-weight:bold;
+            color:#14532d;
+        }
+
+        .small{
+            font-size:13px;
+            color:#555;
+            line-height:1.5;
+        }
+
+        .section-note{
+            color:#555;
+            margin-bottom:18px;
+        }
+
+        .bottom-actions{
+            margin-top:28px;
+            display:flex;
+            flex-wrap:wrap;
+            gap:12px;
+        }
     </style>
 </head>
+
 <body>
 <div class="topbar">GAF Conference Hub</div>
 
@@ -113,13 +238,15 @@
                     {% endif %}
                 </div>
 
-                <a class="btn" href="{% url 'layout_decision' submission.id %}">
-                    Open layout decision / upload final paper
-                </a>
+                <div class="bottom-actions">
+                    <a class="btn" href="{% url 'layout_decision' submission.id %}">
+                        Open layout decision / upload final paper
+                    </a>
 
-                <a class="btn btn-dark" href="{% url 'conference_overview' submission.conference.slug %}">
-                    ← Back to conference
-                </a>
+                    <a class="btn btn-dark" href="{% url 'conference_overview' submission.conference.slug %}">
+                        ← Back to conference
+                    </a>
+                </div>
             </div>
         {% endfor %}
     {% else %}
@@ -127,6 +254,7 @@
     {% endif %}
 
     <h2>Accepted for publication / Print-ready papers</h2>
+
     <p class="section-note">
         Final papers accepted by layout reviewers and ready for proceedings, publication, or printing.
     </p>
@@ -140,7 +268,6 @@
                 <th>Accepted date</th>
                 <th>Reviewers</th>
                 <th>Final file</th>
-                
             </tr>
 
             {% for submission in accepted_publication_submissions %}
@@ -185,16 +312,16 @@
                             No file
                         {% endif %}
                     </td>
-                    
                 </tr>
             {% endfor %}
         </table>
-<div style="margin-top:28px;">
-    <a class="btn btn-dark"
-       href="{% url 'conference_overview' accepted_publication_submissions.0.conference.slug %}"
-        ← Back to conference
-    </a>
-</div>
+
+        <div class="bottom-actions">
+            <a class="btn btn-dark"
+               href="{% url 'conference_overview' accepted_publication_submissions.0.conference.slug %}">
+                ← Back to conference
+            </a>
+        </div>
     {% else %}
         <div class="empty">No papers have been accepted for publication yet.</div>
     {% endif %}
