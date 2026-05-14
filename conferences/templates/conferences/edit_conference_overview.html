@@ -67,6 +67,7 @@
     input[type="url"],
     input[type="date"],
     input[type="file"],
+    input[type="number"],
     select,
     textarea{
         width:100%;
@@ -84,6 +85,26 @@
         border-radius:14px;
         background:#f5fbf7;
         color:#315a45;
+        font-size:14px;
+        line-height:1.5;
+    }
+
+    .settings-section-title{
+        grid-column:1 / -1;
+        margin:14px 0 0;
+        padding-top:22px;
+        border-top:1px solid rgba(13,92,47,0.14);
+    }
+
+    .settings-section-title h2{
+        margin:0 0 6px;
+        color:#0d5c2f;
+        font-size:24px;
+    }
+
+    .settings-section-title p{
+        margin:0;
+        color:#4b6958;
         font-size:14px;
         line-height:1.5;
     }
@@ -328,6 +349,107 @@
                         <label for="{{ form.template_style.id_for_label }}">Template style</label>
                         {{ form.template_style }}
                         {{ form.template_style.errors }}
+                    </div>
+
+                    <div class="settings-section-title">
+                        <h2>Overview page layout</h2>
+                        <p>Adjust card sizes, spacing and text sizes without editing template code. Values are in pixels.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_padding.id_for_label }}">{{ form.overview_section_padding.label }}</label>
+                        {{ form.overview_section_padding }}
+                        {{ form.overview_section_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_radius.id_for_label }}">{{ form.overview_section_radius.label }}</label>
+                        {{ form.overview_section_radius }}
+                        {{ form.overview_section_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_grid_min_width.id_for_label }}">{{ form.overview_grid_min_width.label }}</label>
+                        {{ form.overview_grid_min_width }}
+                        {{ form.overview_grid_min_width.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_grid_gap.id_for_label }}">{{ form.overview_grid_gap.label }}</label>
+                        {{ form.overview_grid_gap }}
+                        {{ form.overview_grid_gap.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_padding.id_for_label }}">{{ form.overview_card_padding.label }}</label>
+                        {{ form.overview_card_padding }}
+                        {{ form.overview_card_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_radius.id_for_label }}">{{ form.overview_card_radius.label }}</label>
+                        {{ form.overview_card_radius }}
+                        {{ form.overview_card_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_title_size.id_for_label }}">{{ form.overview_card_title_size.label }}</label>
+                        {{ form.overview_card_title_size }}
+                        {{ form.overview_card_title_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_text_size.id_for_label }}">{{ form.overview_card_text_size.label }}</label>
+                        {{ form.overview_card_text_size }}
+                        {{ form.overview_card_text_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_card_padding.id_for_label }}">{{ form.overview_stats_card_padding.label }}</label>
+                        {{ form.overview_stats_card_padding }}
+                        {{ form.overview_stats_card_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_card_radius.id_for_label }}">{{ form.overview_stats_card_radius.label }}</label>
+                        {{ form.overview_stats_card_radius }}
+                        {{ form.overview_stats_card_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_number_size.id_for_label }}">{{ form.overview_stats_number_size.label }}</label>
+                        {{ form.overview_stats_number_size }}
+                        {{ form.overview_stats_number_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_label_size.id_for_label }}">{{ form.overview_stats_label_size.label }}</label>
+                        {{ form.overview_stats_label_size }}
+                        {{ form.overview_stats_label_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_padding.id_for_label }}">{{ form.overview_about_padding.label }}</label>
+                        {{ form.overview_about_padding }}
+                        {{ form.overview_about_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_radius.id_for_label }}">{{ form.overview_about_radius.label }}</label>
+                        {{ form.overview_about_radius }}
+                        {{ form.overview_about_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_title_size.id_for_label }}">{{ form.overview_about_title_size.label }}</label>
+                        {{ form.overview_about_title_size }}
+                        {{ form.overview_about_title_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_text_size.id_for_label }}">{{ form.overview_about_text_size.label }}</label>
+                        {{ form.overview_about_text_size }}
+                        {{ form.overview_about_text_size.errors }}
                     </div>
 
                     <div class="form-row">

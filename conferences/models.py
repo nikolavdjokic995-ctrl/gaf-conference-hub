@@ -87,6 +87,27 @@ class Conference(models.Model):
         null=True
     )
 
+    # Public overview page layout settings
+    overview_section_padding = models.PositiveIntegerField(default=40)
+    overview_section_radius = models.PositiveIntegerField(default=26)
+    overview_grid_min_width = models.PositiveIntegerField(default=280)
+    overview_grid_gap = models.PositiveIntegerField(default=26)
+
+    overview_card_padding = models.PositiveIntegerField(default=28)
+    overview_card_radius = models.PositiveIntegerField(default=20)
+    overview_card_title_size = models.PositiveIntegerField(default=20)
+    overview_card_text_size = models.PositiveIntegerField(default=16)
+
+    overview_stats_card_padding = models.PositiveIntegerField(default=28)
+    overview_stats_card_radius = models.PositiveIntegerField(default=22)
+    overview_stats_number_size = models.PositiveIntegerField(default=38)
+    overview_stats_label_size = models.PositiveIntegerField(default=15)
+
+    overview_about_padding = models.PositiveIntegerField(default=38)
+    overview_about_radius = models.PositiveIntegerField(default=24)
+    overview_about_title_size = models.PositiveIntegerField(default=42)
+    overview_about_text_size = models.PositiveIntegerField(default=18)
+
     def __str__(self):
         return self.title_en
 

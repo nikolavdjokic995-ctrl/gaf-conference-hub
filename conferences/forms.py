@@ -252,7 +252,64 @@ class ConferenceOverviewForm(forms.ModelForm):
             "logo",
             "template_style",
             "hero_image",
+            "overview_section_padding",
+            "overview_section_radius",
+            "overview_grid_min_width",
+            "overview_grid_gap",
+            "overview_card_padding",
+            "overview_card_radius",
+            "overview_card_title_size",
+            "overview_card_text_size",
+            "overview_stats_card_padding",
+            "overview_stats_card_radius",
+            "overview_stats_number_size",
+            "overview_stats_label_size",
+            "overview_about_padding",
+            "overview_about_radius",
+            "overview_about_title_size",
+            "overview_about_text_size",
         ]
+
+        labels = {
+            "overview_section_padding": "Overview section padding (px)",
+            "overview_section_radius": "Overview section corner radius (px)",
+            "overview_grid_min_width": "Info card minimum width (px)",
+            "overview_grid_gap": "Info card gap (px)",
+            "overview_card_padding": "Info card padding (px)",
+            "overview_card_radius": "Info card corner radius (px)",
+            "overview_card_title_size": "Info card title size (px)",
+            "overview_card_text_size": "Info card text size (px)",
+            "overview_stats_card_padding": "Stats card padding (px)",
+            "overview_stats_card_radius": "Stats card corner radius (px)",
+            "overview_stats_number_size": "Stats number size (px)",
+            "overview_stats_label_size": "Stats label size (px)",
+            "overview_about_padding": "About section padding (px)",
+            "overview_about_radius": "About section corner radius (px)",
+            "overview_about_title_size": "About title size (px)",
+            "overview_about_text_size": "About text size (px)",
+        }
+
+        widgets = {
+            field: forms.NumberInput(attrs={"min": 0, "step": 1})
+            for field in [
+                "overview_section_padding",
+                "overview_section_radius",
+                "overview_grid_min_width",
+                "overview_grid_gap",
+                "overview_card_padding",
+                "overview_card_radius",
+                "overview_card_title_size",
+                "overview_card_text_size",
+                "overview_stats_card_padding",
+                "overview_stats_card_radius",
+                "overview_stats_number_size",
+                "overview_stats_label_size",
+                "overview_about_padding",
+                "overview_about_radius",
+                "overview_about_title_size",
+                "overview_about_text_size",
+            ]
+        }
 
 
 class SubmissionSettingsForm(forms.ModelForm):
