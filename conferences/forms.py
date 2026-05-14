@@ -175,6 +175,14 @@ class ReviewForm(forms.ModelForm):
             "comments_for_editors": forms.Textarea(attrs={"rows": 7}),
         }
 
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["paper_classification"].choices = [
+            ("review_paper", "Review paper"),
+            ("research_paper", "Research paper"),
+        ]
+
     def clean_commented_paper_file(self):
         file = self.cleaned_data.get("commented_paper_file")
 

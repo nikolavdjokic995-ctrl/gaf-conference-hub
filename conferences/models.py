@@ -364,9 +364,6 @@ class Review(models.Model):
     PAPER_CLASSIFICATION_CHOICES = [
         ("review_paper", "Review paper"),
         ("research_paper", "Research paper"),
-        ("preliminary_report", "Preliminary report/Short communication"),
-        ("professional_paper", "Professional paper"),
-        ("none", "None of above"),
     ]
 
     RATING_CHOICES = [
