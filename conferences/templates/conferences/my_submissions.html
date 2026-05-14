@@ -172,17 +172,7 @@
                         <a class="btn btn-orange" href="{% url 'upload_revision' submission.id %}">
                             Upload revised paper
                         </a>
-
-                    {% elif submission.status == "layout_revision_required" %}
-                        <a class="btn btn-orange" href="{% url 'upload_revision' submission.id %}">
-                            Upload layout corrected paper
-                        </a>
                     {% endif %}
-
-                    <a class="btn btn-outline" href="/conference/{{ submission.conference.slug }}/overview/">
-                        ← Back to conference overview
-                    </a>
-
                 </div>
 
                 <h3>Reviewer feedback</h3>
@@ -222,9 +212,6 @@
     {% endif %}
 
     
-
-
-    <a href="/dashboard/" class="btn btn-outline">← Back to dashboard</a>
 
 </div>
 

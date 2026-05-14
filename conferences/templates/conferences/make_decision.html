@@ -25,7 +25,8 @@
         <button type="submit">Save decision</button>
     </form>
 
-    <a class="back" href="{% url 'submission_result' submission.id %}">← Back to submission result</a>
+    <a class="back" href="{% url 'submission_result' submission.id %}">← Back to submission result</a><br>
+    <a class="back" href="{% url 'conference_overview' submission.conference.slug %}">← Back to conference</a>
 </div>
 </body>
 </html>

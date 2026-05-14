@@ -102,12 +102,7 @@
                     <strong>Conference:</strong>
                     {{ assignment.submission.conference.title_en }}
                     <br>
-
-                    <strong>First author:</strong>
-                    {{ assignment.submission.first_author }}
-                    <br>
-
-                    <strong>Topics:</strong>
+<strong>Topics:</strong>
                     {% for topic in assignment.submission.topic_list %}
                         {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
                     {% empty %}
@@ -131,6 +126,11 @@
     Open review
 </a>
 
+                <a class="btn btn-outline"
+                   href="{% url 'conference_overview' assignment.submission.conference.slug %}">
+                    ← Back to conference
+                </a>
+
             </div>
         {% endfor %}
 
@@ -139,13 +139,6 @@
             No papers assigned yet.
         </div>
     {% endif %}
-
-
-    <div style="margin-top:30px;">
-        <a href="/dashboard/" class="btn btn-outline">
-            ← Back to dashboard
-        </a>
-    </div>
 
 </div>
 

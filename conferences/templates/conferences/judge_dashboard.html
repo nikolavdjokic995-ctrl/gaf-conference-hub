@@ -3,38 +3,9 @@
 <head>
     <title>Judge Dashboard</title>
     <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}
-        .topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}
-        .container{max-width:1800px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
-        h1{margin-top:0;color:#14532d;margin-bottom:10px}
-        .subtitle{color:#555;margin-bottom:30px}
-        .filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}
-        .filter-btn{background:white;border:2px solid #14532d;color:#14532d;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:bold}
-        .filter-btn:hover{background:#14532d;color:white}
-        table{width:100%;border-collapse:collapse;border-radius:14px;overflow:hidden;table-layout:auto}
-        th{background:#14532d;color:white;padding:16px;text-align:left;font-size:15px;white-space:nowrap}
-        td{padding:16px;border-bottom:1px solid #e5e7eb;vertical-align:middle;white-space:nowrap}
-        tr:hover{background:#f9fafb}
-        .paper-title{font-weight:bold;color:#14532d;font-size:16px;margin-bottom:4px}
-        .author{color:#555;font-size:14px}
-        .paper-col{width:30%;min-width:320px;white-space:normal}
-        .score-badge{display:inline-block;background:#dcfce7;color:#166534;padding:6px 12px;border-radius:999px;font-weight:bold}
-        .review-count{font-weight:bold;color:#1f2937}
-        .status{display:inline-block;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:bold;background:#fef3c7;color:#92400e}
-        .status-good{background:#dcfce7;color:#166534}
-        .status-revision{background:#dbeafe;color:#1d4ed8}
-        .status-bad{background:#fee2e2;color:#991b1b}
-        .actions{display:flex;gap:10px;flex-wrap:wrap}
-        .btn{display:inline-block;text-decoration:none;padding:10px 14px;border-radius:9px;font-weight:bold;font-size:14px}
-        .btn-view{background:#374151;color:white}
-        .btn-decision{background:#16a34a;color:white}
-        .empty{padding:35px;text-align:center;color:#666;background:#f9fafb;border-radius:12px}
-        .messages{background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;border-radius:12px;padding:12px;margin-bottom:16px}
-        .action-required{background:#fff7ed;border:1px solid #fdba74;color:#9a3412;border-radius:12px;padding:10px 12px;font-weight:bold;display:inline-block}
-        details.row-details{margin-top:12px}
-        details.row-details summary{cursor:pointer;color:#14532d;font-weight:bold}
-        .details-panel{margin-top:12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:15px;white-space:normal}
-        .small-label{color:#6b7280;font-size:12px}
+        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}.container{max-width:1800px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}h1{margin-top:0;color:#14532d;margin-bottom:10px}.subtitle{color:#555;margin-bottom:30px}.filters{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:28px}.filter-btn{background:white;border:2px solid #14532d;color:#14532d;padding:10px 18px;border-radius:10px;text-decoration:none;font-weight:bold}.filter-btn:hover{background:#14532d;color:white}table{width:100%;border-collapse:collapse;border-radius:14px;overflow:hidden}th{background:#14532d;color:white;padding:16px;text-align:left;font-size:15px}td{padding:16px;border-bottom:1px solid #e5e7eb;vertical-align:middle}tr:hover{background:#f9fafb}.paper-title{font-weight:bold;color:#14532d;font-size:16px;margin-bottom:4px}.author{color:#555;font-size:14px}.paper-col{width:35%;min-width:320px;white-space:normal;}.score-badge{display:inline-block;background:#dcfce7;color:#166534;padding:6px 12px;border-radius:999px;font-weight:bold}.review-count{font-weight:bold;color:#1f2937}.status{display:inline-block;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:bold;background:#fef3c7;color:#92400e}.status-good{background:#dcfce7;color:#166534}.status-revision{background:#dbeafe;color:#1d4ed8}.status-bad{background:#fee2e2;color:#991b1b}.actions{display:flex;gap:10px;flex-wrap:wrap}.btn{display:inline-block;text-decoration:none;padding:10px 14px;border-radius:9px;font-weight:bold;font-size:14px}.btn-view{background:#374151;color:white}.btn-decision{background:#16a34a;color:white}.empty{padding:35px;text-align:center;color:#666;background:#f9fafb;border-radius:12px}.messages{background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;border-radius:12px;padding:12px;margin-bottom:16px}
+table{width:100%;border-collapse:collapse;border-radius:14px;overflow:hidden;table-layout:auto}
+th,td{white-space:nowrap}
     </style>
 </head>
 <body>
@@ -52,60 +23,27 @@
         <a class="filter-btn" href="/judge-dashboard/?status=revised_submitted">Revised submitted</a>
         <a class="filter-btn" href="/judge-dashboard/?status=revision_required">Revision requested</a>
         <a class="filter-btn" href="/judge-dashboard/?status=accepted_for_layout">Accepted for layout</a>
-        <a class="filter-btn" href="/judge-dashboard/?status=final_accepted">Final accepted</a>
+        <a class="filter-btn" href="/judge-dashboard/?status=final_accepted">Accepted for publication</a>
         <a class="filter-btn" href="/judge-dashboard/?status=rejected">Rejected</a>
     </div>
 
     {% if data %}
         <table>
             <tr>
-                <th>Paper ID</th>
-                <th class="paper-col">Paper</th>
-                <th>Avg score</th>
-                <th>Reviews</th>
-                <th>Completed reviewers</th>
-                <th>Revision</th>
-                <th>Last activity</th>
-                <th>Status</th>
-                <th>Actions</th>
+                <th>Paper ID</th><th class="paper-col">Paper</th><th>Avg score</th><th>Reviews</th><th>Reviewers</th><th>Status</th><th>Actions</th>
             </tr>
-
             {% for item in data %}
                 <tr>
-                    <td><strong>{{ item.submission.paper_code }}</strong></td>
+                    <td><strong>{{ item.submission.paper_code }}</strong></td><td class="paper-col">
+    <div class="paper-title">{{ item.submission.title }}</div><div class="author">{{ item.submission.first_author }}</div></td>
 
-                    <td class="paper-col">
-                        <div class="paper-title">{{ item.submission.title }}</div>
-                        <div class="author">{{ item.submission.first_author }}</div>
-
-                        <details class="row-details">
-                            <summary>+ Details</summary>
-                            <div class="details-panel">
-                                <p><strong>Submitted:</strong> {{ item.submission.created_at|date:"d.m.Y. H:i" }}</p>
-                                <p><strong>Last updated:</strong> {{ item.submission.updated_at|date:"d.m.Y. H:i" }}</p>
-                                <p><strong>Content revision round:</strong> {{ item.submission.revision_round }}</p>
-                                <p><strong>Layout revision round:</strong> {{ item.submission.layout_revision_round }}</p>
-
-                                {% if item.submission.judge_revision_message %}
-                                    <p><strong>Last judge message:</strong><br>{{ item.submission.judge_revision_message|linebreaksbr }}</p>
-                                {% endif %}
-
-                                {% if item.submission.revised_paper_file %}
-                                    <p><strong>Revised paper:</strong> available</p>
-                                {% endif %}
-                            </div>
-                        </details>
-                    </td>
-
-                    <td>
-                        <span class="score-badge">
-                            {% if item.avg_score %}
-                                {{ item.avg_score|floatformat:1 }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        </span>
-                    </td>
+                    <td><span class="score-badge">
+                        {% if item.avg_score %}
+                            {{ item.avg_score|floatformat:1 }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span></td>
 
                     <td><span class="review-count">{{ item.review_count }}</span></td>
 
@@ -115,20 +53,6 @@
                         {% empty %}
                             -
                         {% endfor %}
-                    </td>
-
-                    <td>
-                        <div><strong>Round:</strong> {{ item.submission.revision_round }}</div>
-                        {% if item.submission.status == "revised_submitted" %}
-                            <div class="action-required">Action required</div>
-                        {% else %}
-                            <span class="small-label">No pending revision</span>
-                        {% endif %}
-                    </td>
-
-                    <td>
-                        {{ item.submission.updated_at|date:"d.m.Y." }}<br>
-                        {{ item.submission.updated_at|date:"H:i" }}
                     </td>
 
                     <td>
@@ -143,25 +67,16 @@
                         {% endif %}
                     </td>
 
-                    <td>
-                        <div class="actions">
-                            <a class="btn btn-view" href="/submission/{{ item.submission.id }}/result/">View details</a>
-                            <a class="btn btn-decision" href="/submission/{{ item.submission.id }}/decision/">Judge decision</a>
-                        </div>
-                    </td>
+                    <td><div class="actions">
+                        <a class="btn btn-view" href="/submission/{{ item.submission.id }}/result/">View reviews</a>
+                        <a class="btn btn-decision" href="/submission/{{ item.submission.id }}/decision/">Judge decision</a>
+                    </div></td>
                 </tr>
             {% endfor %}
         </table>
     {% else %}
         <div class="empty">No submissions found.</div>
     {% endif %}
-
-    <div style="margin-top:35px;">
-        <a href="/dashboard/" class="btn btn-view">
-            ← Back to dashboard
-        </a>
-    </div>
-
 </div>
 </body>
 </html>

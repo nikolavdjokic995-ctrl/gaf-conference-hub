@@ -30,14 +30,8 @@
         <button type="submit">Upload revision</button>
     </form>
 
-    <a class="back" href="{% url 'my_submissions' %}">← Back to my submissions</a>
-
-    <div style="margin-top:18px;">
-        <a class="back" href="/conference/{{ submission.conference.slug }}/overview/">
-            ← Back to conference overview
-        </a>
-    </div>
-
+    <a class="back" href="{% url 'my_submissions' %}">← Back to my submissions</a><br>
+    <a class="back" href="{% url 'conference_overview' submission.conference.slug %}">← Back to conference</a>
 </div>
 </body>
 </html>
