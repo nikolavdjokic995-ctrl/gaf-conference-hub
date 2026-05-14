@@ -50,7 +50,9 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
     coauthor_emails = split_emails(submission.coauthor_emails) if submission else []
 
     author_name = user_full_name(submission.author) if submission else ""
-    author_email = submission.author.email if submission and submission.author else ""
+    submitter_email = submission.author.email if submission and submission.author else ""
+    first_author_email = submission.first_author_email if submission else ""
+    author_email = first_author_email or submitter_email
     all_authors = [first_author or author_name] + coauthors
     all_authors = [name for name in all_authors if name]
     all_author_emails = [author_email] + coauthor_emails
@@ -66,7 +68,9 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "submission_status": submission.get_status_display() if submission else "",
         "author_name": author_name,
         "author_email": author_email,
+        "submitter_email": submitter_email,
         "first_author": first_author,
+        "first_author_email": first_author_email,
         "coauthors": ", ".join(coauthors),
         "coauthor_emails": ", ".join(coauthor_emails),
         "all_authors": ", ".join(all_authors),
@@ -94,8 +98,11 @@ def render_template_text(text, context):
 def recipients_for_template(template, submission=None, reviewer=None):
     recipients = []
     if submission:
-        if template.send_to_author and submission.author and submission.author.email:
-            recipients.append(submission.author.email)
+        if template.send_to_author:
+            if submission.first_author_email:
+                recipients.append(submission.first_author_email)
+            elif submission.author and submission.author.email:
+                recipients.append(submission.author.email)
         if template.send_to_coauthors:
             recipients.extend(split_emails(submission.coauthor_emails))
 
@@ -212,6 +219,7 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "author_email": "author@example.com",
             "first_author": "Example Author",
             "coauthors": "Coauthor One, Coauthor Two",
+            "first_author_email": "first.author@example.com",
             "coauthor_emails": "coauthor1@example.com, coauthor2@example.com",
             "all_authors": "Example Author, Coauthor One, Coauthor Two",
             "all_author_emails": "author@example.com, coauthor1@example.com, coauthor2@example.com",

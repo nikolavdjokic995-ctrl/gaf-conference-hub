@@ -17,7 +17,8 @@ class ConferenceAdmin(admin.ModelAdmin):
 
 @admin.register(Submission)
 class SubmissionAdmin(admin.ModelAdmin):
-    list_display = ("title", "conference", "status", "created_at")
+    list_display = ("title", "conference", "first_author", "first_author_email", "status", "created_at")
+    search_fields = ("title", "first_author", "first_author_email", "coauthors", "coauthor_emails")
 
 
 @admin.register(ConferenceRole)

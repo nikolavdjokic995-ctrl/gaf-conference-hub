@@ -144,6 +144,11 @@ class Submission(models.Model):
 
     first_author = models.CharField(max_length=255)
 
+    first_author_email = models.EmailField(
+        blank=True,
+        help_text="Email address of the first author. This may be different from the account submitting the paper."
+    )
+
     paper_code = models.CharField(max_length=50, blank=True, unique=True)
 
     coauthors = models.TextField(
@@ -246,6 +251,44 @@ class Submission(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def coauthor_name_list(self):
+        if not self.coauthors:
+            return []
+        import re
+        return [part.strip() for part in re.split(r"[\n,;]+", self.coauthors) if part.strip()]
+
+    def coauthor_email_list(self):
+        if not self.coauthor_emails:
+            return []
+        import re
+        emails = [part.strip() for part in re.split(r"[\n,;\s]+", self.coauthor_emails) if part.strip()]
+        clean = []
+        for email in emails:
+            if "@" in email and email not in clean:
+                clean.append(email)
+        return clean
+
+    def author_email_list(self):
+        emails = []
+        if self.first_author_email:
+            emails.append(self.first_author_email)
+        elif self.author and self.author.email:
+            emails.append(self.author.email)
+        emails.extend(self.coauthor_email_list())
+
+        clean = []
+        for email in emails:
+            if email and email not in clean:
+                clean.append(email)
+        return clean
+
+    def all_author_names(self):
+        names = []
+        if self.first_author:
+            names.append(self.first_author)
+        names.extend(self.coauthor_name_list())
+        return names
 
     def topic_list(self):
         topics = []

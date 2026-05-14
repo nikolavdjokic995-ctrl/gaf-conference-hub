@@ -531,6 +531,14 @@
                         <label for="{{ form.first_author.id_for_label }}">{{ form.first_author.label }}</label>
                         {{ form.first_author }}
                         {{ form.first_author.errors }}
+                        <div class="help">Enter the real first author of the paper, even if another user is submitting the form.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.first_author_email.id_for_label }}">{{ form.first_author_email.label }}</label>
+                        {{ form.first_author_email }}
+                        {{ form.first_author_email.errors }}
+                        <div class="help">This email will be used for future automatic notifications to authors.</div>
                     </div>
 
                     <div class="field">
@@ -544,11 +552,11 @@
                         <label for="{{ form.coauthor_emails.id_for_label }}">{{ form.coauthor_emails.label }}</label>
                         {{ form.coauthor_emails }}
                         {{ form.coauthor_emails.errors }}
-                        <div class="help">Enter co-author emails, one per line.</div>
+                        <div class="help">Enter co-author emails, one per line, preferably in the same order as the co-author names.</div>
                     </div>
 
                     <div class="info-box">
-                        ℹ️ You can add multiple co-authors. For best matching later, enter one name and one email per line.
+                        ℹ️ Enter author emails carefully. Later, automatic messages can be sent to the first author and to each co-author email listed here.
                     </div>
                 </section>
 

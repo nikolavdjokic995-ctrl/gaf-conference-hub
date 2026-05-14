@@ -63,38 +63,25 @@ class SubmissionForm(forms.ModelForm):
             "abstract",
             "keywords",
             "first_author",
+            "first_author_email",
             "coauthors",
             "coauthor_emails",
             "topic",
             "secondary_topic",
             "full_paper_file",
         ]
-
-    def clean_full_paper_file(self):
-        file = self.cleaned_data.get("full_paper_file")
-
-        if file:
-            allowed_extensions = [".doc", ".docx"]
-            file_name = file.name.lower()
-
-            if not any(file_name.endswith(ext) for ext in allowed_extensions):
-                raise forms.ValidationError(
-                    "Please upload your paper in Word format only (.doc or .docx)."
-                )
-    
-        return file
         labels = {
             "title": "Paper title",
             "abstract": "Abstract",
             "keywords": "Keywords",
             "first_author": "First author (First Name Last Name)",
+            "first_author_email": "First author email address",
             "coauthors": "Co-authors (First Name Last Name)",
             "coauthor_emails": "Co-author email addresses",
             "topic": "Primary conference topic",
             "secondary_topic": "Second conference topic (optional)",
             "full_paper_file": "Full paper file",
         }
-
         widgets = {
             "abstract": forms.Textarea(attrs={
                 "rows": 8,
@@ -104,13 +91,16 @@ class SubmissionForm(forms.ModelForm):
             "keywords": forms.TextInput(attrs={
                 "placeholder": "e.g. green building, energy efficiency, sustainability",
             }),
+            "first_author_email": forms.EmailInput(attrs={
+                "placeholder": "first.author@example.com",
+            }),
             "coauthors": forms.Textarea(attrs={
                 "rows": 4,
                 "placeholder": "Enter co-authors, one per line",
             }),
             "coauthor_emails": forms.Textarea(attrs={
                 "rows": 4,
-                "placeholder": "Enter co-author emails, one per line",
+                "placeholder": "Enter co-author emails, one per line in the same order as co-authors",
             }),
         }
 
@@ -132,8 +122,34 @@ class SubmissionForm(forms.ModelForm):
         self.fields["secondary_topic"].required = False
         self.fields["abstract"].required = True
         self.fields["keywords"].required = True
-        self.fields["full_paper_file"].required = True
-        self.fields["first_author"].required = True
+        self.fields["first_author_email"].required = True
+
+    def clean_full_paper_file(self):
+        file = self.cleaned_data.get("full_paper_file")
+
+        if file:
+            allowed_extensions = [".doc", ".docx"]
+            file_name = file.name.lower()
+
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    "Please upload your paper in Word format only (.doc or .docx)."
+                )
+
+        return file
+
+    def clean(self):
+        cleaned_data = super().clean()
+        coauthors = cleaned_data.get("coauthors") or ""
+        coauthor_emails = cleaned_data.get("coauthor_emails") or ""
+
+        if coauthor_emails and not coauthors:
+            self.add_error(
+                "coauthors",
+                "Please enter co-author names if you enter co-author email addresses."
+            )
+
+        return cleaned_data
 
 
 class ReviewForm(forms.ModelForm):
