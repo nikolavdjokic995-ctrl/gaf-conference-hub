@@ -261,27 +261,97 @@
         }
 
     
-        .stats-section{margin-top:34px;display:grid;grid-template-columns:repeat(4,minmax(180px,1fr));gap:22px}
-        .stat-card{padding:28px;border-radius:22px;background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 100%);border:1px solid #d1fae5;box-shadow:0 10px 26px rgba(0,0,0,0.05)}
-        .stat-number{color:#065f46;font-size:38px;font-weight:900;line-height:1;margin-bottom:10px}
-        .stat-label{color:#374151;font-size:15px;font-weight:700}
-        .conference-footer{background:#0f2f1f;color:white;margin-top:70px;padding:0}
-        .footer-partners{background:#eef2f4;color:#111827;padding:56px 24px;text-align:center}
-        .footer-partners h2{color:#0d5c2f;font-size:30px;margin-bottom:30px}
-        .footer-subtitle{color:#111827;font-size:18px;font-weight:900;margin:28px 0 20px}
-        .partners-grid{max-width:1100px;margin:0 auto 20px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:26px;align-items:stretch}
-        .partner-logo-card{background:white;border-radius:18px;padding:24px;min-height:150px;display:flex;align-items:center;justify-content:center;box-shadow:0 10px 24px rgba(0,0,0,0.06);text-decoration:none;color:#0d5c2f;font-weight:800}
-        .partner-content{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;text-align:center}
-        .partner-logo-card img{max-width:170px;max-height:86px;object-fit:contain}
-        .partner-name{color:#0d5c2f;font-size:15px;font-weight:900;line-height:1.35}
-        .footer-main{max-width:1200px;margin:0 auto;padding:55px 24px;display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:34px}
-        .footer-logo{max-width:160px;max-height:80px;object-fit:contain;margin-bottom:18px}
-        .footer-main h3,.footer-main h4{margin-bottom:16px;color:#ffffff}
-        .footer-main p,.footer-main a{color:rgba(255,255,255,0.84);line-height:1.7;text-decoration:none;display:block;margin-bottom:8px}
-        .footer-main a:hover{color:#86efac}
-        .footer-bottom{border-top:1px solid rgba(255,255,255,0.12);padding:18px 24px;text-align:center;color:rgba(255,255,255,0.74);font-size:14px}
-        @media(max-width:900px){.stats-section{grid-template-columns:repeat(2,minmax(0,1fr))}.footer-main{grid-template-columns:1fr 1fr}}
-        @media(max-width:560px){.stats-section{grid-template-columns:1fr}.footer-main{grid-template-columns:1fr}}
+        .countdown-section{
+            max-width:1050px;
+            margin:-32px auto 34px;
+            position:relative;
+            z-index:8;
+            padding:0 20px;
+        }
+
+        .countdown-card{
+            background:rgba(255,255,255,0.92);
+            backdrop-filter:blur(14px);
+            border:1px solid rgba(255,255,255,0.75);
+            border-radius:26px;
+            box-shadow:0 18px 45px rgba(0,0,0,0.16);
+            padding:28px;
+            text-align:center;
+        }
+
+        .countdown-kicker{
+            color:#059669;
+            font-size:13px;
+            font-weight:900;
+            text-transform:uppercase;
+            letter-spacing:.12em;
+            margin-bottom:8px;
+        }
+
+        .countdown-title{
+            color:#064e3b;
+            font-size:25px;
+            font-weight:900;
+            margin-bottom:22px;
+        }
+
+        .countdown-grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:16px;
+            max-width:780px;
+            margin:0 auto;
+        }
+
+        .countdown-box{
+            background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 100%);
+            border:1px solid #bbf7d0;
+            border-radius:20px;
+            padding:20px 14px;
+        }
+
+        .countdown-number{
+            color:#065f46;
+            font-size:42px;
+            font-weight:950;
+            line-height:1;
+            margin-bottom:8px;
+        }
+
+        .countdown-label{
+            color:#374151;
+            font-size:13px;
+            font-weight:800;
+            text-transform:uppercase;
+            letter-spacing:.08em;
+        }
+
+        .countdown-ended{
+            color:#065f46;
+            font-weight:900;
+            font-size:20px;
+            padding:18px;
+        }
+
+        @media(max-width:760px){
+            .countdown-grid{
+                grid-template-columns:repeat(2,1fr);
+            }
+
+            .countdown-title{
+                font-size:21px;
+            }
+
+            .countdown-number{
+                font-size:34px;
+            }
+        }
+
+        @media(max-width:460px){
+            .countdown-grid{
+                grid-template-columns:1fr;
+            }
+        }
 
     </style>
 
@@ -434,6 +504,41 @@
 
 </section>
 
+
+<section class="countdown-section">
+    <div class="countdown-card"
+         data-submission-deadline="{{ conference.submission_deadline|date:'Y-m-d' }}"
+         data-conference-start="{{ conference.start_date|date:'Y-m-d' }}">
+
+        <div class="countdown-kicker" id="countdown-kicker">Important deadline</div>
+        <div class="countdown-title" id="countdown-title">Loading countdown...</div>
+
+        <div class="countdown-grid" id="countdown-grid">
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-days">0</div>
+                <div class="countdown-label">Days</div>
+            </div>
+
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-hours">0</div>
+                <div class="countdown-label">Hours</div>
+            </div>
+
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-minutes">0</div>
+                <div class="countdown-label">Minutes</div>
+            </div>
+
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-seconds">0</div>
+                <div class="countdown-label">Seconds</div>
+            </div>
+        </div>
+
+        <div class="countdown-ended" id="countdown-ended" style="display:none;"></div>
+    </div>
+</section>
+
 <section class="overview-section">
 
     <div class="overview-grid">
@@ -464,27 +569,7 @@
 
     </div>
 
-    
-    <div class="stats-section">
-        <div class="stat-card">
-            <div class="stat-number">{{ stats.submitted_papers|default:"0" }}</div>
-            <div class="stat-label">Submitted papers</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{{ stats.accepted_papers|default:"0" }}</div>
-            <div class="stat-label">Accepted for publication</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{{ stats.participating_countries|default:"0" }}</div>
-            <div class="stat-label">Participating countries</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-number">{{ stats.topics|default:"0" }}</div>
-            <div class="stat-label">Conference topics</div>
-        </div>
-    </div>
-
-<div class="about-overview">
+    <div class="about-overview">
 
         <div class="about-kicker">
             Conference overview
@@ -496,7 +581,7 @@
 
         {% if conference.description_en %}
             <div class="about-content">
-                {{ conference.description_en|safe }}
+                {{ conference.description_en|linebreaks }}
             </div>
         {% else %}
             <p class="about-empty">
@@ -509,98 +594,92 @@
 </section>
 
 
-<footer class="conference-footer">
-    <section class="footer-partners">
-        <h2>Organizers &amp; Partners</h2>
+<script>
+(function(){
+    const card = document.querySelector(".countdown-card");
+    if (!card) return;
 
-        <div class="footer-subtitle">The conference is organized by</div>
-        <div class="partners-grid">
-            {% for partner in footer_partners %}
-                {% if partner.enabled and partner.partner_type == "organizer" %}
-                    {% if partner.website %}<a class="partner-logo-card" href="{{ partner.website }}" target="_blank">{% else %}<div class="partner-logo-card">{% endif %}
-                        <div class="partner-content">
-                            {% if partner.logo %}<img src="{{ partner.logo.url }}" alt="{{ partner.name }}">{% endif %}
-                            <div class="partner-name">{{ partner.name }}</div>
-                        </div>
-                    {% if partner.website %}</a>{% else %}</div>{% endif %}
-                {% endif %}
-            {% empty %}
-                <div class="partner-logo-card">
-                    <div class="partner-content">
-                        <div class="partner-name">{{ conference.organizer }}</div>
-                    </div>
-                </div>
-            {% endfor %}
-        </div>
+    const submissionDeadline = card.dataset.submissionDeadline;
+    const conferenceStart = card.dataset.conferenceStart;
 
-        <div class="footer-subtitle">Co-organizers</div>
-        <div class="partners-grid">
-            {% for partner in footer_partners %}
-                {% if partner.enabled and partner.partner_type == "coorganizer" %}
-                    {% if partner.website %}<a class="partner-logo-card" href="{{ partner.website }}" target="_blank">{% else %}<div class="partner-logo-card">{% endif %}
-                        <div class="partner-content">
-                            {% if partner.logo %}<img src="{{ partner.logo.url }}" alt="{{ partner.name }}">{% endif %}
-                            <div class="partner-name">{{ partner.name }}</div>
-                        </div>
-                    {% if partner.website %}</a>{% else %}</div>{% endif %}
-                {% endif %}
-            {% endfor %}
-        </div>
-    </section>
+    const title = document.getElementById("countdown-title");
+    const kicker = document.getElementById("countdown-kicker");
+    const grid = document.getElementById("countdown-grid");
+    const ended = document.getElementById("countdown-ended");
 
-    <section class="footer-main">
-        <div>
-            {% if conference.footer_logo %}
-                <img class="footer-logo" src="{{ conference.footer_logo.url }}" alt="{{ conference.title_en }}">
-            {% elif conference.logo %}
-                <img class="footer-logo" src="{{ conference.logo.url }}" alt="{{ conference.title_en }}">
-            {% endif %}
-            <h3>{{ conference.title_en }}</h3>
-            {% if conference.footer_description %}
-                <p>{{ conference.footer_description|linebreaksbr }}</p>
-            {% elif conference.organizer %}
-                <p>{{ conference.organizer }}</p>
-            {% endif %}
-        </div>
+    const daysEl = document.getElementById("countdown-days");
+    const hoursEl = document.getElementById("countdown-hours");
+    const minutesEl = document.getElementById("countdown-minutes");
+    const secondsEl = document.getElementById("countdown-seconds");
 
-        <div>
-            <h4>Navigation</h4>
-            <a href="{% url 'conference_overview' conference.slug %}">Overview</a>
-            <a href="{% url 'important_information' conference.slug %}">Important Information</a>
-            <a href="{% url 'submit_paper' conference.slug %}">Submit Paper</a>
-            <a href="{% url 'my_submissions' %}">My Submissions</a>
-        </div>
+    function parseDate(dateString, endOfDay){
+        if (!dateString) return null;
+        const date = new Date(dateString + (endOfDay ? "T23:59:59" : "T00:00:00"));
+        return isNaN(date.getTime()) ? null : date;
+    }
 
-        <div>
-            <h4>Contact</h4>
-            {% if conference.footer_contact_email %}
-                <p>{{ conference.footer_contact_email }}</p>
-            {% elif conference.contact_email %}
-                <p>{{ conference.contact_email }}</p>
-            {% endif %}
-            {% if conference.footer_address %}
-                <p>{{ conference.footer_address }}</p>
-            {% elif conference.location %}
-                <p>{{ conference.location }}</p>
-            {% endif %}
-        </div>
+    function getTarget(){
+        const now = new Date();
+        const submissionDate = parseDate(submissionDeadline, true);
+        const conferenceDate = parseDate(conferenceStart, false);
 
-        <div>
-            <h4>Conference</h4>
-            <p>{{ conference.location }}</p>
-            <p>{{ conference.start_date }} — {{ conference.end_date }}</p>
-            <p>Powered by GAF Conference Hub</p>
-        </div>
-    </section>
+        if (submissionDate && now <= submissionDate) {
+            return {
+                date: submissionDate,
+                kicker: "Call for papers",
+                title: "Time left until submission deadline"
+            };
+        }
 
-    <div class="footer-bottom">
-        {% if conference.footer_copyright %}
-            {{ conference.footer_copyright }}
-        {% else %}
-            © {{ conference.start_date|date:"Y" }} {{ conference.title_en }}. All rights reserved.
-        {% endif %}
-    </div>
-</footer>
+        if (conferenceDate && now <= conferenceDate) {
+            return {
+                date: conferenceDate,
+                kicker: "Conference countdown",
+                title: "Time left until the conference starts"
+            };
+        }
+
+        return null;
+    }
+
+    function updateCountdown(){
+        const target = getTarget();
+
+        if (!target) {
+            grid.style.display = "none";
+            ended.style.display = "block";
+            kicker.textContent = "Conference status";
+            title.textContent = "Green Building Conference 2026";
+            ended.textContent = "The conference countdown has ended.";
+            return;
+        }
+
+        kicker.textContent = target.kicker;
+        title.textContent = target.title;
+
+        const now = new Date();
+        const distance = target.date.getTime() - now.getTime();
+
+        if (distance <= 0) {
+            updateCountdown();
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((distance / (1000 * 60)) % 60);
+        const seconds = Math.floor((distance / 1000) % 60);
+
+        daysEl.textContent = days;
+        hoursEl.textContent = String(hours).padStart(2, "0");
+        minutesEl.textContent = String(minutes).padStart(2, "0");
+        secondsEl.textContent = String(seconds).padStart(2, "0");
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
 
 </body>
 </html>
