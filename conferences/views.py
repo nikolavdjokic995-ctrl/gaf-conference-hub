@@ -28,7 +28,6 @@ from .models import (
     ConferenceInfoCard,
     ConferenceSidebarCard,
     ConferenceTopic,
-    ConferenceFooterPartner,
     UserProfile,
 )
 
@@ -45,8 +44,6 @@ from .forms import (
     LayoutDecisionForm,
     EmailTemplateForm,
     SubmissionSettingsForm,
-    ConferenceFooterForm,
-    ConferenceFooterPartnerForm,
 )
 
 from .emails import send_event_email, preview_template
@@ -94,9 +91,9 @@ def home(request):
 def conference_overview(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
     submission_closed = (
-        conference.submission_deadline
-        and timezone.now().date() > conference.submission_deadline
-    )
+    conference.submission_deadline
+    and timezone.now().date() > conference.submission_deadline
+)
 
     can_submit = request.user.is_authenticated
     is_manager = False
@@ -129,27 +126,6 @@ def conference_overview(request, slug):
             role="layout_reviewer"
         ).exists()
 
-    footer_partners = ConferenceFooterPartner.objects.filter(
-        conference=conference,
-        enabled=True
-    ).order_by("order", "name")
-
-    stats = {
-        "submitted_papers": Submission.objects.filter(conference=conference).count(),
-        "accepted_papers": Submission.objects.filter(
-            conference=conference,
-            status="final_accepted"
-        ).count(),
-        "reviewers": ConferenceRole.objects.filter(
-            conference=conference,
-            role__in=["content_reviewer", "layout_reviewer"]
-        ).values("user").distinct().count(),
-        "topics": ConferenceTopic.objects.filter(
-            conference=conference,
-            enabled=True
-        ).count(),
-    }
-
     return render(request, "conferences/conference_overview.html", {
         "conference": conference,
         "can_submit": can_submit,
@@ -158,8 +134,6 @@ def conference_overview(request, slug):
         "is_judge": is_judge,
         "is_layout_reviewer": is_layout_reviewer,
         "submission_closed": submission_closed,
-        "footer_partners": footer_partners,
-        "stats": stats,
     })
 
 @login_required
@@ -1334,25 +1308,10 @@ def layout_dashboard(request):
         "author",
         "topic",
         "secondary_topic",
-    ).prefetch_related(
-        "reviews__reviewer"
-    ).order_by("-updated_at")
-
-    accepted_publication_submissions = Submission.objects.filter(
-        conference__in=conferences,
-        status="final_accepted"
-    ).select_related(
-        "conference",
-        "author",
-        "topic",
-        "secondary_topic",
-    ).prefetch_related(
-        "reviews__reviewer"
     ).order_by("-updated_at")
 
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,
-        "accepted_publication_submissions": accepted_publication_submissions,
     })
 
 
@@ -1405,124 +1364,6 @@ def layout_decision(request, submission_id):
     return render(request, "conferences/layout_decision.html", {
         "submission": submission,
         "form": form,
-    })
-
-
-@login_required
-def footer_settings(request, slug):
-    conference = get_object_or_404(Conference, slug=slug)
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    if not is_manager:
-        return redirect("conference_overview", slug=conference.slug)
-
-    if request.method == "POST":
-        form = ConferenceFooterForm(request.POST, request.FILES, instance=conference)
-
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Footer settings updated successfully.")
-            return redirect("footer_settings", slug=conference.slug)
-    else:
-        form = ConferenceFooterForm(instance=conference)
-
-    partners = ConferenceFooterPartner.objects.filter(
-        conference=conference
-    ).order_by("order", "name")
-
-    partner_form = ConferenceFooterPartnerForm()
-
-    return render(request, "conferences/footer_settings.html", {
-        "conference": conference,
-        "form": form,
-        "partners": partners,
-        "partner_form": partner_form,
-    })
-
-
-@login_required
-def add_footer_partner(request, slug):
-    conference = get_object_or_404(Conference, slug=slug)
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    if not is_manager:
-        return redirect("conference_overview", slug=conference.slug)
-
-    if request.method == "POST":
-        form = ConferenceFooterPartnerForm(request.POST, request.FILES)
-
-        if form.is_valid():
-            partner = form.save(commit=False)
-            partner.conference = conference
-            partner.save()
-            messages.success(request, "Footer partner added successfully.")
-
-    return redirect("footer_settings", slug=conference.slug)
-
-
-@login_required
-def edit_footer_partner(request, partner_id):
-    partner = get_object_or_404(ConferenceFooterPartner, id=partner_id)
-    conference = partner.conference
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    if not is_manager:
-        return redirect("conference_overview", slug=conference.slug)
-
-    if request.method == "POST":
-        form = ConferenceFooterPartnerForm(request.POST, request.FILES, instance=partner)
-
-        if form.is_valid():
-            form.save()
-            messages.success(request, "Footer partner updated successfully.")
-            return redirect("footer_settings", slug=conference.slug)
-    else:
-        form = ConferenceFooterPartnerForm(instance=partner)
-
-    return render(request, "conferences/footer_partner_form.html", {
-        "conference": conference,
-        "partner": partner,
-        "form": form,
-    })
-
-
-@login_required
-def delete_footer_partner(request, partner_id):
-    partner = get_object_or_404(ConferenceFooterPartner, id=partner_id)
-    conference = partner.conference
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    if not is_manager:
-        return redirect("conference_overview", slug=conference.slug)
-
-    if request.method == "POST":
-        partner.delete()
-        messages.success(request, "Footer partner deleted successfully.")
-        return redirect("footer_settings", slug=conference.slug)
-
-    return render(request, "conferences/delete_footer_partner.html", {
-        "conference": conference,
-        "partner": partner,
     })
 
 
@@ -1773,3 +1614,36 @@ def delete_submission(request, submission_id):
     return render(request, "conferences/delete_submission.html", {
         "submission": submission
     })
+@login_required
+def footer_settings(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    return render(request, "conferences/footer_settings.html", {
+        "conference": conference,
+    })
+
+
+@login_required
+def add_footer_partner(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    return redirect("footer_settings", slug=conference.slug)
+
+
+@login_required
+def edit_footer_partner(request, partner_id):
+    return redirect("/")
+
+
+@login_required
+def delete_footer_partner(request, partner_id):
+    return redirect("/")
