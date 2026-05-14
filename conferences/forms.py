@@ -20,18 +20,12 @@ class RegisterForm(UserCreationForm):
 
     TITLE_CHOICES = [
         ("", "Select"),
+        ("Prof. Dr.", "Prof. Dr."),
+        ("Assoc. Prof. Dr.", "Assoc. Prof. Dr."),
+        ("Asst. Prof. Dr.", "Asst. Prof. Dr."),
         ("Dr.", "Dr."),
         ("Mr.", "Mr."),
-        ("Mrs.", "Mrs."),
         ("Ms.", "Ms."),
-        ("Mx.", "Mx."),
-        ("Prof.", "Prof."),
-        ("Prof. Dr.", "Prof. Dr."),
-        ("Doc. dr.", "Doc. dr."),
-        ("MA", "MA"),
-        ("MS", "MS"),
-        ("MSc", "MSc"),
-        ("PhD", "PhD"),
     ]
 
     title = forms.ChoiceField(choices=TITLE_CHOICES)
@@ -68,7 +62,6 @@ class SubmissionForm(forms.ModelForm):
             "title",
             "abstract",
             "keywords",
-            "article_type",
             "first_author",
             "coauthors",
             "coauthor_emails",
@@ -139,7 +132,6 @@ class SubmissionForm(forms.ModelForm):
         self.fields["secondary_topic"].required = False
         self.fields["abstract"].required = True
         self.fields["keywords"].required = True
-        self.fields["article_type"].required = True
         self.fields["full_paper_file"].required = True
         self.fields["first_author"].required = True
 
@@ -149,71 +141,55 @@ class ReviewForm(forms.ModelForm):
     class Meta:
         model = Review
         fields = [
-            "no_conflict_confirmed",
-            "extension_requested",
-            "requested_deadline",
-            "quality_originality",
-            "quality_scientific_contribution",
-            "quality_methodological_approach",
-            "quality_references",
-            "quality_clarity_expression",
-            "paper_classification",
-            "reviewer_competency",
+            "content_context",
+            "research_design",
+            "arguments_discussion",
+            "results_presented",
+            "references_adequate",
+            "conclusions_supported",
+            "english_quality",
             "comments_for_authors",
-            "commented_paper_file",
+            "conflict_of_interest",
+            "plagiarism_detected",
+            "inappropriate_self_citations",
+            "ethical_concerns",
+            "originality",
+            "contribution",
+            "structure_clarity",
+            "logical_coherence",
+            "engagement_sources",
+            "overall_merit",
+            "references_relevant",
             "comments_for_editors",
+            "commented_paper_file",
             "overall_recommendation",
+            "wants_final_notification",
         ]
 
         widgets = {
-            "quality_originality": forms.RadioSelect,
-            "quality_scientific_contribution": forms.RadioSelect,
-            "quality_methodological_approach": forms.RadioSelect,
-            "quality_references": forms.RadioSelect,
-            "quality_clarity_expression": forms.RadioSelect,
-            "paper_classification": forms.RadioSelect,
-            "reviewer_competency": forms.RadioSelect,
+            "content_context": forms.RadioSelect,
+            "research_design": forms.RadioSelect,
+            "arguments_discussion": forms.RadioSelect,
+            "results_presented": forms.RadioSelect,
+            "references_adequate": forms.RadioSelect,
+            "conclusions_supported": forms.RadioSelect,
+            "english_quality": forms.RadioSelect,
+            "conflict_of_interest": forms.RadioSelect,
+            "plagiarism_detected": forms.RadioSelect,
+            "inappropriate_self_citations": forms.RadioSelect,
+            "ethical_concerns": forms.RadioSelect,
+            "originality": forms.RadioSelect,
+            "contribution": forms.RadioSelect,
+            "structure_clarity": forms.RadioSelect,
+            "logical_coherence": forms.RadioSelect,
+            "engagement_sources": forms.RadioSelect,
+            "overall_merit": forms.RadioSelect,
+            "references_relevant": forms.RadioSelect,
             "overall_recommendation": forms.RadioSelect,
-            "no_conflict_confirmed": forms.CheckboxInput(attrs={"class": "check-input"}),
-            "extension_requested": forms.CheckboxInput(attrs={"class": "check-input", "id": "id_extension_requested"}),
-            "requested_deadline": forms.DateInput(attrs={"type": "date", "class": "date-input", "id": "id_requested_deadline"}),
-            "comments_for_authors": forms.Textarea(attrs={"rows": 8}),
-            "comments_for_editors": forms.Textarea(attrs={"rows": 7}),
+            "wants_final_notification": forms.RadioSelect,
+            "comments_for_authors": forms.Textarea(attrs={"rows": 4}),
+            "comments_for_editors": forms.Textarea(attrs={"rows": 4}),
         }
-
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["paper_classification"].choices = [
-            ("review_paper", "Review paper"),
-            ("research_paper", "Research paper"),
-        ]
-        self.fields["no_conflict_confirmed"].required = True
-        self.fields["no_conflict_confirmed"].label = "I confirm that I have no conflict of interest for reviewing this paper."
-        self.fields["extension_requested"].required = False
-        self.fields["extension_requested"].label = "Request review deadline extension"
-        self.fields["requested_deadline"].required = False
-        self.fields["requested_deadline"].label = "Requested new deadline"
-
-    def clean(self):
-        cleaned_data = super().clean()
-
-        if not cleaned_data.get("no_conflict_confirmed"):
-            self.add_error(
-                "no_conflict_confirmed",
-                "Please confirm that you have no conflict of interest before submitting the review."
-            )
-
-        if cleaned_data.get("extension_requested") and not cleaned_data.get("requested_deadline"):
-            self.add_error(
-                "requested_deadline",
-                "Please select a requested deadline date, or uncheck the extension request."
-            )
-
-        if not cleaned_data.get("extension_requested"):
-            cleaned_data["requested_deadline"] = None
-
-        return cleaned_data
 
     def clean_commented_paper_file(self):
         file = self.cleaned_data.get("commented_paper_file")
