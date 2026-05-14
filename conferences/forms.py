@@ -11,8 +11,8 @@ from .models import (
     ConferenceInfoCard,
     ConferenceSidebarCard,
     ConferenceTopic,
-    ConferenceFooterPartner,
     EmailTemplate,
+    ConferenceFooterPartner,
 )
 
 
@@ -255,45 +255,6 @@ class ConferenceOverviewForm(forms.ModelForm):
         ]
 
 
-class ConferenceFooterForm(forms.ModelForm):
-
-    class Meta:
-        model = Conference
-        fields = [
-            "footer_description",
-            "footer_copyright",
-            "footer_contact_email",
-            "footer_address",
-            "footer_logo",
-        ]
-
-        widgets = {
-            "footer_description": forms.Textarea(attrs={
-                "rows": 5,
-                "placeholder": "Short institutional footer text.",
-            }),
-            "footer_copyright": forms.TextInput(attrs={
-                "placeholder": "© 2026 Green Building Conference. All rights reserved.",
-            }),
-            "footer_address": forms.TextInput(attrs={
-                "placeholder": "Faculty address or conference office address.",
-            }),
-        }
-
-
-class ConferenceFooterPartnerForm(forms.ModelForm):
-
-    class Meta:
-        model = ConferenceFooterPartner
-        fields = [
-            "name",
-            "logo",
-            "website",
-            "order",
-            "enabled",
-        ]
-
-
 class SubmissionSettingsForm(forms.ModelForm):
 
     class Meta:
@@ -418,3 +379,28 @@ class LayoutDecisionForm(forms.Form):
         required=False,
         help_text="Optional. Upload the final version prepared for publication/printing."
     )
+class ConferenceFooterForm(forms.ModelForm):
+
+    class Meta:
+        model = Conference
+        fields = [
+            "footer_description",
+            "footer_copyright",
+            "footer_contact_email",
+            "footer_address",
+            "footer_logo",
+        ]
+
+
+class ConferenceFooterPartnerForm(forms.ModelForm):
+
+    class Meta:
+        model = ConferenceFooterPartner
+        fields = [
+            "partner_type",
+            "name",
+            "logo",
+            "website",
+            "order",
+            "enabled",
+        ]

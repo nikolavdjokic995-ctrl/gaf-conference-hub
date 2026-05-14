@@ -12,8 +12,8 @@
         h2,h3{color:#14532d;margin-top:0}
         form p{margin-bottom:18px}
         label{display:block;font-weight:bold;color:#14532d;margin-bottom:7px}
-        input[type="text"],input[type="email"],input[type="url"],input[type="number"],input[type="file"],textarea{
-            width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-size:15px
+        input[type="text"],input[type="email"],input[type="url"],input[type="number"],input[type="file"],select,textarea{
+            width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:12px;padding:12px;font-size:15px;background:white
         }
         textarea{min-height:120px}
         .btn{display:inline-block;background:#16a34a;color:white;text-decoration:none;border:0;border-radius:10px;padding:11px 16px;font-weight:bold;cursor:pointer;margin-top:8px}
@@ -21,12 +21,14 @@
         .btn-danger{background:#dc2626}
         .btn-outline{background:white;color:#14532d;border:1px solid #14532d}
         .partner{display:flex;gap:16px;align-items:center;border:1px solid #e5e7eb;border-radius:14px;padding:14px;margin-bottom:12px;background:#f9fafb}
-        .partner-logo{width:90px;height:58px;border-radius:10px;background:white;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e5e7eb}
-        .partner-logo img{max-width:82px;max-height:50px;object-fit:contain}
-        .partner-info{flex:1}
+        .partner-logo{width:96px;height:70px;border-radius:10px;background:white;display:flex;align-items:center;justify-content:center;overflow:hidden;border:1px solid #e5e7eb;flex:0 0 auto}
+        .partner-logo img{max-width:86px;max-height:60px;object-fit:contain}
+        .partner-info{flex:1;line-height:1.5}
+        .partner-name{font-weight:800;color:#14532d}
+        .partner-type{display:inline-block;background:#dcfce7;color:#166534;padding:4px 9px;border-radius:999px;font-size:12px;font-weight:800;margin-bottom:6px}
         .partner-actions{display:flex;gap:8px;flex-wrap:wrap}
         .note{color:#6b7280;line-height:1.6}
-        @media(max-width:900px){.grid{grid-template-columns:1fr}}
+        @media(max-width:900px){.grid{grid-template-columns:1fr}.partner{flex-direction:column;align-items:flex-start}}
     </style>
 </head>
 <body>
@@ -56,8 +58,8 @@
         </section>
 
         <aside class="card">
-            <h2>Add partner / organizer logo</h2>
-            <p class="note">Add logos shown in the “Organizers & Partners” footer section.</p>
+            <h2>Add organizer / co-organizer</h2>
+            <p class="note">Choose whether this logo belongs to the organizer section or the co-organizers section.</p>
 
             <form method="post" enctype="multipart/form-data" action="{% url 'add_footer_partner' conference.slug %}">
                 {% csrf_token %}
@@ -68,7 +70,7 @@
     </div>
 
     <section class="card" style="margin-top:24px;">
-        <h2>Current footer partners</h2>
+        <h2>Current footer organizations</h2>
 
         {% if partners %}
             {% for partner in partners %}
@@ -82,7 +84,8 @@
                     </div>
 
                     <div class="partner-info">
-                        <strong>{{ partner.name }}</strong><br>
+                        <span class="partner-type">{{ partner.get_partner_type_display }}</span><br>
+                        <span class="partner-name">{{ partner.name }}</span><br>
                         {% if partner.website %}
                             <span>{{ partner.website }}</span><br>
                         {% endif %}
@@ -96,7 +99,7 @@
                 </div>
             {% endfor %}
         {% else %}
-            <p class="note">No footer partner logos added yet.</p>
+            <p class="note">No footer organizations added yet.</p>
         {% endif %}
     </section>
 </div>

@@ -224,128 +224,6 @@
             line-height:1.7;
         }
 
-
-        .stats-section{
-            margin-top:34px;
-            display:grid;
-            grid-template-columns:repeat(4,minmax(180px,1fr));
-            gap:22px;
-        }
-
-        .stat-card{
-            padding:28px;
-            border-radius:22px;
-            background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 100%);
-            border:1px solid #d1fae5;
-            box-shadow:0 10px 26px rgba(0,0,0,0.05);
-        }
-
-        .stat-number{
-            color:#065f46;
-            font-size:38px;
-            font-weight:900;
-            line-height:1;
-            margin-bottom:10px;
-        }
-
-        .stat-label{
-            color:#374151;
-            font-size:15px;
-            font-weight:700;
-        }
-
-        .conference-footer{
-            background:#0f2f1f;
-            color:white;
-            margin-top:70px;
-            padding:0;
-        }
-
-        .footer-partners{
-            background:#eef2f4;
-            color:#111827;
-            padding:52px 24px;
-            text-align:center;
-        }
-
-        .footer-partners h2{
-            color:#0d5c2f;
-            font-size:28px;
-            margin-bottom:28px;
-        }
-
-        .partners-grid{
-            max-width:1050px;
-            margin:0 auto;
-            display:grid;
-            grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-            gap:26px;
-            align-items:center;
-        }
-
-        .partner-logo-card{
-            background:white;
-            border-radius:18px;
-            padding:20px;
-            min-height:118px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            box-shadow:0 10px 24px rgba(0,0,0,0.06);
-            text-decoration:none;
-            color:#0d5c2f;
-            font-weight:800;
-        }
-
-        .partner-logo-card img{
-            max-width:150px;
-            max-height:76px;
-            object-fit:contain;
-        }
-
-        .footer-main{
-            max-width:1200px;
-            margin:0 auto;
-            padding:55px 24px;
-            display:grid;
-            grid-template-columns:1.4fr 1fr 1fr 1fr;
-            gap:34px;
-        }
-
-        .footer-logo{
-            max-width:160px;
-            max-height:80px;
-            object-fit:contain;
-            margin-bottom:18px;
-        }
-
-        .footer-main h3,
-        .footer-main h4{
-            margin-bottom:16px;
-            color:#ffffff;
-        }
-
-        .footer-main p,
-        .footer-main a{
-            color:rgba(255,255,255,0.82);
-            line-height:1.7;
-            text-decoration:none;
-            display:block;
-            margin-bottom:8px;
-        }
-
-        .footer-main a:hover{
-            color:#86efac;
-        }
-
-        .footer-bottom{
-            border-top:1px solid rgba(255,255,255,0.12);
-            padding:18px 24px;
-            text-align:center;
-            color:rgba(255,255,255,0.72);
-            font-size:14px;
-        }
-
         @media(max-width:900px){
  
             .navbar{
@@ -382,14 +260,6 @@
                 grid-template-columns:repeat(2,minmax(0,1fr));
             }
 
-            .stats-section{
-                grid-template-columns:repeat(2,minmax(0,1fr));
-            }
-
-            .footer-main{
-                grid-template-columns:1fr 1fr;
-            }
-
             .about-overview{
                 padding:26px;
             }
@@ -405,14 +275,6 @@
 
         @media(max-width:560px){
             .overview-grid{
-                grid-template-columns:1fr;
-            }
-
-            .stats-section{
-                grid-template-columns:1fr;
-            }
-
-            .footer-main{
                 grid-template-columns:1fr;
             }
 
@@ -625,92 +487,6 @@
     </div>
 
 </section>
-
-
-<footer class="conference-footer">
-
-    {% if footer_partners %}
-        <section class="footer-partners">
-            <h2>Organizers &amp; Partners</h2>
-
-            <div class="partners-grid">
-                {% for partner in footer_partners %}
-                    {% if partner.website %}
-                        <a class="partner-logo-card" href="{{ partner.website }}" target="_blank">
-                            {% if partner.logo %}
-                                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
-                            {% else %}
-                                {{ partner.name }}
-                            {% endif %}
-                        </a>
-                    {% else %}
-                        <div class="partner-logo-card">
-                            {% if partner.logo %}
-                                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
-                            {% else %}
-                                {{ partner.name }}
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                {% endfor %}
-            </div>
-        </section>
-    {% endif %}
-
-    <section class="footer-main">
-        <div>
-            {% if conference.footer_logo %}
-                <img class="footer-logo" src="{{ conference.footer_logo.url }}" alt="{{ conference.title_en }}">
-            {% endif %}
-
-            <h3>{{ conference.title_en }}</h3>
-
-            {% if conference.footer_description %}
-                <p>{{ conference.footer_description|linebreaksbr }}</p>
-            {% else %}
-                <p>{{ conference.organizer }}</p>
-            {% endif %}
-        </div>
-
-        <div>
-            <h4>Navigation</h4>
-            <a href="{% url 'conference_overview' conference.slug %}">Overview</a>
-            <a href="{% url 'important_information' conference.slug %}">Important Information</a>
-            <a href="{% url 'submit_paper' conference.slug %}">Submit Paper</a>
-            <a href="{% url 'my_submissions' %}">My Submissions</a>
-        </div>
-
-        <div>
-            <h4>Contact</h4>
-            {% if conference.footer_contact_email %}
-                <p>{{ conference.footer_contact_email }}</p>
-            {% elif conference.contact_email %}
-                <p>{{ conference.contact_email }}</p>
-            {% endif %}
-
-            {% if conference.footer_address %}
-                <p>{{ conference.footer_address }}</p>
-            {% elif conference.location %}
-                <p>{{ conference.location }}</p>
-            {% endif %}
-        </div>
-
-        <div>
-            <h4>Conference</h4>
-            <p>{{ conference.location }}</p>
-            <p>{{ conference.start_date }} — {{ conference.end_date }}</p>
-            <p>Powered by GAF Conference Hub</p>
-        </div>
-    </section>
-
-    <div class="footer-bottom">
-        {% if conference.footer_copyright %}
-            {{ conference.footer_copyright }}
-        {% else %}
-            © {{ conference.start_date|date:"Y" }} {{ conference.title_en }}. All rights reserved.
-        {% endif %}
-    </div>
-</footer>
 
 </body>
 </html>
