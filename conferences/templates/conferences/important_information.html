@@ -560,7 +560,7 @@
                                         </summary>
 
                                         <div class="info-card-body">
-                                            <div class="info-card-description">{{ card.description|linebreaksbr }}</div>
+                                            <div class="info-card-description">{{ card.description|safe }}</div>
 
                                             {% if card.file %}
                                                 <div class="info-card-footer">
@@ -619,7 +619,7 @@
                             </div>
 
                             {% if sidebar_card.description %}
-                                <div class="sidebar-description">{{ sidebar_card.description|linebreaksbr }}</div>
+                                <div class="sidebar-description">{{ sidebar_card.description|safe }}</div>
                             {% endif %}
 
                             {% if is_manager %}

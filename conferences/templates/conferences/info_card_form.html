@@ -1,18 +1,237 @@
-<h1>
-    {% if form.instance.id %}
-        Edit information card
-    {% else %}
-        Add information card
-    {% endif %}
-</h1>
+{% block content %}
 
-<form method="post" enctype="multipart/form-data">
-    {% csrf_token %}
-    {{ form.as_p }}
+<style>
+    .editor-page{
+        min-height:100vh;
+        background:linear-gradient(135deg,#f4f8f5 0%,#eef7f1 50%,#f8fafc 100%);
+        padding:40px 20px;
+        font-family:Calibri,Arial,sans-serif;
+        color:#123524;
+    }
 
-    <button type="submit">Save card</button>
-</form>
+    .editor-shell{
+        max-width:900px;
+        margin:0 auto;
+    }
 
-<p>
-    <a href="{% url 'important_information' conference.slug %}">Back</a>
-</p>
+    .editor-card{
+        background:#ffffff;
+        border-radius:28px;
+        padding:34px;
+        box-shadow:0 18px 50px rgba(16,24,40,0.08);
+        border:1px solid rgba(13,92,47,0.1);
+    }
+
+    .eyebrow{
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        color:#17804b;
+        font-size:12px;
+        font-weight:800;
+        margin-bottom:10px;
+    }
+
+    h1{
+        margin:0 0 28px;
+        color:#0d5c2f;
+        font-size:42px;
+    }
+
+    form{
+        display:grid;
+        gap:22px;
+    }
+
+    .form-row{
+        display:grid;
+        gap:10px;
+    }
+
+    label{
+        font-weight:800;
+        color:#0d5c2f;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="file"],
+    textarea{
+        width:100%;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:16px;
+        padding:14px 16px;
+        font-size:15px;
+        background:#fff;
+        color:#123524;
+        box-sizing:border-box;
+    }
+
+    textarea{
+        min-height:220px;
+    }
+
+    .helptext{
+        color:#587568;
+        font-size:13px;
+    }
+
+    .checkbox-row{
+        display:flex;
+        align-items:center;
+        gap:10px;
+    }
+
+    .btn-row{
+        display:flex;
+        gap:14px;
+        flex-wrap:wrap;
+        margin-top:10px;
+    }
+
+    .btn-save,
+    .btn-back{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:999px;
+        padding:12px 20px;
+        font-weight:800;
+        text-decoration:none;
+        transition:.15s ease;
+    }
+
+    .btn-save{
+        background:#16a34a;
+        color:#fff;
+        border:none;
+        cursor:pointer;
+        box-shadow:0 10px 24px rgba(22,163,74,0.25);
+    }
+
+    .btn-back{
+        background:#eef7f1;
+        color:#0d5c2f;
+        border:1px solid rgba(13,92,47,0.14);
+    }
+
+    .btn-save:hover,
+    .btn-back:hover{
+        transform:translateY(-1px);
+    }
+
+    .current-file{
+        padding:12px 14px;
+        border-radius:14px;
+        background:#f5fbf7;
+        color:#315a45;
+        font-size:14px;
+    }
+</style>
+
+<div class="editor-page">
+    <div class="editor-shell">
+        <div class="editor-card">
+
+            <p class="eyebrow">Conference information management</p>
+
+            <h1>
+                {% if form.instance.id %}
+                    Edit information card
+                {% else %}
+                    Add information card
+                {% endif %}
+            </h1>
+
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                <div class="form-row">
+                    <label for="{{ form.title.id_for_label }}">Title</label>
+                    {{ form.title }}
+                </div>
+
+                <div class="form-row">
+                    <label for="{{ form.description.id_for_label }}">Description</label>
+                    {{ form.description }}
+                    <span class="helptext">
+                        You can use headings, bold text, lists, links and rich formatting.
+                    </span>
+                </div>
+
+                <div class="form-row">
+                    <label for="{{ form.icon_image.id_for_label }}">Icon image</label>
+
+                    {% if form.instance.icon_image %}
+                        <div class="current-file">
+                            Current file:
+                            <a href="{{ form.instance.icon_image.url }}" target="_blank">
+                                {{ form.instance.icon_image.name }}
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {{ form.icon_image }}
+                </div>
+
+                <div class="form-row">
+                    <label for="{{ form.file.id_for_label }}">Attachment file</label>
+
+                    {% if form.instance.file %}
+                        <div class="current-file">
+                            Current file:
+                            <a href="{{ form.instance.file.url }}" target="_blank">
+                                {{ form.instance.file.name }}
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    {{ form.file }}
+                </div>
+
+                <div class="form-row">
+                    <label for="{{ form.order.id_for_label }}">Display order</label>
+                    {{ form.order }}
+                </div>
+
+                <div class="checkbox-row">
+                    {{ form.enabled }}
+                    <label for="{{ form.enabled.id_for_label }}">Enabled</label>
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn-save">
+                        Save card
+                    </button>
+
+                    <a class="btn-back"
+                       href="{% url 'important_information' conference.slug %}">
+                        ← Back to important information
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+
+<script>
+    tinymce.init({
+        selector: 'textarea',
+        height: 420,
+        menubar: true,
+        plugins: [
+            'advlist','autolink','lists','link','image','charmap',
+            'preview','anchor','searchreplace','visualblocks',
+            'code','fullscreen','insertdatetime','media',
+            'table','wordcount'
+        ],
+        toolbar:
+            'undo redo | blocks | bold italic underline | ' +
+            'alignleft aligncenter alignright alignjustify | ' +
+            'bullist numlist outdent indent | link table | ' +
+            'forecolor backcolor | removeformat | code fullscreen preview',
+    });
+</script>
+
+{% endblock %}
