@@ -488,6 +488,22 @@ class Review(models.Model):
 
     comments_for_authors = models.TextField(blank=True)
 
+    no_conflict_confirmed = models.BooleanField(
+        default=False,
+        help_text="Reviewer confirms there is no conflict of interest for this paper."
+    )
+
+    extension_requested = models.BooleanField(
+        default=False,
+        help_text="Reviewer requests an extension of the review deadline."
+    )
+
+    requested_deadline = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Requested new review deadline, if an extension is requested."
+    )
+
     conflict_of_interest = models.CharField(
         max_length=10,
         choices=YES_NO_CHOICES,

@@ -149,6 +149,9 @@ class ReviewForm(forms.ModelForm):
     class Meta:
         model = Review
         fields = [
+            "no_conflict_confirmed",
+            "extension_requested",
+            "requested_deadline",
             "quality_originality",
             "quality_scientific_contribution",
             "quality_methodological_approach",
@@ -171,6 +174,9 @@ class ReviewForm(forms.ModelForm):
             "paper_classification": forms.RadioSelect,
             "reviewer_competency": forms.RadioSelect,
             "overall_recommendation": forms.RadioSelect,
+            "no_conflict_confirmed": forms.CheckboxInput(attrs={"class": "check-input"}),
+            "extension_requested": forms.CheckboxInput(attrs={"class": "check-input", "id": "id_extension_requested"}),
+            "requested_deadline": forms.DateInput(attrs={"type": "date", "class": "date-input", "id": "id_requested_deadline"}),
             "comments_for_authors": forms.Textarea(attrs={"rows": 8}),
             "comments_for_editors": forms.Textarea(attrs={"rows": 7}),
         }
@@ -182,6 +188,32 @@ class ReviewForm(forms.ModelForm):
             ("review_paper", "Review paper"),
             ("research_paper", "Research paper"),
         ]
+        self.fields["no_conflict_confirmed"].required = True
+        self.fields["no_conflict_confirmed"].label = "I confirm that I have no conflict of interest for reviewing this paper."
+        self.fields["extension_requested"].required = False
+        self.fields["extension_requested"].label = "Request review deadline extension"
+        self.fields["requested_deadline"].required = False
+        self.fields["requested_deadline"].label = "Requested new deadline"
+
+    def clean(self):
+        cleaned_data = super().clean()
+
+        if not cleaned_data.get("no_conflict_confirmed"):
+            self.add_error(
+                "no_conflict_confirmed",
+                "Please confirm that you have no conflict of interest before submitting the review."
+            )
+
+        if cleaned_data.get("extension_requested") and not cleaned_data.get("requested_deadline"):
+            self.add_error(
+                "requested_deadline",
+                "Please select a requested deadline date, or uncheck the extension request."
+            )
+
+        if not cleaned_data.get("extension_requested"):
+            cleaned_data["requested_deadline"] = None
+
+        return cleaned_data
 
     def clean_commented_paper_file(self):
         file = self.cleaned_data.get("commented_paper_file")

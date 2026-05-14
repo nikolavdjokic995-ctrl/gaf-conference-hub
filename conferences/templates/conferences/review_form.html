@@ -85,6 +85,13 @@
         }
         .field-label { font-size: 14px; font-weight: 800; margin-top: 14px; color:#10251a; }
         input[type="radio"] { accent-color: var(--accent); width: 16px; height: 16px; }
+        input[type="checkbox"] { accent-color: var(--accent); width: 18px; height: 18px; }
+        .declaration-box { background: #f8fffb; border: 1px solid var(--green-line); border-radius: 14px; padding: 18px; margin-top: 12px; }
+        .check-row { display: flex; gap: 12px; align-items: flex-start; font-weight: 800; color:#10251a; line-height:1.45; }
+        .check-row .help { font-weight: 400; margin-top: 4px; }
+        .date-row { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: center; margin-top: 16px; }
+        .date-input { max-width: 220px; padding: 12px; border: 1px solid #cbd5d1; border-radius: 10px; font-size: 14px; }
+        .extension-fields.is-hidden { display: none; }
         textarea { width: 100%; min-height: 150px; padding: 14px; border: 1px solid #cbd5d1; border-radius: 12px; font-size: 14px; box-sizing: border-box; }
         textarea:focus, input:focus, select:focus { outline: 3px solid #d8f3e2; border-color: var(--accent); }
         input[type="file"] { width: 100%; background: #eef7f1; border:1px solid #d7eadf; border-radius: 12px; padding: 12px; box-sizing: border-box; }
@@ -177,6 +184,46 @@
         {{ form.non_field_errors }}
 
         <div class="card">
+            <h2>Conflict of interest and deadline</h2>
+            <div class="gb-note">Before completing the review, please confirm that you can evaluate this Green Building Conference paper independently and without conflict of interest.</div>
+
+            <div class="declaration-box">
+                {{ form.no_conflict_confirmed.errors }}
+                <label class="check-row">
+                    {{ form.no_conflict_confirmed }}
+                    <span>
+                        {{ form.no_conflict_confirmed.label }}
+                        <div class="help">Do not continue if you have a personal, professional, institutional, financial, or recent collaboration conflict with the author(s). In that case, please contact the conference editor/chair.</div>
+                    </span>
+                </label>
+            </div>
+
+            <div class="declaration-box">
+                {{ form.extension_requested.errors }}
+                <label class="check-row">
+                    {{ form.extension_requested }}
+                    <span>
+                        {{ form.extension_requested.label }}
+                        <div class="help">Use this only if you need more time than the current review deadline{% if submission.conference.review_deadline %}: {{ submission.conference.review_deadline|date:"d.m.Y." }}{% endif %}.</div>
+                    </span>
+                </label>
+
+                <div id="extension-fields" class="extension-fields">
+                    <div class="date-row">
+                        <div>
+                            <strong>{{ form.requested_deadline.label }}</strong>
+                            <div class="help">The editor/chair will review this request.</div>
+                        </div>
+                        <div>
+                            {{ form.requested_deadline.errors }}
+                            {{ form.requested_deadline }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
             <h2>Your report</h2>
             <div class="gb-note">Please evaluate the paper in the context of Green Building Conference 2026, with attention to sustainability, scientific quality, clarity, and relevance to the selected conference topic.</div>
             <h3>Paper quality evaluation</h3>
@@ -255,5 +302,29 @@
         </div>
     </form>
 </div>
+<script>
+(function () {
+    const checkbox = document.getElementById("id_extension_requested");
+    const fields = document.getElementById("extension-fields");
+    const dateInput = document.getElementById("id_requested_deadline");
+
+    function updateExtensionFields() {
+        if (!checkbox || !fields) return;
+        const enabled = checkbox.checked;
+        fields.classList.toggle("is-hidden", !enabled);
+        if (dateInput) {
+            dateInput.disabled = !enabled;
+            if (!enabled) {
+                dateInput.value = "";
+            }
+        }
+    }
+
+    if (checkbox) {
+        checkbox.addEventListener("change", updateExtensionFields);
+        updateExtensionFields();
+    }
+})();
+</script>
 </body>
 </html>
