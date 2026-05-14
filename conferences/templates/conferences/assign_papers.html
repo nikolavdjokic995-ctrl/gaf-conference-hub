@@ -109,7 +109,11 @@
 
 <div class="container">
 
-    <h1>Assign reviewers</h1>
+    <h1>Assign reviewers{% if selected_submission %}: {{ selected_submission.title }}{% endif %}</h1>
+
+    {% if selected_submission %}
+        <p class="empty">You are assigning reviewers only for the selected paper.</p>
+    {% endif %}
 
     {% for item in submission_data %}
         <div class="paper-card">
@@ -224,8 +228,8 @@
         </div>
     {% endfor %}
 
-    <a href="{% url 'conference_overview' conference.slug %}">
-        ← Back to conference
+    <a href="{% url 'conference_submissions' conference.slug %}">
+        ← Back to submissions
     </a>
 
 </div>

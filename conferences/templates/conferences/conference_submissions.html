@@ -318,7 +318,7 @@
                             {% endif %}
 
                             <a class="assign-btn"
-                               href="{% url 'assign_papers' conference.slug %}">
+                               href="{% url 'assign_paper_single' conference.slug submission.id %}">
                                 Assign reviewers
                             </a>
 

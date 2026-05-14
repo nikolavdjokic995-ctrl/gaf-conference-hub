@@ -221,7 +221,7 @@ def make_decision(request, submission_id):
 
 
 @login_required
-def assign_papers(request, slug):
+def assign_papers(request, slug, submission_id=None):
     conference = get_object_or_404(Conference, slug=slug)
 
     can_assign = ConferenceRole.objects.filter(
@@ -235,7 +235,17 @@ def assign_papers(request, slug):
 
     submissions = Submission.objects.filter(
         conference=conference
-    ).select_related(
+    )
+
+    selected_submission = None
+    if submission_id is not None:
+        selected_submission = get_object_or_404(
+            submissions,
+            id=submission_id
+        )
+        submissions = submissions.filter(id=selected_submission.id)
+
+    submissions = submissions.select_related(
         "author",
         "topic",
         "secondary_topic"
@@ -281,6 +291,8 @@ def assign_papers(request, slug):
         submission.status = "under_review"
         submission.save()
 
+        if submission_id is not None:
+            return redirect("assign_paper_single", slug=conference.slug, submission_id=submission.id)
         return redirect("assign_papers", slug=conference.slug)
 
     submission_data = []
@@ -306,6 +318,7 @@ def assign_papers(request, slug):
     return render(request, "conferences/assign_papers.html", {
         "conference": conference,
         "submission_data": submission_data,
+        "selected_submission": selected_submission,
     })
 
 @login_required
