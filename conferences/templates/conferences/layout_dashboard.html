@@ -5,8 +5,9 @@
     <style>
         body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}
         .topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}
-        .container{max-width:1250px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
-        h1{color:#14532d;margin-top:0}
+        .container{max-width:1350px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
+        h1,h2{color:#14532d;margin-top:0}
+        h2{margin-top:35px}
         .card{border:1px solid #e5e7eb;border-radius:14px;padding:22px;margin-bottom:18px;background:white}
         .title{font-size:22px;font-weight:bold;color:#14532d;margin-bottom:10px}
         .meta{line-height:1.8;color:#444}
@@ -19,12 +20,23 @@
         .btn-dark{background:#374151;color:white}
         .empty{padding:26px;background:#f9fafb;border-radius:12px;color:#555}
         .file-box{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:14px;margin-top:16px}
+        table{width:100%;border-collapse:collapse;border-radius:14px;overflow:hidden;margin-top:15px}
+        th{background:#14532d;color:white;text-align:left;padding:14px;font-size:14px}
+        td{padding:14px;border-bottom:1px solid #e5e7eb;vertical-align:top}
+        tr:hover{background:#f9fafb}
+        .paper-title{font-weight:bold;color:#14532d}
+        .small{font-size:13px;color:#555;line-height:1.5}
+        .section-note{color:#555;margin-bottom:18px}
     </style>
 </head>
 <body>
 <div class="topbar">GAF Conference Hub</div>
 <div class="container">
     <h1>Layout Review Dashboard</h1>
+
+    <p class="section-note">
+        Papers currently waiting for layout review, layout corrections, or final print-ready upload.
+    </p>
 
     {% if submissions %}
         {% for submission in submissions %}
@@ -84,6 +96,71 @@
         {% endfor %}
     {% else %}
         <div class="empty">No papers are currently waiting for layout review.</div>
+    {% endif %}
+
+    <h2>Accepted for publication / Print-ready papers</h2>
+    <p class="section-note">
+        Final papers accepted by layout reviewers and ready for proceedings, publication, or printing.
+    </p>
+
+    {% if accepted_publication_submissions %}
+        <table>
+            <tr>
+                <th>Paper ID</th>
+                <th>Title</th>
+                <th>Authors</th>
+                <th>Accepted date</th>
+                <th>Reviewers</th>
+                <th>Final file</th>
+            </tr>
+
+            {% for submission in accepted_publication_submissions %}
+                <tr>
+                    <td><strong>{{ submission.paper_code }}</strong></td>
+
+                    <td>
+                        <div class="paper-title">{{ submission.title }}</div>
+                        <div class="small">{{ submission.conference.title_en }}</div>
+                    </td>
+
+                    <td>
+                        <strong>{{ submission.first_author }}</strong>
+                        {% if submission.coauthors %}
+                            <div class="small">{{ submission.coauthors|linebreaksbr }}</div>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {{ submission.updated_at|date:"d.m.Y." }}<br>
+                        <span class="small">{{ submission.updated_at|date:"H:i" }}</span>
+                    </td>
+
+                    <td>
+                        {% for review in submission.reviews.all %}
+                            {{ review.reviewer.get_full_name|default:review.reviewer.username }}{% if not forloop.last %}, {% endif %}
+                        {% empty %}
+                            -
+                        {% endfor %}
+                    </td>
+
+                    <td>
+                        {% if submission.final_publication_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">
+                                Download final file
+                            </a>
+                        {% elif submission.full_paper_file %}
+                            <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
+                                Download current file
+                            </a>
+                        {% else %}
+                            No file
+                        {% endif %}
+                    </td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% else %}
+        <div class="empty">No papers have been accepted for publication yet.</div>
     {% endif %}
 </div>
 </body>
