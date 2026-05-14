@@ -119,6 +119,7 @@ urlpatterns = [
     path("topics/<int:topic_id>/delete/", delete_conference_topic, name="delete_conference_topic"),
 
     path("conference/<slug:slug>/submit/", submit_paper, name="submit_paper"),
+    path("conference/<slug:slug>/assign/<int:submission_id>/", assign_papers, name="assign_paper_single"),
     path("conference/<slug:slug>/assign/", assign_papers, name="assign_papers"),
     path("conference/<slug:slug>/submissions/", conference_submissions, name="conference_submissions"),
     path("conference/<slug:slug>/people/", conference_people, name="conference_people"),
