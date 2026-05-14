@@ -211,7 +211,7 @@
 
                 <div class="conference-body">
                     <div class="conference-description">
-                        {{ conference.description_en }}
+                        {{ conference.description_en|striptags|truncatewords:45 }}
                     </div>
 
                     <a class="btn" href="/conference/{{ conference.slug }}/overview/">
