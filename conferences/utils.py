@@ -59,6 +59,48 @@ def _clear_docx_review_xml_text(input_docx_path, output_docx_path):
                 zout.writestr(item, data)
 
 
+
+def _remove_revision_authors(input_docx_path, output_docx_path):
+    """
+    Remove tracked-changes, comments and revision author metadata from DOCX XML.
+    This clears attributes such as w:author and w:initials.
+    """
+    with zipfile.ZipFile(input_docx_path, "r") as zin:
+        with zipfile.ZipFile(output_docx_path, "w", zipfile.ZIP_DEFLATED) as zout:
+            for item in zin.infolist():
+                data = zin.read(item.filename)
+
+                if item.filename.endswith(".xml"):
+                    try:
+                        root = etree.fromstring(data)
+
+                        for elem in root.iter():
+                            for attr in list(elem.attrib.keys()):
+                                local_name = attr.split("}")[-1].lower()
+
+                                if local_name in {
+                                    "author",
+                                    "initials",
+                                    "lastmodifiedby",
+                                    "creator",
+                                    "manager",
+                                    "company",
+                                }:
+                                    elem.attrib[attr] = ""
+
+                        data = etree.tostring(
+                            root,
+                            xml_declaration=True,
+                            encoding="UTF-8",
+                            standalone="yes",
+                        )
+                    except Exception:
+                        # Do not corrupt the DOCX if an XML part cannot be parsed.
+                        pass
+
+                zout.writestr(item, data)
+
+
 def _normal_text(paragraph):
     return " ".join((paragraph.text or "").strip().split())
 
@@ -170,11 +212,19 @@ def anonymize_docx(source_path, target_path):
                 break
 
     temp_docx = target_path + ".tmp.docx"
+    temp_docx_2 = target_path + ".clean.docx"
+
     doc.save(temp_docx)
 
-    _clear_docx_review_xml_text(temp_docx, target_path)
+    _clear_docx_review_xml_text(temp_docx, temp_docx_2)
+    _remove_revision_authors(temp_docx_2, target_path)
 
     try:
         os.remove(temp_docx)
+    except OSError:
+        pass
+
+    try:
+        os.remove(temp_docx_2)
     except OSError:
         pass
