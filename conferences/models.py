@@ -66,30 +66,25 @@ class Conference(models.Model):
     registration_url = models.URLField(blank=True)
     contact_email = models.EmailField(blank=True)
     organizer = models.CharField(max_length=255, blank=True)
+    
+    footer_description = models.TextField(blank=True)
 
-    footer_description = models.TextField(
-        blank=True,
-        help_text="Short text shown in the conference footer."
-    )
     footer_copyright = models.CharField(
         max_length=255,
-        blank=True,
-        help_text="Copyright text shown at the bottom of the footer."
+        blank=True
     )
-    footer_contact_email = models.EmailField(
-        blank=True,
-        help_text="Contact email shown in the footer."
-    )
+
+    footer_contact_email = models.EmailField(blank=True)
+
     footer_address = models.CharField(
         max_length=255,
-        blank=True,
-        help_text="Address shown in the footer."
+        blank=True
     )
+
     footer_logo = models.ImageField(
         upload_to="conference_footer/",
         blank=True,
-        null=True,
-        help_text="Optional logo shown in the footer."
+        null=True
     )
 
     def __str__(self):
@@ -734,20 +729,35 @@ class ConferenceSidebarCard(models.Model):
     class Meta:
         ordering = ["order"]
 
+
 class ConferenceFooterPartner(models.Model):
+    PARTNER_TYPE_CHOICES = [
+        ("organizer", "Organizer"),
+        ("coorganizer", "Co-organizer"),
+    ]
+
     conference = models.ForeignKey(
         Conference,
         on_delete=models.CASCADE,
         related_name="footer_partners"
     )
 
+    partner_type = models.CharField(
+        max_length=20,
+        choices=PARTNER_TYPE_CHOICES,
+        default="organizer"
+    )
+
     name = models.CharField(max_length=200)
+
     logo = models.ImageField(
         upload_to="conference_footer_partners/",
         blank=True,
         null=True
     )
+
     website = models.URLField(blank=True)
+
     order = models.PositiveIntegerField(default=0)
     enabled = models.BooleanField(default=True)
 
