@@ -59,6 +59,21 @@ urlpatterns = [
     ), name="login"),
 
     path("logout/", auth_views.LogoutView.as_view(next_page="home"), name="logout"),
+    path(
+        "password/change/",
+        auth_views.PasswordChangeView.as_view(
+            template_name="conferences/password_change.html",
+            success_url="/password/change/done/",
+        ),
+        name="password_change",
+    ),
+    path(
+        "password/change/done/",
+        auth_views.PasswordChangeDoneView.as_view(
+            template_name="conferences/password_change_done.html",
+        ),
+        name="password_change_done",
+    ),
     path("register/", register, name="register"),
 
     path("dashboard/", manager_dashboard, name="dashboard"),
@@ -104,7 +119,6 @@ urlpatterns = [
     path("topics/<int:topic_id>/delete/", delete_conference_topic, name="delete_conference_topic"),
 
     path("conference/<slug:slug>/submit/", submit_paper, name="submit_paper"),
-    path("conference/<slug:slug>/assign/<int:submission_id>/", assign_papers, name="assign_paper_single"),
     path("conference/<slug:slug>/assign/", assign_papers, name="assign_papers"),
     path("conference/<slug:slug>/submissions/", conference_submissions, name="conference_submissions"),
     path("conference/<slug:slug>/people/", conference_people, name="conference_people"),

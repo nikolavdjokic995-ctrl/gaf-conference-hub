@@ -136,8 +136,8 @@
             max-width:1380px;
             margin:-40px auto 60px;
             background:white;
-            border-radius:{{ conference.overview_section_radius|default:26 }}px;
-            padding:{{ conference.overview_section_padding|default:40 }}px;
+            border-radius:26px;
+            padding:40px;
             position:relative;
             z-index:5;
             color:#111827;
@@ -146,34 +146,33 @@
 
         .overview-grid{
             display:grid;
-            grid-template-columns:repeat(auto-fit,minmax({{ conference.overview_grid_min_width|default:280 }}px,1fr));
-            gap:{{ conference.overview_grid_gap|default:26 }}px;
+            grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
+            gap:26px;
         }
 
         .overview-card{
             background:#f9fafb;
-            border-radius:{{ conference.overview_card_radius|default:20 }}px;
-            padding:{{ conference.overview_card_padding|default:28 }}px;
+            border-radius:20px;
+            padding:28px;
         }
 
         .overview-card h3{
             margin-bottom:18px;
             color:#065f46;
-            font-size:{{ conference.overview_card_title_size|default:20 }}px;
+            font-size:20px;
         }
 
         .overview-card p{
             line-height:1.6;
             color:#111827;
-            font-size:{{ conference.overview_card_text_size|default:16 }}px;
             word-break:break-word;
             overflow-wrap:break-word;
         }
 
         .about-overview{
             margin-top:34px;
-            padding:{{ conference.overview_about_padding|default:38 }}px;
-            border-radius:{{ conference.overview_about_radius|default:24 }}px;
+            padding:38px;
+            border-radius:24px;
             background:#ffffff;
             border:1px solid #e5e7eb;
             box-shadow:0 10px 26px rgba(0,0,0,0.06);
@@ -199,13 +198,13 @@
             padding-bottom:14px;
             border-bottom:1px solid #d1d5db;
             color:#1f2937;
-            font-size:{{ conference.overview_about_title_size|default:42 }}px;
+            font-size:42px;
             line-height:1.15;
         }
 
         .about-content{
             color:#111827;
-            font-size:{{ conference.overview_about_text_size|default:18 }}px;
+            font-size:18px;
             line-height:1.8;
         }
 
@@ -364,8 +363,8 @@
         }
 
         .stat-card{
-            padding:{{ conference.overview_stats_card_padding|default:28 }}px;
-            border-radius:{{ conference.overview_stats_card_radius|default:22 }}px;
+            padding:28px;
+            border-radius:22px;
             background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 100%);
             border:1px solid #d1fae5;
             box-shadow:0 10px 26px rgba(0,0,0,0.05);
@@ -373,7 +372,7 @@
 
         .stat-number{
             color:#065f46;
-            font-size:{{ conference.overview_stats_number_size|default:38 }}px;
+            font-size:38px;
             font-weight:900;
             line-height:1;
             margin-bottom:10px;
@@ -381,7 +380,7 @@
 
         .stat-label{
             color:#374151;
-            font-size:{{ conference.overview_stats_label_size|default:15 }}px;
+            font-size:15px;
             font-weight:700;
         }
 
@@ -544,6 +543,10 @@
                         Layout Review
                     </a>
                 {% endif %}
+
+                <a href="{% url 'password_change' %}">
+                    Change password
+                </a>
 
                 <form method="post"
                       action="{% url 'logout' %}"

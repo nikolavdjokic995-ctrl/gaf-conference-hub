@@ -180,6 +180,10 @@
                     Welcome, <strong>{{ user.username }}</strong>
                 </span>
 
+                <a href="{% url 'password_change' %}" class="btn secondary" style="margin-right:8px;">
+                    Change password
+                </a>
+
                 <form method="post" action="/logout/" style="display:inline;">
                     {% csrf_token %}
                     <button type="submit" class="btn secondary">Logout</button>
