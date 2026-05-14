@@ -11,6 +11,7 @@ from .models import (
     ConferenceInfoCard,
     ConferenceSidebarCard,
     ConferenceTopic,
+    ConferenceFooterPartner,
     EmailTemplate,
 )
 
@@ -251,6 +252,45 @@ class ConferenceOverviewForm(forms.ModelForm):
             "logo",
             "template_style",
             "hero_image",
+        ]
+
+
+class ConferenceFooterForm(forms.ModelForm):
+
+    class Meta:
+        model = Conference
+        fields = [
+            "footer_description",
+            "footer_copyright",
+            "footer_contact_email",
+            "footer_address",
+            "footer_logo",
+        ]
+
+        widgets = {
+            "footer_description": forms.Textarea(attrs={
+                "rows": 5,
+                "placeholder": "Short institutional footer text.",
+            }),
+            "footer_copyright": forms.TextInput(attrs={
+                "placeholder": "© 2026 Green Building Conference. All rights reserved.",
+            }),
+            "footer_address": forms.TextInput(attrs={
+                "placeholder": "Faculty address or conference office address.",
+            }),
+        }
+
+
+class ConferenceFooterPartnerForm(forms.ModelForm):
+
+    class Meta:
+        model = ConferenceFooterPartner
+        fields = [
+            "name",
+            "logo",
+            "website",
+            "order",
+            "enabled",
         ]
 
 

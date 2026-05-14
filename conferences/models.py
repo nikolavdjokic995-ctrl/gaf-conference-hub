@@ -67,6 +67,31 @@ class Conference(models.Model):
     contact_email = models.EmailField(blank=True)
     organizer = models.CharField(max_length=255, blank=True)
 
+    footer_description = models.TextField(
+        blank=True,
+        help_text="Short text shown in the conference footer."
+    )
+    footer_copyright = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Copyright text shown at the bottom of the footer."
+    )
+    footer_contact_email = models.EmailField(
+        blank=True,
+        help_text="Contact email shown in the footer."
+    )
+    footer_address = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Address shown in the footer."
+    )
+    footer_logo = models.ImageField(
+        upload_to="conference_footer/",
+        blank=True,
+        null=True,
+        help_text="Optional logo shown in the footer."
+    )
+
     def __str__(self):
         return self.title_en
 
@@ -708,4 +733,27 @@ class ConferenceSidebarCard(models.Model):
 
     class Meta:
         ordering = ["order"]
+
+class ConferenceFooterPartner(models.Model):
+    conference = models.ForeignKey(
+        Conference,
+        on_delete=models.CASCADE,
+        related_name="footer_partners"
+    )
+
+    name = models.CharField(max_length=200)
+    logo = models.ImageField(
+        upload_to="conference_footer_partners/",
+        blank=True,
+        null=True
+    )
+    website = models.URLField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    enabled = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["order", "name"]
+
+    def __str__(self):
+        return f"{self.conference.title_en} - {self.name}"
 

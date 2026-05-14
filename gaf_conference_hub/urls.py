@@ -43,6 +43,11 @@ from conferences.views import (
     send_revision_to_reviewers,
     layout_dashboard,
     layout_decision,
+    footer_settings,
+    footer_settings,
+    add_footer_partner,
+    edit_footer_partner,
+    delete_footer_partner,
 )
 
 urlpatterns = [
@@ -76,6 +81,10 @@ urlpatterns = [
     path("conference/<slug:slug>/overview/", conference_overview, name="conference_overview"),
     path("conference/<slug:slug>/edit-overview/", edit_conference_overview, name="edit_conference_overview"),
     path("conference/<slug:slug>/settings/", conference_settings, name="conference_settings"),
+    path("conference/<slug:slug>/settings/footer/", footer_settings, name="footer_settings"),
+    path("conference/<slug:slug>/settings/footer/partner/add/", add_footer_partner, name="add_footer_partner"),
+    path("conference/footer/partner/<int:partner_id>/edit/", edit_footer_partner, name="edit_footer_partner"),
+    path("conference/footer/partner/<int:partner_id>/delete/", delete_footer_partner, name="delete_footer_partner"),
     path("conference/<slug:slug>/settings/submission/", edit_submission_settings, name="edit_submission_settings"),
     path("conference/<slug:slug>/settings/emails/", email_templates, name="email_templates"),
     path("conference/email-template/<int:template_id>/edit/", edit_email_template, name="edit_email_template"),
