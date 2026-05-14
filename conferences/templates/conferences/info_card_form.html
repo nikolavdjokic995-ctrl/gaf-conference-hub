@@ -66,8 +66,53 @@
         box-sizing:border-box;
     }
 
-    textarea{
-        min-height:300px;
+    .rich-toolbar{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        padding:12px;
+        background:#f5fbf7;
+        border:1px solid rgba(13,92,47,0.16);
+        border-radius:16px 16px 0 0;
+        border-bottom:0;
+    }
+
+    .tool-btn,
+    .tool-select{
+        border:1px solid rgba(13,92,47,0.18);
+        background:white;
+        color:#0d5c2f;
+        border-radius:10px;
+        padding:8px 11px;
+        font-weight:800;
+        cursor:pointer;
+        font-size:14px;
+    }
+
+    .tool-btn:hover,
+    .tool-select:hover{
+        background:#eaf7ef;
+    }
+
+    .rich-editor{
+        min-height:360px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:0 0 16px 16px;
+        padding:18px;
+        background:white;
+        color:#123524;
+        line-height:1.65;
+        outline:none;
+        overflow:auto;
+    }
+
+    .rich-editor:focus{
+        border-color:#16a34a;
+        box-shadow:0 0 0 4px rgba(22,163,74,0.12);
+    }
+
+    .hidden-description{
+        display:none;
     }
 
     .helptext{
@@ -126,21 +171,6 @@
         color:#315a45;
         font-size:14px;
     }
-
-    .tinymce-note{
-        font-size:13px;
-        color:#587568;
-    }
-
-    .editor-warning{
-        display:none;
-        padding:12px 14px;
-        background:#fff7ed;
-        border:1px solid #fed7aa;
-        border-radius:14px;
-        color:#9a3412;
-        font-size:14px;
-    }
 </style>
 
 <div class="editor-page">
@@ -157,7 +187,7 @@
                 {% endif %}
             </h1>
 
-            <form method="post" enctype="multipart/form-data">
+            <form method="post" enctype="multipart/form-data" id="info-card-form">
                 {% csrf_token %}
 
                 <div class="form-row">
@@ -166,15 +196,40 @@
                 </div>
 
                 <div class="form-row">
-                    <label for="{{ form.description.id_for_label }}">Description</label>
-                    {{ form.description }}
+                    <label>Description</label>
 
-                    <div id="editor-warning" class="editor-warning">
-                        Rich text editor did not load. Try Ctrl+F5, or check whether the CDN is blocked.
+                    <div class="rich-toolbar">
+                        <select class="tool-select" onchange="formatBlock(this.value); this.selectedIndex=0;">
+                            <option value="">Style</option>
+                            <option value="p">Paragraph</option>
+                            <option value="h2">Heading 2</option>
+                            <option value="h3">Heading 3</option>
+                            <option value="h4">Heading 4</option>
+                        </select>
+
+                        <button type="button" class="tool-btn" onclick="cmd('bold')"><b>B</b></button>
+                        <button type="button" class="tool-btn" onclick="cmd('italic')"><i>I</i></button>
+                        <button type="button" class="tool-btn" onclick="cmd('underline')"><u>U</u></button>
+
+                        <button type="button" class="tool-btn" onclick="cmd('insertUnorderedList')">• List</button>
+                        <button type="button" class="tool-btn" onclick="cmd('insertOrderedList')">1. List</button>
+
+                        <button type="button" class="tool-btn" onclick="cmd('justifyLeft')">Left</button>
+                        <button type="button" class="tool-btn" onclick="cmd('justifyCenter')">Center</button>
+                        <button type="button" class="tool-btn" onclick="cmd('justifyRight')">Right</button>
+
+                        <button type="button" class="tool-btn" onclick="addLink()">Link</button>
+                        <button type="button" class="tool-btn" onclick="cmd('removeFormat')">Clear</button>
+                    </div>
+
+                    <div id="rich-description" class="rich-editor" contenteditable="true"></div>
+
+                    <div class="hidden-description">
+                        {{ form.description }}
                     </div>
 
                     <span class="helptext">
-                        Use the toolbar for headings, bold text, lists, links, tables and formatting.
+                        Use the toolbar for bold text, headings, lists, links and alignment.
                     </span>
                 </div>
 
@@ -236,48 +291,38 @@
 </div>
 
 <script>
-    window.tinyMCEPreInit = window.tinyMCEPreInit || {};
-</script>
-
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-
-<script>
-document.addEventListener("DOMContentLoaded", function () {
-    function showWarning() {
-        var warning = document.getElementById("editor-warning");
-        if (warning) {
-            warning.style.display = "block";
-        }
+    function cmd(command) {
+        document.execCommand(command, false, null);
+        document.getElementById("rich-description").focus();
     }
 
-    function initEditor() {
-        if (!window.tinymce) {
-            showWarning();
-            return;
-        }
-
-        tinymce.init({
-            selector: 'textarea[name="description"]',
-            height: 430,
-            menubar: true,
-            branding: false,
-            promotion: false,
-            plugins: 'advlist autolink lists link charmap preview anchor searchreplace visualblocks code fullscreen insertdatetime table wordcount',
-            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | forecolor backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link table | removeformat | code fullscreen preview',
-            content_style: 'body { font-family: Calibri, Arial, sans-serif; font-size: 15px; line-height: 1.6; }',
-            setup: function (editor) {
-                editor.on('init', function () {
-                    var warning = document.getElementById("editor-warning");
-                    if (warning) {
-                        warning.style.display = "none";
-                    }
-                });
-            }
-        });
+    function formatBlock(tag) {
+        if (!tag) return;
+        document.execCommand("formatBlock", false, tag);
+        document.getElementById("rich-description").focus();
     }
 
-    setTimeout(initEditor, 250);
-});
+    function addLink() {
+        const url = prompt("Enter link URL:");
+        if (url) {
+            document.execCommand("createLink", false, url);
+        }
+        document.getElementById("rich-description").focus();
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const textarea = document.querySelector('textarea[name="description"]');
+        const editor = document.getElementById("rich-description");
+        const form = document.getElementById("info-card-form");
+
+        if (textarea && editor) {
+            editor.innerHTML = textarea.value || "";
+
+            form.addEventListener("submit", function () {
+                textarea.value = editor.innerHTML;
+            });
+        }
+    });
 </script>
 
 {% endblock %}
