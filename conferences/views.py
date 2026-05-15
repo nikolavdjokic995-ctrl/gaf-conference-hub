@@ -50,9 +50,10 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template
+from .emails import send_event_email, preview_template, send_test_template_email, validate_template_placeholders
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .utils import anonymize_docx
+from .mail_scheduler import run_review_reminders_throttled
 
 
 def home(request):
@@ -632,6 +633,11 @@ def judge_dashboard(request):
     if not judge_roles.exists():
         return redirect("/")
 
+    try:
+        run_review_reminders_throttled()
+    except Exception as exc:
+        messages.warning(request, f"Review reminder check could not run: {exc}")
+
     conferences = [role.conference for role in judge_roles]
 
     submissions = Submission.objects.filter(conference__in=conferences)
@@ -753,6 +759,11 @@ def email_templates(request, slug):
     if not is_manager:
         return redirect("/")
 
+    try:
+        run_review_reminders_throttled()
+    except Exception as exc:
+        messages.warning(request, f"Review reminder check could not run: {exc}")
+
     from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
 
     for event, template_data in DEFAULT_EMAIL_TEMPLATES_2026.items():
@@ -787,6 +798,9 @@ def email_templates(request, slug):
         if event in templates_by_event
     ]
 
+    for template in templates:
+        template.unknown_placeholders = validate_template_placeholders(template)
+
     logs = EmailLog.objects.filter(
         conference=conference
     ).select_related("submission", "template")[:40]
@@ -816,20 +830,66 @@ def edit_email_template(request, template_id):
         form = EmailTemplateForm(request.POST, instance=template)
 
         if form.is_valid():
-            form.save()
-            messages.success(request, "Email template saved successfully.")
+            saved_template = form.save()
+            unknown_placeholders = validate_template_placeholders(saved_template)
+            if unknown_placeholders:
+                messages.warning(
+                    request,
+                    "Template saved, but it contains unknown placeholder(s): " + ", ".join(unknown_placeholders)
+                )
+            else:
+                messages.success(request, "Email template saved successfully.")
             return redirect("email_templates", slug=conference.slug)
+        else:
+            messages.error(request, "Email template could not be saved. Please check the form fields.")
     else:
         form = EmailTemplateForm(instance=template)
 
     preview = preview_template(template, request=request)
+    unknown_placeholders = validate_template_placeholders(template)
 
     return render(request, "conferences/email_template_form.html", {
         "conference": conference,
         "template": template,
         "form": form,
         "preview": preview,
+        "unknown_placeholders": unknown_placeholders,
     })
+
+
+
+@login_required
+def send_test_email_template(request, template_id):
+    template = get_object_or_404(EmailTemplate, id=template_id)
+    conference = template.conference
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    is_judge = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="judge"
+    ).exists()
+
+    if not (is_manager or is_judge):
+        return redirect("/")
+
+    if request.method != "POST":
+        return redirect("email_templates", slug=conference.slug)
+
+    recipient = request.POST.get("test_recipient") or request.user.email
+    ok, message = send_test_template_email(template, recipient, request=request)
+
+    if ok:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+
+    return redirect("email_templates", slug=conference.slug)
 
 
 @login_required

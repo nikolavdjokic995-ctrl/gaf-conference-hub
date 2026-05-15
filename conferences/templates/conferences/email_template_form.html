@@ -16,6 +16,10 @@
         .btn.secondary { background: #64748b; }
         .preview { white-space: pre-wrap; background: #f8fafc; padding: 14px; border-radius: 10px; border: 1px solid #e5e7eb; line-height: 1.5; max-height: 520px; overflow:auto; }
         code { display:inline-block; background: #ecfdf5; color:#14532d; padding: 3px 6px; border-radius: 5px; margin:3px; border:1px solid #bbf7d0; }
+        .message { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-weight: 700; }
+        .message.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .message.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .message.warning, .warning { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:12px; border-radius:10px; margin-bottom:14px; line-height:1.45; }
         @media (max-width: 900px) { .container { grid-template-columns: 1fr; } }
     </style>
 </head>
@@ -27,6 +31,18 @@
 
 <div class="container">
     <div class="panel">
+        {% if messages %}
+            {% for message in messages %}
+                <div class="message {{ message.tags }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% if unknown_placeholders %}
+            <div class="warning">
+                <strong>Warning:</strong> This template contains unknown placeholder(s):
+                {% for item in unknown_placeholders %}<code>{{ item }}</code>{% endfor %}
+                <br>These values will render empty until they are added to the email context.
+            </div>
+        {% endif %}
         <form method="post">
             {% csrf_token %}
             <div class="checkrow">

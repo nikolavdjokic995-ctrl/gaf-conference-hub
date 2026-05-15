@@ -14,6 +14,7 @@ from conferences.views import (
     email_templates,
     edit_email_template,
     preview_email_template,
+    send_test_email_template,
     submit_paper,
     important_information,
     add_info_card,
@@ -106,6 +107,7 @@ urlpatterns = [
     path("conference/<slug:slug>/settings/emails/", email_templates, name="email_templates"),
     path("conference/email-template/<int:template_id>/edit/", edit_email_template, name="edit_email_template"),
     path("conference/email-template/<int:template_id>/preview/", preview_email_template, name="preview_email_template"),
+    path("conference/email-template/<int:template_id>/send-test/", send_test_email_template, name="send_test_email_template"),
 
     path("conference/<slug:slug>/important-information/", important_information, name="important_information"),
     path("conference/<slug:slug>/important-information/add/", add_info_card, name="add_info_card"),

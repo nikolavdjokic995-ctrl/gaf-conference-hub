@@ -23,6 +23,16 @@
         th, td { padding: 12px; border-bottom: 1px solid #e5e7eb; text-align: left; font-size: 14px; vertical-align: top; }
         th { background: #e8f8ef; color:#064e3b; }
         code { background: #eef2f7; padding: 2px 4px; border-radius: 4px; }
+        .message { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-weight: 700; }
+        .message.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .message.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .test-form { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .test-input { flex: 1 1 210px; padding: 9px; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .btn.test { background: #0f766e; border: 0; cursor: pointer; }
+        .warning { background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; padding:10px; border-radius:10px; font-size:13px; line-height:1.4; margin:10px 0; }
+        .log-sent { color:#166534; font-weight:700; }
+        .log-failed { color:#991b1b; font-weight:700; }
+        .log-skipped { color:#92400e; font-weight:700; }
     </style>
 </head>
 <body>
@@ -33,8 +43,14 @@
 </div>
 
 <div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
     <div class="intro">
-        <strong>Green Building 2026 automatic emails.</strong>
+        <strong>Green Building 2026 automatic emails.</strong> Use <strong>Send test email</strong> after editing each card to verify SMTP delivery and placeholder rendering.
         Edit each card text directly on the platform. Dynamic data can be inserted with placeholders such as
         <code>&#123;&#123; paper_title &#125;&#125;</code>, <code>&#123;&#123; paper_code &#125;&#125;</code>,
         <code>&#123;&#123; all_authors &#125;&#125;</code>, <code>&#123;&#123; first_author_email &#125;&#125;</code>,
@@ -48,6 +64,12 @@
                 <h3>{{ template.get_event_display }}</h3>
                 {% if template.enabled %}<span class="status on">Enabled</span>{% else %}<span class="status off">Disabled</span>{% endif %}
                 <p class="small"><strong>Subject:</strong> {{ template.subject }}</p>
+                {% if template.unknown_placeholders %}
+                    <div class="warning">
+                        <strong>Placeholder warning:</strong> Unknown placeholder(s):
+                        {% for item in template.unknown_placeholders %}<code>{{ item }}</code>{% endfor %}
+                    </div>
+                {% endif %}
                 <p class="small">
                     <strong>Recipients:</strong>
                     {% if template.send_to_author %}first/submitting author {% endif %}
@@ -58,6 +80,11 @@
                 </p>
                 <a class="btn" href="{% url 'edit_email_template' template.id %}">Edit text</a>
                 <a class="btn secondary" href="{% url 'preview_email_template' template.id %}">Preview</a>
+                <form class="test-form" method="post" action="{% url 'send_test_email_template' template.id %}">
+                    {% csrf_token %}
+                    <input class="test-input" type="email" name="test_recipient" placeholder="Test recipient email" value="{{ request.user.email }}">
+                    <button class="btn test" type="submit">Send test email</button>
+                </form>
             </div>
         {% empty %}
             <div class="card">
@@ -72,7 +99,7 @@
         <thead><tr><th>Time</th><th>Event</th><th>Paper</th><th>Recipient</th><th>Status</th><th>Message</th></tr></thead>
         <tbody>
             {% for log in logs %}
-                <tr><td>{{ log.created_at }}</td><td>{{ log.event }}</td><td>{% if log.submission %}{{ log.submission.title }}{% endif %}</td><td>{{ log.recipient }}</td><td>{{ log.get_status_display }}</td><td>{{ log.message }}</td></tr>
+                <tr><td>{{ log.created_at }}</td><td>{{ log.event }}</td><td>{% if log.submission %}{{ log.submission.title }}{% endif %}</td><td>{{ log.recipient }}</td><td class="log-{{ log.status }}">{{ log.get_status_display }}</td><td>{{ log.message }}</td></tr>
             {% empty %}
                 <tr><td colspan="6">No email logs yet.</td></tr>
             {% endfor %}

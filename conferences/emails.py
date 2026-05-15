@@ -20,9 +20,12 @@ def split_emails(value):
         return []
     emails = [part.strip() for part in re.split(r"[\n,;\s]+", value) if part.strip()]
     clean = []
+    seen = set()
     for email in emails:
-        if "@" in email and email not in clean:
-            clean.append(email)
+        normalized = email.strip().lower()
+        if "@" in normalized and normalized not in seen:
+            clean.append(normalized)
+            seen.add(normalized)
     return clean
 
 
@@ -203,9 +206,12 @@ def recipients_for_template(template, submission=None, reviewer=None):
         recipients.append(reviewer.email)
 
     clean = []
+    seen = set()
     for email in recipients:
-        if email and email not in clean:
-            clean.append(email)
+        normalized = str(email).strip().lower()
+        if normalized and "@" in normalized and normalized not in seen:
+            clean.append(normalized)
+            seen.add(normalized)
     return clean
 
 
@@ -244,6 +250,11 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
         extra=extra,
         assignment=assignment,
     )
+    unknown_placeholders = validate_template_placeholders(template)
+    warning_message = ""
+    if unknown_placeholders:
+        warning_message = "Unknown placeholder(s): " + ", ".join(unknown_placeholders)
+
     subject = render_template_text(template.subject, context).strip()
     body = render_template_text(template.body, context).strip()
     recipients = recipients_for_template(template, submission=submission, reviewer=reviewer)
@@ -273,6 +284,7 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
                 recipient=recipient,
                 subject=subject,
                 status="sent",
+                message=warning_message,
             )
             sent.append(recipient)
         except Exception as exc:
@@ -344,3 +356,104 @@ def preview_template(template, submission=None, reviewer=None, request=None):
         "body": render_template_text(template.body, context).strip(),
         "context": context,
     }
+
+
+
+PLACEHOLDER_PATTERN = re.compile(r"{{\s*([a-zA-Z0-9_]+)\s*}}")
+
+
+def extract_placeholders(text):
+    """Return placeholder names used in a template string."""
+    return set(PLACEHOLDER_PATTERN.findall(text or ""))
+
+
+def available_placeholder_names(template=None):
+    """Return placeholders supported by the current email renderer."""
+    if template is not None:
+        try:
+            return set(preview_template(template).get("context", {}).keys())
+        except Exception:
+            pass
+
+    return {
+        "conference_name", "conference_location", "conference_dates", "conference_contact_email",
+        "paper_title", "submission_id", "paper_code", "submission_status",
+        "submitting_author_name", "submitting_author_email", "author_name", "author_email",
+        "first_author", "first_author_email", "coauthors", "coauthor_emails",
+        "all_authors", "all_author_emails", "reviewer_name", "reviewer_email",
+        "revision_message", "layout_revision_message", "final_comment",
+        "upload_revision_link", "submission_result_link", "review_link", "review_form_link",
+        "review_invitation_link", "layout_decision_link", "conference_link",
+        "article_type", "abstract", "keywords", "submitted_on",
+        "review_deadline", "proposed_review_deadline", "accepted_review_deadline",
+        "review_days", "review_deadline_days", "days_until_due", "date_agreed",
+        "editor_decision", "editor_comments", "reviewer_comments",
+        "revision_deadline", "layout_deadline", "temporary_password",
+    }
+
+
+def validate_template_placeholders(template):
+    """Return unknown placeholders used by an EmailTemplate."""
+    used = extract_placeholders(template.subject) | extract_placeholders(template.body)
+    allowed = available_placeholder_names(template)
+    return sorted(used - allowed)
+
+
+def send_test_template_email(template, recipient, request=None):
+    """Send one rendered test email for a template and write EmailLog.
+
+    This is used from the Email settings page to verify SMTP, rendering and logs
+    without triggering the real workflow recipients.
+    """
+    recipient = (recipient or "").strip()
+    if not recipient or "@" not in recipient:
+        EmailLog.objects.create(
+            conference=template.conference,
+            template=template,
+            event=template.event,
+            recipient=recipient,
+            status="failed",
+            subject=template.subject,
+            message="Test email was not sent: invalid recipient email address.",
+        )
+        return False, "Invalid recipient email address."
+
+    preview = preview_template(template, request=request)
+    subject = f"[TEST] {preview['subject']}".strip()
+    body = (
+        "This is a test email from the Green Building Conference platform.\n"
+        "No real workflow action was triggered.\n\n"
+        f"Template event: {template.event}\n\n"
+        "----------------------------------------\n\n"
+        f"{preview['body']}"
+    )
+
+    try:
+        send_mail(
+            subject,
+            body,
+            getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            [recipient],
+            fail_silently=False,
+        )
+        EmailLog.objects.create(
+            conference=template.conference,
+            template=template,
+            event=template.event,
+            recipient=recipient,
+            subject=subject,
+            status="sent",
+            message="Test email sent successfully.",
+        )
+        return True, f"Test email sent to {recipient}."
+    except Exception as exc:
+        EmailLog.objects.create(
+            conference=template.conference,
+            template=template,
+            event=template.event,
+            recipient=recipient,
+            subject=subject,
+            status="failed",
+            message=f"Test email failed: {exc}",
+        )
+        return False, f"Test email failed: {exc}"
