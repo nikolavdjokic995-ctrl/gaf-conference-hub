@@ -21,6 +21,7 @@ class Command(BaseCommand):
         for assignment in assignments:
             submission = assignment.submission
             deadline = assignment.final_deadline()
+
             if not deadline:
                 continue
 
@@ -30,6 +31,7 @@ class Command(BaseCommand):
                 reviewer=assignment.reviewer,
                 review_round=current_round,
             ).exists()
+
             if review_exists:
                 continue
 
@@ -53,6 +55,7 @@ class Command(BaseCommand):
                     submission,
                     reviewer=assignment.reviewer,
                     assignment=assignment,
+                    extra={"days_until_due": str(days_until_due)},
                 )
                 assignment.overdue_reminder_sent = True
                 assignment.save(update_fields=["overdue_reminder_sent"])
