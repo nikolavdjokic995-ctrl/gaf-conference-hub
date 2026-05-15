@@ -4,13 +4,14 @@ from django.db import migrations, models
 def add_missing_review_assignment_fields(apps, schema_editor):
     ReviewAssignment = apps.get_model("conferences", "ReviewAssignment")
 
-    existing_columns = {
-        column.name
-        for column in schema_editor.connection.introspection.get_table_description(
-            schema_editor.connection.cursor(),
-            ReviewAssignment._meta.db_table
-        )
-    }
+    with schema_editor.connection.cursor() as cursor:
+        existing_columns = {
+            column.name
+            for column in schema_editor.connection.introspection.get_table_description(
+                cursor,
+                ReviewAssignment._meta.db_table
+            )
+        }
 
     fields_to_add = [
         ("invitation_status", models.CharField(max_length=20, default="pending")),

@@ -7,8 +7,6 @@ from django.contrib.auth import views as auth_views
 from conferences.views import (
     home,
     register,
-    privacy_policy,
-    terms_of_use,
     conference_overview,
     edit_conference_overview,
     conference_settings,
@@ -43,7 +41,6 @@ from conferences.views import (
     my_submissions,
     delete_submission,
     reviewer_dashboard,
-    reviewer_topics,
     upload_revision,
     send_revision_to_reviewers,
     layout_dashboard,
@@ -53,6 +50,9 @@ from conferences.views import (
     add_footer_partner,
     edit_footer_partner,
     delete_footer_partner,
+    terms_of_use,
+    privacy_policy,
+    reviewer_topics,
 )
 
 urlpatterns = [
@@ -80,8 +80,6 @@ urlpatterns = [
         name="password_change_done",
     ),
     path("register/", register, name="register"),
-    path("privacy/", privacy_policy, name="privacy_policy"),
-    path("terms/", terms_of_use, name="terms_of_use"),
 
     path("dashboard/", manager_dashboard, name="dashboard"),
     path("judge-dashboard/", judge_dashboard, name="judge_dashboard"),
@@ -112,7 +110,7 @@ urlpatterns = [
     path("conference/<slug:slug>/settings/emails/", email_templates, name="email_templates"),
     path("conference/email-template/<int:template_id>/edit/", edit_email_template, name="edit_email_template"),
     path("conference/email-template/<int:template_id>/preview/", preview_email_template, name="preview_email_template"),
-    path("conference/email-template/<int:template_id>/test/", send_test_email_template, name="send_test_email_template"),
+    path("conference/email-template/<int:template_id>/send-test/", send_test_email_template, name="send_test_email_template"),
 
     path("conference/<slug:slug>/important-information/", important_information, name="important_information"),
     path("conference/<slug:slug>/important-information/add/", add_info_card, name="add_info_card"),
@@ -123,7 +121,6 @@ urlpatterns = [
     path("important-information/sidebar/<int:sidebar_card_id>/delete/", delete_sidebar_card, name="delete_sidebar_card"),
 
     path("conference/<slug:slug>/topics/", conference_topics, name="conference_topics"),
-    path("conference/<slug:slug>/reviewer-topics/", reviewer_topics, name="reviewer_topics"),
     path("conference/<slug:slug>/topics/add/", add_conference_topic, name="add_conference_topic"),
     path("topics/<int:topic_id>/edit/", edit_conference_topic, name="edit_conference_topic"),
     path("topics/<int:topic_id>/delete/", delete_conference_topic, name="delete_conference_topic"),
@@ -133,6 +130,9 @@ urlpatterns = [
     path("conference/<slug:slug>/assign/", assign_papers, name="assign_papers"),
     path("conference/<slug:slug>/submissions/", conference_submissions, name="conference_submissions"),
     path("conference/<slug:slug>/people/", conference_people, name="conference_people"),
+    path("conference/<slug:slug>/reviewer-topics/", reviewer_topics, name="reviewer_topics"),
+    path("privacy/", privacy_policy, name="privacy_policy"),
+    path("terms/", terms_of_use, name="terms_of_use"),
 ]
 
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

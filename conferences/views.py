@@ -16,7 +16,6 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
-from django.http import HttpResponse
 from pathlib import Path
 
 from .models import (
@@ -51,9 +50,9 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
+from .emails import send_event_email, preview_template, send_test_template_email
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
-from .utils import anonymize_docx, get_supabase_storage_usage, cleanup_submission_temporary_files
+from .utils import anonymize_docx
 
 
 def home(request):
@@ -218,9 +217,6 @@ def make_decision(request, submission_id):
 
             submission.save()
 
-            if status == "final_accepted":
-                cleanup_submission_temporary_files(submission)
-
             # Official Green Building email workflow:
             # 11. Notify reviewers about the editor/judge decision.
             # 12. Notify authors that the review stage has been completed.
@@ -254,6 +250,34 @@ def make_decision(request, submission_id):
         "form": form,
     })
 
+
+
+
+def reviewer_roles_with_topic_match(reviewers, submission):
+    submission_topics = [topic for topic in [submission.topic, submission.secondary_topic] if topic]
+    submission_topic_ids = {topic.id for topic in submission_topics}
+
+    enriched = []
+    for reviewer_role in reviewers:
+        expertise_topics = list(reviewer_role.topics.all())
+        expertise_ids = {topic.id for topic in expertise_topics}
+        matching_topics = [topic for topic in expertise_topics if topic.id in submission_topic_ids]
+
+        reviewer_role.expertise_topics = expertise_topics
+        reviewer_role.matching_topics = matching_topics
+        reviewer_role.match_count = len(matching_topics)
+        reviewer_role.has_topics_selected = bool(expertise_topics)
+        reviewer_role.expertise_labels = ", ".join(
+            f"{topic.code} — {topic.title}" for topic in expertise_topics
+        ) or "No expertise topics selected yet"
+
+        enriched.append(reviewer_role)
+
+    enriched.sort(
+        key=lambda role: (role.match_count, role.has_topics_selected, role.user.get_full_name() or role.user.username),
+        reverse=True
+    )
+    return enriched
 
 @login_required
 def assign_papers(request, slug, submission_id=None):
@@ -367,20 +391,16 @@ def assign_papers(request, slug, submission_id=None):
     submission_data = []
 
     for submission in submissions:
-        topic_ids = [
-            topic.id
-            for topic in [submission.topic, submission.secondary_topic]
-            if topic
+        all_reviewers = reviewer_roles_with_topic_match(reviewers, submission)
+        suggested_reviewers = [
+            reviewer_role for reviewer_role in all_reviewers
+            if reviewer_role.match_count > 0
         ]
-
-        suggested_reviewers = reviewers.filter(
-            topics__id__in=topic_ids
-        ).distinct() if topic_ids else reviewers.none()
 
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
-            "all_reviewers": reviewers,
+            "all_reviewers": all_reviewers,
             "assignments": submission.review_assignments.all(),
         })
 
@@ -711,11 +731,8 @@ def conference_settings(request, slug):
     if not is_manager:
         return redirect("/")
 
-    storage_usage = get_supabase_storage_usage()
-
     return render(request, "conferences/conference_settings.html", {
-        "conference": conference,
-        "storage_usage": storage_usage,
+        "conference": conference
     })
 
 
@@ -839,6 +856,41 @@ def edit_email_template(request, template_id):
     })
 
 
+
+@login_required
+def send_test_email_template(request, template_id):
+    template = get_object_or_404(EmailTemplate, id=template_id)
+    conference = template.conference
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    is_judge = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="judge"
+    ).exists()
+
+    if not (is_manager or is_judge):
+        return redirect("/")
+
+    if request.method != "POST":
+        return redirect("email_templates", slug=conference.slug)
+
+    recipient = request.POST.get("test_recipient") or request.user.email
+    ok, message = send_test_template_email(template, recipient, request=request)
+
+    if ok:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+
+    return redirect("email_templates", slug=conference.slug)
+
+
 @login_required
 def preview_email_template(request, template_id):
     template = get_object_or_404(EmailTemplate, id=template_id)
@@ -862,47 +914,11 @@ def preview_email_template(request, template_id):
     })
 
 
-
-@login_required
-def send_test_email_template(request, template_id):
-    template = get_object_or_404(EmailTemplate, id=template_id)
-    conference = template.conference
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    if not is_manager:
-        return redirect("/")
-
-    if request.method == "POST":
-        recipient = request.POST.get("test_recipient", "").strip()
-        ok, message = send_test_template_email(template, recipient, request=request)
-        if ok:
-            messages.success(request, message)
-        else:
-            messages.error(request, message)
-
-    return redirect("email_templates", slug=conference.slug)
-
-
 @login_required
 def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
     if request.method == "POST":
-        recent_cutoff = timezone.now() - timezone.timedelta(minutes=10)
-        recent_count = Submission.objects.filter(
-            author=request.user,
-            created_at__gte=recent_cutoff,
-        ).count()
-
-        if recent_count >= 3:
-            messages.error(request, "Too many submissions in a short period. Please wait a few minutes and try again.")
-            return redirect("submit_paper", slug=conference.slug)
-
         form = SubmissionForm(request.POST, request.FILES, conference=conference)
 
         if form.is_valid():
@@ -1446,15 +1462,24 @@ def reviewer_topics(request, slug):
 
     if request.method == "POST":
         selected_topic_ids = request.POST.getlist("topics")
-        reviewer_role.topics.set(selected_topic_ids)
-        return redirect("reviewer_topics", slug=conference.slug)
 
-    selected_topics = reviewer_role.topics.values_list("id", flat=True)
+        if len(selected_topic_ids) < 1 or len(selected_topic_ids) > 2:
+            messages.error(request, "Please select one or two conference topics.")
+        else:
+            valid_topic_ids = set(
+                topics.filter(id__in=selected_topic_ids).values_list("id", flat=True)
+            )
+            reviewer_role.topics.set(valid_topic_ids)
+            messages.success(request, "Your reviewer expertise topics have been saved successfully.")
+            return redirect("reviewer_topics", slug=conference.slug)
+
+    selected_topics = list(reviewer_role.topics.values_list("id", flat=True))
 
     return render(request, "conferences/reviewer_topics.html", {
         "conference": conference,
         "topics": topics,
         "selected_topics": selected_topics,
+        "reviewer_role": reviewer_role,
     })
 
 
@@ -1616,27 +1641,20 @@ def layout_decision(request, submission_id):
         return redirect("layout_dashboard")
 
     if request.method == "POST":
-        form = LayoutDecisionForm(request.POST, request.FILES)
+        form = LayoutDecisionForm(request.POST)
 
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
-            final_publication_file = form.cleaned_data.get("final_publication_file")
 
             submission.status = status
             submission.final_comment = comment
-
-            if final_publication_file:
-                submission.final_publication_file = final_publication_file
 
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
                 submission.layout_revision_round += 1
 
             submission.save()
-
-            if status == "final_accepted":
-                cleanup_submission_temporary_files(submission)
 
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
@@ -1772,14 +1790,6 @@ def delete_footer_partner(request, partner_id):
         "conference": conference,
         "partner": partner,
     })
-
-
-def privacy_policy(request):
-    return render(request, "conferences/privacy_policy.html")
-
-
-def terms_of_use(request):
-    return render(request, "conferences/terms_of_use.html")
 
 
 def register(request):
@@ -1943,19 +1953,11 @@ def conference_people(request, slug):
 
         if role in dict(role_options):
             if action == "add":
-                conference_role, created = ConferenceRole.objects.get_or_create(
+                ConferenceRole.objects.get_or_create(
                     conference=conference,
                     user=selected_user,
                     role=role
                 )
-
-                if created and role == "content_reviewer":
-                    send_conference_role_email(
-                        "committee_login_info",
-                        conference,
-                        selected_user,
-                        request=request,
-                    )
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
@@ -2041,3 +2043,12 @@ def delete_submission(request, submission_id):
     return render(request, "conferences/delete_submission.html", {
         "submission": submission
     })
+from django.shortcuts import render
+
+
+def terms_of_use(request):
+    return render(request, "conferences/terms_of_use.html")
+
+
+def privacy_policy(request):
+    return render(request, "conferences/privacy_policy.html")

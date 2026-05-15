@@ -20,12 +20,9 @@ def split_emails(value):
         return []
     emails = [part.strip() for part in re.split(r"[\n,;\s]+", value) if part.strip()]
     clean = []
-    seen = set()
     for email in emails:
-        normalized = email.strip().lower()
-        if "@" in normalized and normalized not in seen:
-            clean.append(normalized)
-            seen.add(normalized)
+        if "@" in email and email not in clean:
+            clean.append(email)
     return clean
 
 
@@ -67,14 +64,14 @@ def format_date(value):
         return str(value)
 
 
-def build_email_context(submission=None, reviewer=None, request=None, extra=None, assignment=None):
+def build_email_context(submission=None, reviewer=None, request=None, extra=None, assignment=None, conference=None):
     assignment = find_assignment(submission=submission, reviewer=reviewer, assignment=assignment)
     if assignment and not submission:
         submission = assignment.submission
     if assignment and not reviewer:
         reviewer = assignment.reviewer
 
-    conference = submission.conference if submission else None
+    conference = conference or (submission.conference if submission else None)
     first_author = submission.first_author if submission else ""
     first_author_email = submission.first_author_email if submission else ""
     coauthors = split_people(submission.coauthors) if submission else []
@@ -207,12 +204,9 @@ def recipients_for_template(template, submission=None, reviewer=None):
         recipients.append(reviewer.email)
 
     clean = []
-    seen = set()
     for email in recipients:
-        normalized = str(email).strip().lower()
-        if normalized and "@" in normalized and normalized not in seen:
-            clean.append(normalized)
-            seen.add(normalized)
+        if email and email not in clean:
+            clean.append(email)
     return clean
 
 
@@ -251,11 +245,6 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
         extra=extra,
         assignment=assignment,
     )
-    unknown_placeholders = validate_template_placeholders(template)
-    warning_message = ""
-    if unknown_placeholders:
-        warning_message = "Unknown placeholder(s): " + ", ".join(unknown_placeholders)
-
     subject = render_template_text(template.subject, context).strip()
     body = render_template_text(template.body, context).strip()
     recipients = recipients_for_template(template, submission=submission, reviewer=reviewer)
@@ -285,7 +274,6 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
                 recipient=recipient,
                 subject=subject,
                 status="sent",
-                message=warning_message,
             )
             sent.append(recipient)
         except Exception as exc:
@@ -334,6 +322,7 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "review_invitation_link": "https://example.com/review-invitation/",
             "layout_decision_link": "https://example.com/layout-decision/",
             "conference_link": "https://example.com/conference/",
+            "reviewer_topics_link": "https://example.com/conference/reviewer-topics/",
             "article_type": "Research paper",
             "abstract": "Example abstract text.",
             "keywords": "green building, sustainability",
@@ -358,46 +347,6 @@ def preview_template(template, submission=None, reviewer=None, request=None):
         "context": context,
     }
 
-
-
-PLACEHOLDER_PATTERN = re.compile(r"{{\s*([a-zA-Z0-9_]+)\s*}}")
-
-
-def extract_placeholders(text):
-    """Return placeholder names used in a template string."""
-    return set(PLACEHOLDER_PATTERN.findall(text or ""))
-
-
-def available_placeholder_names(template=None):
-    """Return placeholders supported by the current email renderer."""
-    if template is not None:
-        try:
-            return set(preview_template(template).get("context", {}).keys())
-        except Exception:
-            pass
-
-    return {
-        "conference_name", "conference_location", "conference_dates", "conference_contact_email",
-        "paper_title", "submission_id", "paper_code", "submission_status",
-        "submitting_author_name", "submitting_author_email", "author_name", "author_email",
-        "first_author", "first_author_email", "coauthors", "coauthor_emails",
-        "all_authors", "all_author_emails", "reviewer_name", "reviewer_email",
-        "revision_message", "layout_revision_message", "final_comment",
-        "upload_revision_link", "submission_result_link", "review_link", "review_form_link",
-        "review_invitation_link", "layout_decision_link", "conference_link", "reviewer_topics_link",
-        "article_type", "abstract", "keywords", "submitted_on",
-        "review_deadline", "proposed_review_deadline", "accepted_review_deadline",
-        "review_days", "review_deadline_days", "days_until_due", "date_agreed",
-        "editor_decision", "editor_comments", "reviewer_comments",
-        "revision_deadline", "layout_deadline", "temporary_password",
-    }
-
-
-def validate_template_placeholders(template):
-    """Return unknown placeholders used by an EmailTemplate."""
-    used = extract_placeholders(template.subject) | extract_placeholders(template.body)
-    allowed = available_placeholder_names(template)
-    return sorted(used - allowed)
 
 
 def send_test_template_email(template, recipient, request=None):
@@ -460,29 +409,58 @@ def send_test_template_email(template, recipient, request=None):
         return False, f"Test email failed: {exc}"
 
 
-def send_conference_role_email(event, conference, reviewer, request=None, extra=None):
-    """Send a conference-level email to a reviewer/user, without requiring a submission.
 
-    Used for Scientific Committee / reviewer login information and reviewer topic
-    selection instructions. The template must be enabled before it will send.
+def send_conference_role_email(event, conference, user, request=None, extra=None):
+    """Send an email related to a user's role in a conference.
+
+    Used for Scientific Committee / reviewer onboarding messages that are not
+    linked to a specific submission. It supports placeholders such as
+    {{ conference_link }}, {{ reviewer_email }} and {{ reviewer_topics_link }}.
     """
     template = EmailTemplate.objects.filter(
         conference=conference,
         event=event,
-        enabled=True,
     ).first()
 
-    recipient = (getattr(reviewer, "email", "") or "").strip()
-
-    if not template:
+    if template is None:
         EmailLog.objects.create(
             conference=conference,
             event=event,
-            recipient=recipient,
+            recipient=user.email if user else "",
             status="skipped",
-            message="Template not found or disabled.",
+            message="No email template exists for this event.",
         )
-        return False, "Template not found or disabled."
+        return []
+
+    if not template.enabled:
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event=event,
+            recipient=user.email if user else "",
+            status="skipped",
+            message="Template is disabled.",
+        )
+        return []
+
+    context = build_email_context(
+        reviewer=user,
+        request=request,
+        conference=conference,
+        extra=extra,
+    )
+    context.update({
+        "conference_name": conference.title_en,
+        "conference_contact_email": conference.contact_email,
+        "reviewer_name": user_full_name(user),
+        "reviewer_email": user.email,
+        "conference_link": absolute_url(request, "conference_overview", conference.slug),
+        "reviewer_topics_link": absolute_url(request, "reviewer_topics", conference.slug),
+    })
+
+    subject = render_template_text(template.subject, context).strip()
+    body = render_template_text(template.body, context).strip()
+    recipient = (user.email or "").strip() if user else ""
 
     if not recipient or "@" not in recipient:
         EmailLog.objects.create(
@@ -490,38 +468,14 @@ def send_conference_role_email(event, conference, reviewer, request=None, extra=
             template=template,
             event=event,
             recipient=recipient,
+            subject=subject,
             status="skipped",
-            subject=template.subject,
-            message="Reviewer email address is empty or invalid.",
+            message="No valid recipient email address was found for this user.",
         )
-        return False, "Reviewer email address is empty or invalid."
-
-    reviewer_name = user_full_name(reviewer)
-    context = {
-        "conference_name": conference.title_en,
-        "conference_location": conference.location,
-        "conference_dates": f"{conference.start_date} — {conference.end_date}",
-        "conference_contact_email": conference.contact_email,
-        "conference_link": absolute_url(request, "conference_overview", conference.slug),
-        "reviewer_topics_link": absolute_url(request, "reviewer_topics", conference.slug),
-        "reviewer_name": reviewer_name,
-        "reviewer_email": recipient,
-        "temporary_password": "",
-    }
-    if extra:
-        context.update(extra)
-
-    subject = render_template_text(template.subject, context).strip()
-    body = render_template_text(template.body, context)
+        return []
 
     try:
-        send_mail(
-            subject,
-            body,
-            getattr(settings, "DEFAULT_FROM_EMAIL", None),
-            [recipient],
-            fail_silently=False,
-        )
+        send_mail(subject, body, getattr(settings, "DEFAULT_FROM_EMAIL", None), [recipient], fail_silently=False)
         EmailLog.objects.create(
             conference=conference,
             template=template,
@@ -529,9 +483,8 @@ def send_conference_role_email(event, conference, reviewer, request=None, extra=
             recipient=recipient,
             subject=subject,
             status="sent",
-            message="Conference role email sent successfully.",
         )
-        return True, "Conference role email sent successfully."
+        return [recipient]
     except Exception as exc:
         EmailLog.objects.create(
             conference=conference,
@@ -540,7 +493,6 @@ def send_conference_role_email(event, conference, reviewer, request=None, extra=
             recipient=recipient,
             subject=subject,
             status="failed",
-            message=f"Conference role email failed: {exc}",
+            message=str(exc),
         )
-        return False, f"Conference role email failed: {exc}"
-
+        return []

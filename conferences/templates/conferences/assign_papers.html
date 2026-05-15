@@ -101,59 +101,6 @@
             margin: 3px;
         }
 
-
-        .reviewer-option-line {
-            font-size: 13px;
-            color: #475569;
-            margin: 4px 0 8px;
-        }
-
-        .topic-badge {
-            display: inline-block;
-            background: #f1f5f9;
-            color: #334155;
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: bold;
-            margin: 2px;
-        }
-
-        .match-badge {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #86efac;
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: bold;
-            margin: 2px;
-        }
-
-        .warning-badge {
-            display: inline-block;
-            background: #fff7ed;
-            color: #9a3412;
-            border: 1px solid #fed7aa;
-            padding: 3px 8px;
-            border-radius: 999px;
-            font-size: 12px;
-            font-weight: bold;
-            margin: 2px;
-        }
-
-        .reviewer-help {
-            margin-top: 6px;
-            padding: 9px 12px;
-            background: #f8fafc;
-            border-left: 3px solid #16a34a;
-            border-radius: 8px;
-            color: #475569;
-            font-size: 13px;
-            line-height: 1.45;
-        }
-
         .empty {
             color: #777;
         }
@@ -163,6 +110,29 @@
             font-weight: bold;
             text-decoration: none;
         }
+
+        .match-note {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #dcfce7;
+            color: #166534;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .no-topics-note {
+            display: inline-block;
+            margin-left: 6px;
+            padding: 3px 8px;
+            border-radius: 999px;
+            background: #fff7ed;
+            color: #9a3412;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
     </style>
 </head>
 
@@ -242,24 +212,14 @@
                     <select name="reviewer_role_id" required>
                         <option value="">Select reviewer</option>
 
-                        {% for reviewer in item.suggested_reviewers %}
-                            <option value="{{ reviewer.id }}">
-                                {{ reviewer.display_name }} — good match{% if reviewer.match_count %} ({{ reviewer.match_count }} topic match{% if reviewer.match_count > 1 %}es{% endif %}){% endif %}
+                        {% for reviewer_role in item.suggested_reviewers %}
+                            <option value="{{ reviewer_role.id }}">
+                                {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }}
+                                — match: {{ reviewer_role.match_count }} topic(s)
+                                — expertise: {{ reviewer_role.expertise_labels }}
                             </option>
                         {% endfor %}
                     </select>
-
-                    <div class="reviewer-help">
-                        Suggested reviewers are sorted by matching topics for this paper.
-                        {% for reviewer in item.suggested_reviewers %}
-                            <div class="reviewer-option-line">
-                                <strong>{{ reviewer.display_name }}</strong>:
-                                {% for topic in reviewer.matching_topics %}
-                                    <span class="match-badge">{{ topic.code }}</span>
-                                {% endfor %}
-                            </div>
-                        {% endfor %}
-                    </div>
 
                     <div class="deadline-row">
                         <input type="date" name="proposed_deadline">
@@ -273,16 +233,7 @@
                 </form>
             {% else %}
                 <div class="empty">
-                    No suggested reviewers for this topic.
-                </div>
-            {% endif %}
-
-            {% if item.reviewers_without_topics %}
-                <div class="reviewer-help">
-                    Some reviewers have not selected their expertise topics yet:
-                    {% for reviewer in item.reviewers_without_topics %}
-                        <span class="warning-badge">{{ reviewer.display_name }}</span>
-                    {% endfor %}
+                    No reviewer has selected a matching expertise topic yet.
                 </div>
             {% endif %}
 
@@ -300,39 +251,20 @@
                 <select name="reviewer_role_id" required>
                     <option value="">Select reviewer</option>
 
-                    {% for reviewer in item.all_reviewers %}
-                        <option value="{{ reviewer.id }}">
-                            {{ reviewer.display_name }}
-                            {% if reviewer.match_count > 0 %}— {{ reviewer.match_count }} topic match{% if reviewer.match_count > 1 %}es{% endif %}{% elif not reviewer.topics_completed %}— topics not selected yet{% else %}— no topic match{% endif %}
+                    {% for reviewer_role in item.all_reviewers %}
+                        <option value="{{ reviewer_role.id }}">
+                            {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }}
+                            {% if reviewer_role.match_count %}
+                                — match: {{ reviewer_role.match_count }} topic(s)
+                            {% elif not reviewer_role.has_topics_selected %}
+                                — topics not selected yet
+                            {% else %}
+                                — no topic match
+                            {% endif %}
+                            — expertise: {{ reviewer_role.expertise_labels }}
                         </option>
                     {% endfor %}
                 </select>
-
-                <div class="reviewer-help">
-                    Reviewer expertise for this paper:
-                    {% for reviewer in item.all_reviewers %}
-                        <div class="reviewer-option-line">
-                            <strong>{{ reviewer.display_name }}</strong>:
-                            {% if reviewer.matching_topics %}
-                                {% for topic in reviewer.matching_topics %}
-                                    <span class="match-badge">{{ topic.code }}</span>
-                                {% endfor %}
-                            {% elif reviewer.topics %}
-                                {% for topic in reviewer.topics %}
-                                    <span class="topic-badge">{{ topic.code }}</span>
-                                {% endfor %}
-                            {% else %}
-                                <span class="warning-badge">topics not selected</span>
-                            {% endif %}
-                        </div>
-                    {% endfor %}
-                </div>
-
-                <div class="deadline-row">
-                    <input type="date" name="proposed_deadline">
-                    <input type="number" name="review_days" min="1" value="10" style="min-width:120px;">
-                    <span class="help">Choose a proposed deadline date, or leave date empty and use number of days.</span>
-                </div>
 
                 <button type="submit">
                     Assign
