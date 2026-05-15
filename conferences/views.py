@@ -567,10 +567,27 @@ def edit_submission_settings(request, slug):
         "form": form,
     })
 
-
 @login_required
 def email_templates(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
+
+    from .email_defaults import EMAIL_TEMPLATE_DEFAULTS
+
+    for template_data in EMAIL_TEMPLATE_DEFAULTS:
+        EmailTemplate.objects.get_or_create(
+            conference=conference,
+            event=template_data["event"],
+            defaults={
+                "enabled": template_data.get("enabled", True),
+                "send_to_author": template_data.get("send_to_author", True),
+                "send_to_coauthors": template_data.get("send_to_coauthors", False),
+                "send_to_reviewer": template_data.get("send_to_reviewer", False),
+                "send_to_managers": template_data.get("send_to_managers", False),
+                "send_to_layout_reviewers": template_data.get("send_to_layout_reviewers", False),
+                "subject": template_data["subject"],
+                "body": template_data["body"],
+            }
+        )
 
     is_manager = ConferenceRole.objects.filter(
         conference=conference,
@@ -585,8 +602,17 @@ def email_templates(request, slug):
         conference=conference,
         event__in=OFFICIAL_EMAIL_EVENTS,
     )
-    templates_by_event = {template.event: template for template in templates_qs}
-    templates = [templates_by_event[event] for event in OFFICIAL_EMAIL_EVENTS if event in templates_by_event]
+
+    templates_by_event = {
+        template.event: template
+        for template in templates_qs
+    }
+
+    templates = [
+        templates_by_event[event]
+        for event in OFFICIAL_EMAIL_EVENTS
+        if event in templates_by_event
+    ]
 
     logs = EmailLog.objects.filter(
         conference=conference
@@ -597,7 +623,6 @@ def email_templates(request, slug):
         "templates": templates,
         "logs": logs,
     })
-
 
 @login_required
 def edit_email_template(request, template_id):
