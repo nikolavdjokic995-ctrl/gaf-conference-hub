@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review invitation | GAF Conference Hub</title>
+    <style>
+        body { margin:0; font-family: Arial, sans-serif; background:#f4f6f8; color:#102a43; }
+        .topbar { background:#14532d; color:white; padding:24px 42px; }
+        .container { max-width:1000px; margin:40px auto; background:white; padding:34px; border-radius:18px; box-shadow:0 10px 30px rgba(0,0,0,.10); }
+        h1 { margin-top:0; color:#14532d; }
+        .paper-title { font-size:24px; font-weight:800; color:#14532d; margin-bottom:12px; }
+        .meta { line-height:1.8; color:#334155; margin-bottom:22px; }
+        .abstract { background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:18px; line-height:1.6; margin-bottom:24px; }
+        .form-box { background:#ecfdf5; border:1px solid #bbf7d0; border-radius:14px; padding:20px; }
+        label { display:block; margin:10px 0; font-weight:600; }
+        input[type="date"], textarea { width:100%; max-width:420px; padding:10px; border:1px solid #cbd5e1; border-radius:8px; }
+        textarea { max-width:700px; }
+        .btn { display:inline-block; margin-top:18px; background:#16a34a; color:white; border:0; padding:12px 18px; border-radius:9px; font-weight:700; cursor:pointer; }
+        .hint { color:#64748b; font-size:14px; }
+        .errorlist { color:#b91c1c; font-weight:700; }
+        .back { display:inline-block; margin-top:18px; color:#2563eb; font-weight:700; text-decoration:none; }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <h1>Review invitation</h1>
+    <p>{{ conference.title_en }}</p>
+</div>
+
+<div class="container">
+    <div class="paper-title">{{ submission.title }}</div>
+
+    <div class="meta">
+        <strong>Manuscript ID:</strong> {{ submission.paper_code }}<br>
+        <strong>Article type:</strong> {{ submission.get_article_type_display }}<br>
+        <strong>Proposed review deadline:</strong> {{ assignment.proposed_deadline|default:"Not set" }}<br>
+        <strong>Keywords:</strong> {{ submission.keywords }}
+    </div>
+
+    <h2>Abstract</h2>
+    <div class="abstract">{{ submission.abstract|linebreaksbr }}</div>
+
+    {% if assignment.invitation_status == "pending" %}
+        <div class="form-box">
+            <h2>Your response</h2>
+            <p class="hint">Please choose whether you accept this review invitation. If you accept, you can use the proposed deadline or request a different one.</p>
+
+            <form method="post">
+                {% csrf_token %}
+                {{ form.non_field_errors }}
+
+                <h3>{{ form.response.label }}</h3>
+                {{ form.response }}
+
+                <h3>{{ form.deadline_choice.label }}</h3>
+                {{ form.deadline_choice }}
+
+                <label>{{ form.requested_deadline.label }}</label>
+                {{ form.requested_deadline.errors }}
+                {{ form.requested_deadline }}
+
+                <label>{{ form.decline_reason.label }}</label>
+                {{ form.decline_reason.errors }}
+                {{ form.decline_reason }}
+
+                <button class="btn" type="submit">Submit response</button>
+            </form>
+        </div>
+    {% elif assignment.invitation_status == "accepted" %}
+        <p><strong>You have accepted this review invitation.</strong></p>
+        <p>Final review deadline: {{ assignment.accepted_deadline|default:"Not set" }}</p>
+        <a class="btn" href="{% url 'review_submission' submission.id %}">Open review form</a>
+    {% else %}
+        <p><strong>You have declined this review invitation.</strong></p>
+    {% endif %}
+
+    <br>
+    <a class="back" href="{% url 'my_reviews' %}">← Back to my reviews</a>
+</div>
+</body>
+</html>

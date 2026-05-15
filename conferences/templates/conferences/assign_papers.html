@@ -60,11 +60,26 @@
             color: #14532d;
         }
 
-        select {
+        select, input[type="date"] {
             padding: 10px;
-            min-width: 320px;
+            min-width: 220px;
             border-radius: 8px;
             border: 1px solid #ccc;
+            margin-right: 8px;
+        }
+
+        .deadline-label {
+            display: inline-block;
+            margin-left: 10px;
+            margin-right: 6px;
+            color: #14532d;
+            font-weight: bold;
+        }
+
+        .assignment-meta {
+            color: #475569;
+            font-size: 13px;
+            margin-left: 4px;
         }
 
         button {
@@ -152,8 +167,12 @@
             {% if item.assignments %}
                 {% for assignment in item.assignments %}
                     <span class="badge">
-                        {{ assignment.reviewer.username }} — {{ assignment.get_role_display }}
+                        {{ assignment.reviewer.username }} — {{ assignment.get_role_display }} — {{ assignment.get_invitation_status_display }}
                     </span>
+                    <span class="assignment-meta">
+                        Proposed: {{ assignment.proposed_deadline|default:"not set" }}
+                        {% if assignment.accepted_deadline %} | Final: {{ assignment.accepted_deadline }}{% endif %}
+                    </span><br>
                 {% endfor %}
             {% else %}
                 <div class="empty">
@@ -183,6 +202,9 @@
                             </option>
                         {% endfor %}
                     </select>
+
+                    <span class="deadline-label">Proposed deadline</span>
+                    <input type="date" name="proposed_deadline" required>
 
                     <button type="submit">
                         Assign

@@ -354,6 +354,12 @@ class ReviewAssignment(models.Model):
         ("layout_reviewer", "Layout reviewer"),
     ]
 
+    INVITATION_STATUS_CHOICES = [
+        ("pending", "Invitation pending"),
+        ("accepted", "Accepted"),
+        ("declined", "Declined"),
+    ]
+
     submission = models.ForeignKey(
         Submission,
         on_delete=models.CASCADE,
@@ -369,11 +375,38 @@ class ReviewAssignment(models.Model):
     role = models.CharField(max_length=50, choices=ROLE_CHOICES)
     assigned_at = models.DateTimeField(auto_now_add=True)
 
+    invitation_status = models.CharField(
+        max_length=20,
+        choices=INVITATION_STATUS_CHOICES,
+        default="pending",
+        help_text="Reviewer invitation status before the review form is opened."
+    )
+
+    proposed_deadline = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Deadline proposed by the judge when inviting the reviewer."
+    )
+
+    accepted_deadline = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Final deadline accepted or requested by the reviewer."
+    )
+
+    deadline_extension_requested = models.BooleanField(
+        default=False,
+        help_text="Reviewer requested a different deadline when accepting the invitation."
+    )
+
+    decline_reason = models.TextField(blank=True)
+    responded_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         unique_together = ("submission", "reviewer", "role")
 
     def __str__(self):
-        return f"{self.submission.title} — {self.reviewer.username} — {self.role}"
+        return f"{self.submission.title} — {self.reviewer.username} — {self.role} — {self.invitation_status}"
 
 
 class Review(models.Model):

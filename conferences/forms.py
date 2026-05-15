@@ -240,6 +240,57 @@ class ReviewForm(forms.ModelForm):
                 )
 
         return file
+
+class ReviewInvitationResponseForm(forms.Form):
+
+    RESPONSE_CHOICES = [
+        ("accept", "Accept review"),
+        ("decline", "Decline review"),
+    ]
+
+    DEADLINE_CHOICES = [
+        ("proposed", "I accept the proposed deadline"),
+        ("different", "I request a different deadline"),
+    ]
+
+    response = forms.ChoiceField(
+        choices=RESPONSE_CHOICES,
+        widget=forms.RadioSelect,
+        initial="accept",
+        label="Your response"
+    )
+
+    deadline_choice = forms.ChoiceField(
+        choices=DEADLINE_CHOICES,
+        widget=forms.RadioSelect,
+        initial="proposed",
+        required=False,
+        label="Review deadline"
+    )
+
+    requested_deadline = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={"type": "date"}),
+        label="Requested deadline"
+    )
+
+    decline_reason = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={"rows": 4}),
+        label="Reason for declining (optional)"
+    )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        response = cleaned_data.get("response")
+        deadline_choice = cleaned_data.get("deadline_choice")
+        requested_deadline = cleaned_data.get("requested_deadline")
+
+        if response == "accept" and deadline_choice == "different" and not requested_deadline:
+            self.add_error("requested_deadline", "Please select the deadline you would like to request.")
+
+        return cleaned_data
+
 class ConferenceForm(forms.ModelForm):
 
     class Meta:

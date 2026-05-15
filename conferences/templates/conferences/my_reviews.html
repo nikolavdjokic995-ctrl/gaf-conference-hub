@@ -4,124 +4,36 @@
     <title>My Reviews | GAF Conference Hub</title>
 
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
-        }
-
-        .topbar {
-            background: #14532d;
-            color: white;
-            padding: 22px 45px;
-            font-size: 28px;
-            font-weight: bold;
-        }
-
-        .container {
-            max-width: 1050px;
-            margin: 45px auto;
-            background: white;
-            padding: 38px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
-        }
-
-        h1 {
-            margin-top: 0;
-            color: #14532d;
-        }
-
-        .review-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 20px;
-            background: #ffffff;
-        }
-
-        .paper-title {
-            font-size: 22px;
-            font-weight: bold;
-            color: #14532d;
-            margin-bottom: 12px;
-        }
-
-        .meta {
-            color: #444;
-            line-height: 1.8;
-        }
-
-        .badge {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            padding: 5px 10px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: bold;
-        }
-
-        .btn {
-            display: inline-block;
-            margin-top: 16px;
-            margin-right: 10px;
-            background: #16a34a;
-            color: white;
-            padding: 11px 18px;
-            border-radius: 9px;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .btn:hover {
-            background: #15803d;
-        }
-
-        .btn-outline {
-            background: white;
-            color: #14532d;
-            border: 1px solid #14532d;
-        }
-
-        .empty {
-            padding: 26px;
-            background: #f9fafb;
-            border-radius: 12px;
-            color: #555;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 22px;
-            color: #2563eb;
-            font-weight: bold;
-            text-decoration: none;
-        }
+        body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; }
+        .topbar { background: #14532d; color: white; padding: 22px 45px; font-size: 28px; font-weight: bold; }
+        .container { max-width: 1050px; margin: 45px auto; background: white; padding: 38px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.10); }
+        h1 { margin-top: 0; color: #14532d; }
+        .review-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 22px; margin-bottom: 20px; background: #ffffff; }
+        .paper-title { font-size: 22px; font-weight: bold; color: #14532d; margin-bottom: 12px; }
+        .meta { color: #444; line-height: 1.8; }
+        .badge { display: inline-block; background: #dcfce7; color: #166534; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: bold; }
+        .badge.pending { background: #fef3c7; color: #92400e; }
+        .btn { display: inline-block; margin-top: 16px; margin-right: 10px; background: #16a34a; color: white; padding: 11px 18px; border-radius: 9px; font-weight: bold; text-decoration: none; }
+        .btn:hover { background: #15803d; }
+        .btn-outline { background: white; color: #14532d; border: 1px solid #14532d; }
+        .empty { padding: 26px; background: #f9fafb; border-radius: 12px; color: #555; }
+        .back-link { display: inline-block; margin-top: 22px; color: #2563eb; font-weight: bold; text-decoration: none; }
     </style>
 </head>
 
 <body>
-
-<div class="topbar">
-    GAF Conference Hub
-</div>
+<div class="topbar">GAF Conference Hub</div>
 
 <div class="container">
-
-    <h1>My assigned reviews</h1>
+    <h1>My review invitations and assignments</h1>
 
     {% if assignments %}
         {% for assignment in assignments %}
             <div class="review-card">
-
-                <div class="paper-title">
-                    {{ assignment.submission.title }}
-                </div>
+                <div class="paper-title">{{ assignment.submission.title }}</div>
 
                 <div class="meta">
-                    <strong>Conference:</strong>
-                    {{ assignment.submission.conference.title_en }}<br>
+                    <strong>Conference:</strong> {{ assignment.submission.conference.title_en }}<br>
 
                     <strong>Topics:</strong>
                     {% for topic in assignment.submission.topic_list %}
@@ -132,42 +44,39 @@
                     <br>
 
                     <strong>Your role:</strong>
-                    <span class="badge">
-                        {{ assignment.get_role_display }}
+                    <span class="badge">{{ assignment.get_role_display }}</span><br>
+
+                    <strong>Invitation status:</strong>
+                    <span class="badge {% if assignment.invitation_status == 'pending' %}pending{% endif %}">
+                        {{ assignment.get_invitation_status_display }}
                     </span><br>
 
-                    <strong>Status:</strong>
-                    {{ assignment.submission.get_status_display }}<br>
-
-                    <strong>Review round:</strong>
-                    {{ assignment.submission.revision_round }}
+                    <strong>Proposed deadline:</strong> {{ assignment.proposed_deadline|default:"Not set" }}<br>
+                    {% if assignment.accepted_deadline %}
+                        <strong>Final review deadline:</strong> {{ assignment.accepted_deadline }}<br>
+                    {% endif %}
+                    <strong>Review round:</strong> {{ assignment.submission.revision_round }}
                 </div>
 
-                <a class="btn btn-outline"
-                   href="{% url 'download_review_paper' assignment.submission.id %}"
-                   target="_blank">
-                    Download paper for review
-                </a>
-
-                <a class="btn"
-                   href="{% url 'review_submission' assignment.submission.id %}">
-                    Open review
-                </a>
-
+                {% if assignment.invitation_status == "pending" %}
+                    <a class="btn" href="{% url 'review_invitation_response' assignment.id %}">
+                        Respond to invitation
+                    </a>
+                {% elif assignment.invitation_status == "accepted" %}
+                    <a class="btn btn-outline" href="{% url 'download_review_paper' assignment.submission.id %}" target="_blank">
+                        Download paper for review
+                    </a>
+                    <a class="btn" href="{% url 'review_submission' assignment.submission.id %}">
+                        Open review
+                    </a>
+                {% endif %}
             </div>
         {% endfor %}
     {% else %}
-        <div class="empty">
-            No papers assigned yet.
-        </div>
+        <div class="empty">No papers assigned yet.</div>
     {% endif %}
 
-    <a class="back-link"
-       href="/conference/green-building-2026/overview/">
-        ← Back to conference
-    </a>
-
+    <a class="back-link" href="/conference/green-building-2026/overview/">← Back to conference</a>
 </div>
-
 </body>
 </html>
