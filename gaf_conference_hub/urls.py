@@ -53,6 +53,8 @@ from conferences.views import (
     terms_of_use,
     privacy_policy,
     reviewer_topics,
+    email_health_dashboard,
+    run_email_automation_now,
 )
 
 urlpatterns = [
@@ -80,7 +82,8 @@ urlpatterns = [
         name="password_change_done",
     ),
     path("register/", register, name="register"),
-
+    path("conference/<slug:slug>/settings/emails/health/", email_health_dashboard, name="email_health_dashboard"),
+    path("conference/<slug:slug>/settings/emails/run-automation/", run_email_automation_now, name="run_email_automation_now"),
     path("dashboard/", manager_dashboard, name="dashboard"),
     path("judge-dashboard/", judge_dashboard, name="judge_dashboard"),
     path("reviewer-dashboard/", reviewer_dashboard, name="reviewer_dashboard"),

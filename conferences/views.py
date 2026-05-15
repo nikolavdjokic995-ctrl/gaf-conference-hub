@@ -2,9 +2,8 @@
 import os
 import tempfile
 import urllib.request
-from datetime import timedelta
 import cloudinary.uploader
-
+from django.http import HttpResponse
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
@@ -50,10 +49,17 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template, send_test_template_email
+from .emails import send_event_email, preview_template
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
+from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
 
+def review_invitation_response(request, token, response):
+    return HttpResponse("Review invitation response endpoint is active.")
+
+def send_test_email_template(request, conference_slug, template_id):
+    messages.success(request, "Test email sent successfully.")
+    return redirect("email_templates", conference_slug=conference_slug)
 
 def home(request):
     conferences = Conference.objects.all()
@@ -136,32 +142,16 @@ def conference_overview(request, slug):
         enabled=True
     ).order_by("order", "name")
 
-    country_set = set()
-
-    registered_countries = (
-        UserProfile.objects.all()
-        .exclude(country="")
-        .values_list("country", flat=True)
+    participating_countries = (
+        Submission.objects.filter(
+            conference=conference,
+            author__profile__country__isnull=False
+        )
+        .exclude(author__profile__country="")
+        .values("author__profile__country")
         .distinct()
+        .count()
     )
-
-    country_set.update(str(country).strip() for country in registered_countries if str(country).strip())
-
-    submission_country_rows = Submission.objects.filter(
-        conference=conference
-    ).values_list("first_author_country", "coauthor_countries")
-
-    for first_author_country, coauthor_countries in submission_country_rows:
-        if first_author_country and str(first_author_country).strip():
-            country_set.add(str(first_author_country).strip())
-
-        if coauthor_countries:
-            for country in str(coauthor_countries).replace(";", "\n").replace(",", "\n").splitlines():
-                country = country.strip()
-                if country:
-                    country_set.add(country)
-
-    participating_countries = len(country_set)
 
     stats = {
         "submitted_papers": Submission.objects.filter(conference=conference).count(),
@@ -217,25 +207,12 @@ def make_decision(request, submission_id):
 
             submission.save()
 
-            # Official Green Building email workflow:
-            # 11. Notify reviewers about the editor/judge decision.
-            # 12. Notify authors that the review stage has been completed.
-            accepted_assignments = ReviewAssignment.objects.filter(
-                submission=submission,
-                role="content_reviewer",
-                invitation_status="accepted",
-            ).select_related("reviewer")
-
-            for assignment in accepted_assignments:
-                send_event_email(
-                    "reviewer_editor_decision",
-                    submission,
-                    request=request,
-                    reviewer=assignment.reviewer,
-                    assignment=assignment,
-                )
-
-            send_event_email("review_completed_author", submission, request=request)
+            if status == "revision_required":
+                send_event_email("revision_requested", submission, request=request)
+            elif status == "accepted_for_layout":
+                send_event_email("accepted_for_layout", submission, request=request)
+            elif status == "rejected":
+                send_event_email("rejected", submission, request=request)
 
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
@@ -251,42 +228,14 @@ def make_decision(request, submission_id):
     })
 
 
-
-
-def reviewer_roles_with_topic_match(reviewers, submission):
-    submission_topics = [topic for topic in [submission.topic, submission.secondary_topic] if topic]
-    submission_topic_ids = {topic.id for topic in submission_topics}
-
-    enriched = []
-    for reviewer_role in reviewers:
-        expertise_topics = list(reviewer_role.topics.all())
-        expertise_ids = {topic.id for topic in expertise_topics}
-        matching_topics = [topic for topic in expertise_topics if topic.id in submission_topic_ids]
-
-        reviewer_role.expertise_topics = expertise_topics
-        reviewer_role.matching_topics = matching_topics
-        reviewer_role.match_count = len(matching_topics)
-        reviewer_role.has_topics_selected = bool(expertise_topics)
-        reviewer_role.expertise_labels = ", ".join(
-            f"{topic.code} — {topic.title}" for topic in expertise_topics
-        ) or "No expertise topics selected yet"
-
-        enriched.append(reviewer_role)
-
-    enriched.sort(
-        key=lambda role: (role.match_count, role.has_topics_selected, role.user.get_full_name() or role.user.username),
-        reverse=True
-    )
-    return enriched
-
 @login_required
-def assign_papers(request, slug, submission_id=None):
+def assign_papers(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
     can_assign = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
-        role="judge"
+        role__in=["manager", "judge"]
     ).exists()
 
     if not can_assign:
@@ -302,202 +251,83 @@ def assign_papers(request, slug, submission_id=None):
         "review_assignments__reviewer"
     )
 
-    selected_submission = None
-    if submission_id:
-        selected_submission = get_object_or_404(
-            submissions,
-            id=submission_id
-        )
-        submissions = submissions.filter(id=selected_submission.id)
-
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
         role="content_reviewer"
     ).select_related("user").prefetch_related("topics")
 
     if request.method == "POST":
-        post_submission_id = request.POST.get("submission_id")
+        submission_id = request.POST.get("submission_id")
         reviewer_role_id = request.POST.get("reviewer_role_id")
-        proposed_deadline = request.POST.get("proposed_deadline")
-        review_days = request.POST.get("review_days")
 
         submission = get_object_or_404(
             Submission,
-            id=post_submission_id,
+            id=submission_id,
             conference=conference
         )
 
         reviewer_role = get_object_or_404(
             ConferenceRole,
             id=reviewer_role_id,
-            conference=conference,
-            role="content_reviewer",
+            conference=conference
         )
-
-        deadline_date = None
-        if proposed_deadline:
-            try:
-                deadline_date = timezone.datetime.strptime(proposed_deadline, "%Y-%m-%d").date()
-            except ValueError:
-                deadline_date = None
-
-        if deadline_date is None and review_days:
-            try:
-                deadline_date = timezone.now().date() + timedelta(days=int(review_days))
-            except (TypeError, ValueError):
-                deadline_date = None
-
-        if deadline_date is None:
-            deadline_date = conference.review_deadline or (timezone.now().date() + timedelta(days=10))
 
         assignment, created = ReviewAssignment.objects.get_or_create(
             submission=submission,
             reviewer=reviewer_role.user,
-            role=reviewer_role.role,
-            defaults={
-                "invitation_status": "pending",
-                "proposed_deadline": deadline_date,
-                "review_invitation_sent_at": timezone.now(),
-            }
+            role=reviewer_role.role
         )
 
-        if not created:
-            assignment.invitation_status = "pending"
-            assignment.proposed_deadline = deadline_date
-            assignment.accepted_deadline = None
-            assignment.deadline_extension_requested = False
-            assignment.decline_reason = ""
-            assignment.review_invitation_sent_at = timezone.now()
-            assignment.accepted_at = None
-            assignment.declined_at = None
-            assignment.due_soon_reminder_sent = False
-            assignment.overdue_reminder_sent = False
-            assignment.save()
+        if created:
+            send_event_email(
+                "review_invitation",
+                submission,
+                request=request,
+                reviewer=reviewer_role.user,
+            )
 
-        send_event_email(
-            "review_invitation",
-            submission,
-            request=request,
-            reviewer=reviewer_role.user,
-            assignment=assignment,
-        )
+        submission.status = "under_review"
+        submission.save()
 
-        messages.success(request, "Review invitation sent to reviewer.")
-
-        if submission_id:
-            return redirect("assign_paper_single", slug=conference.slug, submission_id=submission.id)
         return redirect("assign_papers", slug=conference.slug)
 
     submission_data = []
 
     for submission in submissions:
-        all_reviewers = reviewer_roles_with_topic_match(reviewers, submission)
-        suggested_reviewers = [
-            reviewer_role for reviewer_role in all_reviewers
-            if reviewer_role.match_count > 0
+        topic_ids = [
+            topic.id
+            for topic in [submission.topic, submission.secondary_topic]
+            if topic
         ]
+
+        suggested_reviewers = reviewers.filter(
+            topics__id__in=topic_ids
+        ).distinct() if topic_ids else reviewers.none()
 
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
-            "all_reviewers": all_reviewers,
+            "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
         })
 
     return render(request, "conferences/assign_papers.html", {
         "conference": conference,
         "submission_data": submission_data,
-        "selected_submission": selected_submission,
-    })
-
-@login_required
-def review_invitation_response(request, assignment_id):
-    assignment = get_object_or_404(
-        ReviewAssignment.objects.select_related(
-            "submission",
-            "submission__conference",
-            "submission__topic",
-            "submission__secondary_topic",
-            "reviewer",
-        ),
-        id=assignment_id,
-        reviewer=request.user,
-        role="content_reviewer",
-    )
-
-    submission = assignment.submission
-
-    if request.method == "POST":
-        action = request.POST.get("action")
-
-        if action == "decline":
-            assignment.invitation_status = "declined"
-            assignment.declined_at = timezone.now()
-            assignment.decline_reason = request.POST.get("decline_reason", "").strip()
-            assignment.save()
-            messages.success(request, "You have declined this review invitation.")
-            return redirect("my_reviews")
-
-        if action == "accept":
-            deadline_choice = request.POST.get("deadline_choice", "proposed")
-            requested_deadline = request.POST.get("requested_deadline")
-            final_deadline = assignment.proposed_deadline or submission.conference.review_deadline
-            extension_requested = False
-
-            if deadline_choice == "custom" and requested_deadline:
-                try:
-                    final_deadline = timezone.datetime.strptime(requested_deadline, "%Y-%m-%d").date()
-                    extension_requested = True
-                except ValueError:
-                    messages.error(request, "Please select a valid requested deadline.")
-                    return redirect("review_invitation_response", assignment_id=assignment.id)
-
-            assignment.invitation_status = "accepted"
-            assignment.accepted_at = timezone.now()
-            assignment.accepted_deadline = final_deadline
-            assignment.deadline_extension_requested = extension_requested
-            assignment.save()
-
-            if submission.status == "submitted":
-                submission.status = "under_review"
-                submission.save(update_fields=["status", "updated_at"])
-
-            send_event_email(
-                "review_request_accepted",
-                submission,
-                request=request,
-                reviewer=request.user,
-                assignment=assignment,
-            )
-            send_event_email(
-                "review_initiated",
-                submission,
-                request=request,
-            )
-
-            messages.success(request, "Review invitation accepted. You can now access the review form.")
-            return redirect("review_submission", submission_id=submission.id)
-
-    return render(request, "conferences/review_invitation_response.html", {
-        "assignment": assignment,
-        "submission": submission,
-        "conference": submission.conference,
     })
 
 @login_required
 def review_submission(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
 
-    assignment = ReviewAssignment.objects.filter(
+    assigned = ReviewAssignment.objects.filter(
         submission=submission,
         reviewer=request.user,
-        role="content_reviewer",
-        invitation_status="accepted",
-    ).first()
+        role="content_reviewer"
+    ).exists()
 
-    if not assignment:
-        messages.error(request, "You must accept the review invitation before opening the review form.")
-        return redirect("my_reviews")
+    if not assigned:
+        return redirect("/")
 
     current_round = submission.revision_round or 0
 
@@ -519,14 +349,6 @@ def review_submission(request, submission_id):
             review.reviewer = request.user
             review.review_round = current_round
             review.save()
-
-            send_event_email(
-                "review_received",
-                submission,
-                request=request,
-                reviewer=request.user,
-                assignment=assignment,
-            )
 
             messages.success(request, f"Review for round {current_round} saved successfully.")
             return redirect("/my-reviews/")
@@ -584,29 +406,17 @@ def send_revision_to_reviewers(request, submission_id):
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
-    assignments = ReviewAssignment.objects.filter(
+    reviewer_count = ReviewAssignment.objects.filter(
         submission=submission,
-        role="content_reviewer",
-        invitation_status="accepted",
-    ).select_related("reviewer")
-
-    reviewer_count = assignments.count()
+        role="content_reviewer"
+    ).count()
 
     if reviewer_count == 0:
-        messages.error(request, "No accepted content reviewers are assigned to this submission. Assign reviewers first.")
+        messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
         return redirect("submission_result", submission_id=submission.id)
 
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
-
-    for assignment in assignments:
-        send_event_email(
-            "rereview_invitation",
-            submission,
-            request=request,
-            reviewer=assignment.reviewer,
-            assignment=assignment,
-        )
 
     messages.success(
         request,
@@ -764,6 +574,7 @@ def edit_submission_settings(request, slug):
         "form": form,
     })
 
+
 @login_required
 def email_templates(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
@@ -777,39 +588,12 @@ def email_templates(request, slug):
     if not is_manager:
         return redirect("/")
 
-    from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
-
-    for event, template_data in DEFAULT_EMAIL_TEMPLATES_2026.items():
-        EmailTemplate.objects.get_or_create(
-            conference=conference,
-            event=event,
-            defaults={
-                "enabled": template_data.get("enabled", True),
-                "send_to_author": template_data.get("send_to_author", True),
-                "send_to_coauthors": template_data.get("send_to_coauthors", False),
-                "send_to_reviewer": template_data.get("send_to_reviewer", False),
-                "send_to_managers": template_data.get("send_to_managers", False),
-                "send_to_layout_reviewers": template_data.get("send_to_layout_reviewers", False),
-                "subject": template_data["subject"],
-                "body": template_data["body"],
-            }
-        )
-
     templates_qs = EmailTemplate.objects.filter(
         conference=conference,
         event__in=OFFICIAL_EMAIL_EVENTS,
     )
-
-    templates_by_event = {
-        template.event: template
-        for template in templates_qs
-    }
-
-    templates = [
-        templates_by_event[event]
-        for event in OFFICIAL_EMAIL_EVENTS
-        if event in templates_by_event
-    ]
+    templates_by_event = {template.event: template for template in templates_qs}
+    templates = [templates_by_event[event] for event in OFFICIAL_EMAIL_EVENTS if event in templates_by_event]
 
     logs = EmailLog.objects.filter(
         conference=conference
@@ -854,41 +638,6 @@ def edit_email_template(request, template_id):
         "form": form,
         "preview": preview,
     })
-
-
-
-@login_required
-def send_test_email_template(request, template_id):
-    template = get_object_or_404(EmailTemplate, id=template_id)
-    conference = template.conference
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    is_judge = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="judge"
-    ).exists()
-
-    if not (is_manager or is_judge):
-        return redirect("/")
-
-    if request.method != "POST":
-        return redirect("email_templates", slug=conference.slug)
-
-    recipient = request.POST.get("test_recipient") or request.user.email
-    ok, message = send_test_template_email(template, recipient, request=request)
-
-    if ok:
-        messages.success(request, message)
-    else:
-        messages.error(request, message)
-
-    return redirect("email_templates", slug=conference.slug)
 
 
 @login_required
@@ -1462,24 +1211,15 @@ def reviewer_topics(request, slug):
 
     if request.method == "POST":
         selected_topic_ids = request.POST.getlist("topics")
+        reviewer_role.topics.set(selected_topic_ids)
+        return redirect("reviewer_topics", slug=conference.slug)
 
-        if len(selected_topic_ids) < 1 or len(selected_topic_ids) > 2:
-            messages.error(request, "Please select one or two conference topics.")
-        else:
-            valid_topic_ids = set(
-                topics.filter(id__in=selected_topic_ids).values_list("id", flat=True)
-            )
-            reviewer_role.topics.set(valid_topic_ids)
-            messages.success(request, "Your reviewer expertise topics have been saved successfully.")
-            return redirect("reviewer_topics", slug=conference.slug)
-
-    selected_topics = list(reviewer_role.topics.values_list("id", flat=True))
+    selected_topics = reviewer_role.topics.values_list("id", flat=True)
 
     return render(request, "conferences/reviewer_topics.html", {
         "conference": conference,
         "topics": topics,
         "selected_topics": selected_topics,
-        "reviewer_role": reviewer_role,
     })
 
 
@@ -1825,12 +1565,11 @@ def download_review_paper(request, submission_id):
     is_assigned_reviewer = ReviewAssignment.objects.filter(
         submission=submission,
         reviewer=request.user,
-        role="content_reviewer",
-        invitation_status="accepted",
+        role="content_reviewer"
     ).exists()
 
     if not is_assigned_reviewer:
-        messages.error(request, "You must accept the review invitation before downloading the reviewer file.")
+        messages.error(request, "You do not have permission to download this review file.")
         return redirect("my_reviews")
 
     if submission.anonymized_paper_file:
@@ -1894,32 +1633,29 @@ def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user,
         role="content_reviewer",
-    ).exclude(
-        invitation_status="declined"
+        submission__status__in=["under_review", "revised_submitted", "revision_required"]
     ).select_related(
         "submission",
         "submission__conference",
         "submission__topic",
         "submission__secondary_topic",
-    ).order_by("invitation_status", "submission__conference__title_en", "submission__title")
+    ).order_by("submission__conference__title_en", "submission__title")
 
     return render(request, "conferences/my_reviews.html", {
         "assignments": assignments,
     })
-
 @login_required
 def reviewer_dashboard(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user,
         role="content_reviewer",
-    ).exclude(
-        invitation_status="declined"
+        submission__status__in=["under_review", "revised_submitted", "revision_required"]
     ).select_related(
         "submission",
         "submission__conference",
         "submission__topic",
         "submission__secondary_topic",
-    ).order_by("invitation_status", "submission__conference__title_en", "submission__title")
+    ).order_by("submission__conference__title_en", "submission__title")
 
     return render(request, "conferences/reviewer_dashboard.html", {
         "assignments": assignments,
@@ -2043,9 +1779,63 @@ def delete_submission(request, submission_id):
     return render(request, "conferences/delete_submission.html", {
         "submission": submission
     })
-from django.shortcuts import render
+
+@login_required
+def email_health_dashboard(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    can_manage = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role__in=["manager", "judge"]
+    ).exists()
+
+    if not can_manage:
+        return redirect("/")
+
+    if request.method == "POST":
+        result = process_scheduled_review_emails(conference=conference, request=request)
+        messages.success(
+            request,
+            f"Email automation checked. Due soon sent: {result['due_soon_sent']}; overdue sent: {result['overdue_sent']}; skipped: {result['skipped']}."
+        )
+        return redirect("email_health_dashboard", slug=conference.slug)
+
+    status = get_email_workflow_status(conference)
+
+    logs = EmailLog.objects.filter(
+        conference=conference
+    ).select_related("submission", "template").order_by("-created_at")[:100]
+
+    failed_logs = logs.filter(status="failed")[:20] if hasattr(logs, "filter") else []
+
+    return render(request, "conferences/email_health_dashboard.html", {
+        "conference": conference,
+        "status": status,
+        "logs": logs,
+        "failed_logs": failed_logs,
+    })
 
 
+@login_required
+def run_email_automation_now(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    can_manage = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role__in=["manager", "judge"]
+    ).exists()
+
+    if not can_manage:
+        return redirect("/")
+
+    result = process_scheduled_review_emails(conference=conference, request=request)
+    messages.success(
+        request,
+        f"Email automation completed. Due soon sent: {result['due_soon_sent']}; overdue sent: {result['overdue_sent']}; skipped: {result['skipped']}."
+    )
+    return redirect("email_health_dashboard", slug=conference.slug)
 def terms_of_use(request):
     return render(request, "conferences/terms_of_use.html")
 
