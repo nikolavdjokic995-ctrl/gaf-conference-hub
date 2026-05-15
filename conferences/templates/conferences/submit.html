@@ -508,8 +508,8 @@
                         {{ form.abstract }}
                         {{ form.abstract.errors }}
                         <div class="help">
-                            <span>Write the abstract directly. Maximum 2500 characters.</span>
-                            <span><span id="abstractCount">0</span>/2500</span>
+                            <span>Write the abstract directly. Maximum 300 words.</span>
+                            <span><span id="abstractCount">0</span>/300 words</span>
                         </div>
                     </div>
 
@@ -615,7 +615,7 @@
                         {{ form.full_paper_file }}
                         {{ form.full_paper_file.errors }}
                         <div class="help" style="justify-content:center;">
-                            Accepted formats depend on your conference settings. PDF/DOC/DOCX are recommended.
+                            Accepted formats: DOC/DOCX only. Maximum file size: 50 MB. PDF files are not accepted at this stage.
                         </div>
                     </div>
                 </section>
@@ -640,6 +640,17 @@
                         <p>You may be asked to submit a revised version after content review or layout review.</p>
                     </div>
                 </section>
+
+                <div class="review-box" style="border-left:4px solid #16a34a; margin-top:18px;">
+                    <label style="display:flex; gap:10px; align-items:flex-start; font-weight:700; color:#14532d;">
+                        {{ form.submission_consent }}
+                        <span>{{ form.submission_consent.label }}</span>
+                    </label>
+                    {% if form.submission_consent.errors %}
+                        <div class="field-error">{{ form.submission_consent.errors }}</div>
+                    {% endif %}
+                    <p class="help">By submitting, you agree that the conference team may process the submitted manuscript and author data for peer-review and conference organization purposes.</p>
+                </div>
 
                 <div class="form-actions">
                     <a class="back-link btn-outline" href="{% url 'conference_overview' conference.slug %}">
@@ -696,6 +707,7 @@
     const abstractCount = document.getElementById("abstractCount");
     const keywordsField = document.getElementById("{{ form.keywords.id_for_label }}");
     const keywordsPreview = document.getElementById("keywordsPreview");
+    const fileField = document.getElementById("{{ form.full_paper_file.id_for_label }}");
 
     let currentStep = 1;
 
@@ -721,7 +733,9 @@
 
     function updateAbstractCount() {
         if (!abstractField || !abstractCount) return;
-        abstractCount.textContent = abstractField.value.length;
+        const words = abstractField.value.trim().split(/\s+/).filter(Boolean);
+        abstractCount.textContent = words.length;
+        abstractCount.style.color = words.length > 300 ? "#b91c1c" : "";
     }
 
     function updateKeywordsPreview() {
@@ -757,6 +771,29 @@
     if (abstractField) {
         abstractField.addEventListener("input", updateAbstractCount);
         updateAbstractCount();
+    }
+
+    if (fileField) {
+        fileField.setAttribute("accept", ".doc,.docx");
+        fileField.addEventListener("change", () => {
+            const file = fileField.files && fileField.files[0];
+            if (!file) return;
+
+            const name = file.name.toLowerCase();
+            const validExtension = name.endsWith(".doc") || name.endsWith(".docx");
+            const validSize = file.size <= 50 * 1024 * 1024;
+
+            if (!validExtension) {
+                alert("Please upload a DOC or DOCX file only. PDF files are not accepted for paper submission.");
+                fileField.value = "";
+                return;
+            }
+
+            if (!validSize) {
+                alert("The paper file must be smaller than 50 MB.");
+                fileField.value = "";
+            }
+        });
     }
 
     if (keywordsField) {

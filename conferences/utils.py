@@ -228,3 +228,152 @@ def anonymize_docx(source_path, target_path):
         os.remove(temp_docx_2)
     except OSError:
         pass
+
+# -----------------------------------------------------------------------------
+# Production helpers: storage usage and safe cleanup
+# -----------------------------------------------------------------------------
+import requests
+from django.conf import settings
+
+
+def get_supabase_storage_usage():
+    """Return approximate Supabase bucket usage for the configured bucket.
+
+    The function is intentionally defensive: if Supabase credentials are missing
+    or the API request fails, it returns a safe unavailable status instead of
+    breaking the settings page.
+    """
+    url = os.environ.get("SUPABASE_URL", "").rstrip("/")
+    service_key = os.environ.get("SUPABASE_SERVICE_ROLE_KEY", "")
+    bucket = os.environ.get("SUPABASE_BUCKET", "conference-papers")
+    max_mb = int(os.environ.get("SUPABASE_STORAGE_QUOTA_MB", "1024"))
+
+    if not url or not service_key:
+        return {
+            "available": False,
+            "message": "Supabase storage is not configured.",
+            "used_bytes": 0,
+            "used_mb": 0,
+            "quota_mb": max_mb,
+            "percent": 0,
+            "files": 0,
+        }
+
+    headers = {
+        "Authorization": f"Bearer {service_key}",
+        "apikey": service_key,
+        "Content-Type": "application/json",
+    }
+
+    def list_prefix(prefix=""):
+        endpoint = f"{url}/storage/v1/object/list/{bucket}"
+        payload = {
+            "prefix": prefix,
+            "limit": 1000,
+            "offset": 0,
+            "sortBy": {"column": "name", "order": "asc"},
+        }
+        response = requests.post(endpoint, headers=headers, json=payload, timeout=15)
+        response.raise_for_status()
+        return response.json()
+
+    total_size = 0
+    total_files = 0
+
+    try:
+        stack = [""]
+        while stack:
+            prefix = stack.pop()
+            for item in list_prefix(prefix):
+                name = item.get("name", "")
+                item_id = item.get("id")
+                metadata = item.get("metadata") or {}
+
+                if item_id is None and name:
+                    next_prefix = f"{prefix}/{name}" if prefix else name
+                    stack.append(next_prefix)
+                    continue
+
+                size = metadata.get("size") or 0
+                try:
+                    total_size += int(size)
+                except (TypeError, ValueError):
+                    pass
+                total_files += 1
+
+        used_mb = round(total_size / (1024 * 1024), 2)
+        percent = round((used_mb / max_mb) * 100, 1) if max_mb else 0
+
+        return {
+            "available": True,
+            "message": "Supabase storage usage loaded.",
+            "used_bytes": total_size,
+            "used_mb": used_mb,
+            "quota_mb": max_mb,
+            "percent": percent,
+            "files": total_files,
+        }
+    except Exception as exc:
+        return {
+            "available": False,
+            "message": f"Storage usage could not be loaded: {exc}",
+            "used_bytes": 0,
+            "used_mb": 0,
+            "quota_mb": max_mb,
+            "percent": 0,
+            "files": 0,
+        }
+
+
+def safe_delete_filefield(filefield):
+    """Delete a Django FileField without failing the workflow."""
+    if not filefield:
+        return False
+
+    try:
+        if not getattr(filefield, "name", ""):
+            return False
+        filefield.delete(save=False)
+        return True
+    except Exception as exc:
+        print("Temporary file cleanup warning:", exc)
+        return False
+
+
+def cleanup_submission_temporary_files(submission):
+    """Remove files that are no longer needed after final acceptance.
+
+    Permanent files kept:
+    - original/current author paper file,
+    - latest revised paper file,
+    - final publication file.
+
+    Temporary files removed:
+    - anonymized reviewer file,
+    - reviewer uploaded/commented files,
+    - intermediate layout revised file.
+    """
+    deleted = 0
+
+    if safe_delete_filefield(submission.anonymized_paper_file):
+        submission.anonymized_paper_file = None
+        deleted += 1
+
+    if safe_delete_filefield(submission.layout_revised_paper_file):
+        submission.layout_revised_paper_file = None
+        deleted += 1
+
+    for review in submission.reviews.all():
+        if safe_delete_filefield(review.commented_paper_file):
+            review.commented_paper_file = None
+            review.save(update_fields=["commented_paper_file", "updated_at"])
+            deleted += 1
+
+    if deleted:
+        submission.save(update_fields=[
+            "anonymized_paper_file",
+            "layout_revised_paper_file",
+            "updated_at",
+        ])
+
+    return deleted

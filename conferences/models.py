@@ -729,6 +729,7 @@ class Review(models.Model):
 class EmailTemplate(models.Model):
     EVENT_CHOICES = [
         ("committee_login_info", "1. Scientific Committee login information"),
+        ("reviewer_topics_request", "Reviewer topic selection request"),
         ("paper_submitted", "2. Submission confirmation – author"),
         ("coauthor_submission_confirmation", "3. Submission confirmation – co-author"),
         ("review_invitation", "4. Invitation to review manuscript"),

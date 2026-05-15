@@ -52,6 +52,30 @@
         .btn.secondary {
             background: #555;
         }
+
+        .storage-bar {
+            width: 100%;
+            height: 12px;
+            background: #e5e7eb;
+            border-radius: 999px;
+            overflow: hidden;
+            margin: 12px 0;
+        }
+
+        .storage-fill {
+            height: 100%;
+            background: #16a34a;
+            border-radius: 999px;
+        }
+
+        .storage-fill.warn { background: #f59e0b; }
+        .storage-fill.danger { background: #dc2626; }
+
+        .muted {
+            color: #6b7280;
+            font-size: 14px;
+            line-height: 1.5;
+        }
     </style>
 </head>
 <body>
@@ -64,7 +88,21 @@
 <div class="container">
 
     <div class="grid">
-    
+
+        <div class="card">
+            <h3>Document storage</h3>
+            {% if storage_usage.available %}
+                <p><strong>{{ storage_usage.used_mb }} MB</strong> / {{ storage_usage.quota_mb }} MB used</p>
+                <div class="storage-bar">
+                    <div class="storage-fill {% if storage_usage.percent >= 95 %}danger{% elif storage_usage.percent >= 80 %}warn{% endif %}" style="width: {{ storage_usage.percent|floatformat:0 }}%;"></div>
+                </div>
+                <p class="muted">{{ storage_usage.percent }}% used · {{ storage_usage.files }} files in Supabase bucket.</p>
+            {% else %}
+                <p class="muted">{{ storage_usage.message }}</p>
+            {% endif %}
+            <p class="muted">Paper uploads are limited to DOC/DOCX files up to 50 MB. Temporary reviewer/anonymized files are cleaned after final acceptance.</p>
+        </div>
+
         <div class="card">
             <h3>Conference topics</h3>
             <p>Manage topic codes such as T01, T02 and connect submissions with categories.</p>
@@ -93,14 +131,6 @@
             <p>Manage automatic email templates and enable/disable notifications.</p>
             <a class="btn" href="{% url 'email_templates' conference.slug %}">
                 Open email templates
-            </a>
-        </div>
-
-        <div class="card">
-            <h3>Storage usage</h3>
-            <p>Check Supabase document storage, fallback files and cleanup status.</p>
-            <a class="btn" href="{% url 'storage_status' conference.slug %}">
-                Open storage status
             </a>
         </div>
 

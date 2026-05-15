@@ -1,5 +1,6 @@
 OFFICIAL_EMAIL_EVENTS = [
     "committee_login_info",
+    "reviewer_topics_request",
     "paper_submitted",
     "coauthor_submission_confirmation",
     "review_invitation",
@@ -22,6 +23,28 @@ DEFAULT_EMAIL_TEMPLATES_2026 = {
         "subject": "Information for Scientific Committee members – {{ conference_name }}",
         "body": """Dear Scientific Committee Member/Reviewer,\n\nIt is my great pleasure to inform you that we have created a hub for all conference communication at the following link:\n{{ conference_link }}\n\nYour login details are:\nUsername: {{ reviewer_email }}\nPassword: {{ temporary_password }}\n\nFor more details, please visit the official conference website.\n\nWe are honoured to have you as part of the Conference Scientific Committee, and look forward to our future cooperation.\n\nKind regards,\n\nProf. Dr. Ljiljana Vasilevska\nConference Scientific Committee Chair\nFaculty of Civil Engineering and Architecture\nUniversity of Niš\nNiš, Serbia""",
         "send_to_author": False, "send_to_coauthors": False, "send_to_reviewer": True,
+    },
+
+    "reviewer_topics_request": {
+        "enabled": True,
+        "subject": "Please select your reviewer expertise topics – {{ conference_name }}",
+        "body": """Dear {{ reviewer_name }},
+
+You have been assigned as a content reviewer for {{ conference_name }}.
+
+To help the judge assign manuscripts to the most appropriate reviewers, please select one or two conference topics that best match your expertise.
+
+Please use the following link:
+{{ reviewer_topics_link }}
+
+Your selected topics will be used only for reviewer matching within this conference.
+
+Kind regards,
+The Editorial Office
+Green Building International Scientific Conference""",
+        "send_to_author": False,
+        "send_to_coauthors": False,
+        "send_to_reviewer": True,
     },
     "paper_submitted": {
         "subject": "Submission Confirmation – Manuscript: {{ paper_title }}",

@@ -158,6 +158,31 @@
             background: #dc2626;
         }
 
+
+
+        .topic-pill {
+            display: inline-block;
+            background: #dcfce7;
+            color: #166534;
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 3px 3px 0 0;
+        }
+
+        .topic-warning {
+            display: inline-block;
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #fed7aa;
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 6px;
+        }
+
         .empty {
             color: #666;
             font-style: italic;
@@ -197,6 +222,14 @@
     <div class="subtitle">
         {{ conference.title_en }}
     </div>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div style="padding: 12px 14px; border-radius: 10px; margin-bottom: 14px; background: #ecfdf5; color: #14532d; border: 1px solid #bbf7d0; font-weight: bold;">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endif %}
 
     <form method="get" class="search-box">
         <input type="text"
@@ -279,6 +312,14 @@
                             {% if role.user.profile %}
                                 {{ role.user.profile.affiliation }}
                             {% endif %}
+
+                            <br>
+                            <strong>Reviewer topics:</strong>
+                            {% for topic in role.topics.all %}
+                                <span class="topic-pill">{{ topic.code }}</span>
+                            {% empty %}
+                                <span class="topic-warning">topics not selected yet</span>
+                            {% endfor %}
                         </div>
                     </div>
                 {% empty %}

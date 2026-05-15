@@ -16,6 +16,12 @@ from .models import (
 )
 
 
+MAX_ABSTRACT_WORDS = 300
+MAX_PAPER_UPLOAD_MB = 50
+MAX_PAPER_UPLOAD_BYTES = MAX_PAPER_UPLOAD_MB * 1024 * 1024
+ALLOWED_PAPER_EXTENSIONS = [".doc", ".docx"]
+
+
 class RegisterForm(UserCreationForm):
 
     TITLE_CHOICES = [
@@ -34,6 +40,11 @@ class RegisterForm(UserCreationForm):
         widget=CountrySelectWidget()
     )
 
+    privacy_consent = forms.BooleanField(
+        required=True,
+        label="I agree to the Privacy Policy and Terms of Use."
+    )
+
     first_name = forms.CharField(max_length=100)
     last_name = forms.CharField(max_length=100)
     email = forms.EmailField()
@@ -49,6 +60,7 @@ class RegisterForm(UserCreationForm):
             "email",
             "affiliation",
             "country",
+            "privacy_consent",
             "password1",
             "password2",
         ]
@@ -69,6 +81,11 @@ class SubmissionForm(forms.ModelForm):
         })
     )
 
+    submission_consent = forms.BooleanField(
+        required=True,
+        label="I confirm that the submission information is accurate and that I have permission to submit this manuscript on behalf of all listed authors."
+    )
+
     class Meta:
         model = Submission
         fields = [
@@ -85,6 +102,7 @@ class SubmissionForm(forms.ModelForm):
             "topic",
             "secondary_topic",
             "full_paper_file",
+            "submission_consent",
         ]
 
         labels = {
@@ -106,8 +124,7 @@ class SubmissionForm(forms.ModelForm):
         widgets = {
             "abstract": forms.Textarea(attrs={
                 "rows": 8,
-                "maxlength": 2500,
-                "placeholder": "Write your abstract here (maximum 2500 characters).",
+                "placeholder": "Write your abstract here (maximum 300 words).",
             }),
             "keywords": forms.TextInput(attrs={
                 "placeholder": "e.g. green building, energy efficiency, sustainability",
@@ -122,16 +139,31 @@ class SubmissionForm(forms.ModelForm):
             }),
         }
 
+    def clean_abstract(self):
+        abstract = self.cleaned_data.get("abstract", "")
+        words = [word for word in abstract.split() if word.strip()]
+
+        if len(words) > MAX_ABSTRACT_WORDS:
+            raise forms.ValidationError(
+                f"The abstract must be no longer than {MAX_ABSTRACT_WORDS} words. Current length: {len(words)} words."
+            )
+
+        return abstract
+
     def clean_full_paper_file(self):
         file = self.cleaned_data.get("full_paper_file")
 
         if file:
-            allowed_extensions = [".doc", ".docx"]
             file_name = file.name.lower()
 
-            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+            if not any(file_name.endswith(ext) for ext in ALLOWED_PAPER_EXTENSIONS):
                 raise forms.ValidationError(
-                    "Please upload your paper in Word format only (.doc or .docx)."
+                    "Please upload your paper in Word format only (.doc or .docx). PDF files are not accepted for paper submission."
+                )
+
+            if file.size > MAX_PAPER_UPLOAD_BYTES:
+                raise forms.ValidationError(
+                    f"The paper file must be smaller than {MAX_PAPER_UPLOAD_MB} MB. Please compress the file and try again."
                 )
 
         return file
@@ -158,6 +190,12 @@ class SubmissionForm(forms.ModelForm):
         self.fields["first_author"].required = True
         self.fields["first_author_email"].required = True
         self.fields["first_author_country"].required = True
+
+        self.fields["full_paper_file"].widget.attrs.update({
+            "accept": ".doc,.docx",
+        })
+        self.fields["abstract"].help_text = "Maximum 300 words."
+        self.fields["full_paper_file"].help_text = "Accepted formats: DOC/DOCX only. Maximum file size: 50 MB."
 
 class ReviewForm(forms.ModelForm):
 
@@ -448,8 +486,32 @@ class JudgeDecisionForm(forms.Form):
 class RevisionUploadForm(forms.Form):
 
     full_paper_file = forms.FileField(
-        label="Upload revised full paper file"
+        label="Upload revised full paper file",
+        help_text="Accepted formats: DOC/DOCX only. Maximum file size: 50 MB."
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["full_paper_file"].widget.attrs.update({
+            "accept": ".doc,.docx",
+        })
+
+    def clean_full_paper_file(self):
+        file = self.cleaned_data.get("full_paper_file")
+
+        if file:
+            file_name = file.name.lower()
+            if not any(file_name.endswith(ext) for ext in ALLOWED_PAPER_EXTENSIONS):
+                raise forms.ValidationError(
+                    "Please upload the revised paper in Word format only (.doc or .docx). PDF files are not accepted."
+                )
+
+            if file.size > MAX_PAPER_UPLOAD_BYTES:
+                raise forms.ValidationError(
+                    f"The revised paper file must be smaller than {MAX_PAPER_UPLOAD_MB} MB."
+                )
+
+        return file
 
 
 class LayoutDecisionForm(forms.Form):

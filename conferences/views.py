@@ -5,6 +5,8 @@ import urllib.request
 from datetime import timedelta
 import cloudinary.uploader
 
+from django.conf import settings
+
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,6 +18,8 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
+from django.http import HttpResponse
+from django.urls import reverse
 from pathlib import Path
 
 from .models import (
@@ -50,11 +54,9 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template, send_test_template_email
+from .emails import send_event_email, preview_template
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
-from .utils import anonymize_docx
-from .document_storage import save_local_file_to_field, cleanup_submission_temporary_files
-from .storage_backends import get_supabase_storage_usage
+from .utils import anonymize_docx, get_supabase_storage_usage, cleanup_submission_temporary_files
 
 
 def home(request):
@@ -219,6 +221,9 @@ def make_decision(request, submission_id):
 
             submission.save()
 
+            if status == "final_accepted":
+                cleanup_submission_temporary_files(submission)
+
             # Official Green Building email workflow:
             # 11. Notify reviewers about the editor/judge decision.
             # 12. Notify authors that the review stage has been completed.
@@ -252,6 +257,122 @@ def make_decision(request, submission_id):
         "form": form,
     })
 
+
+
+def _user_display_name(user):
+    full_name = f"{user.first_name} {user.last_name}".strip()
+    return full_name or user.username
+
+
+def _topic_label(topic):
+    return f"{topic.code} — {topic.title}" if getattr(topic, "code", "") else topic.title
+
+
+def _reviewer_role_match_data(reviewers, submission):
+    """Return reviewer role data sorted by topic match for a submission."""
+    submission_topics = [topic for topic in [submission.topic, submission.secondary_topic] if topic]
+    submission_topic_ids = {topic.id for topic in submission_topics}
+    result = []
+
+    for reviewer_role in reviewers:
+        reviewer_topics = list(reviewer_role.topics.all())
+        matching_topics = [topic for topic in reviewer_topics if topic.id in submission_topic_ids]
+
+        result.append({
+            "role": reviewer_role,
+            "id": reviewer_role.id,
+            "user": reviewer_role.user,
+            "display_name": _user_display_name(reviewer_role.user),
+            "topics": reviewer_topics,
+            "matching_topics": matching_topics,
+            "match_count": len(matching_topics),
+            "topics_completed": bool(reviewer_topics),
+        })
+
+    result.sort(key=lambda item: (-item["match_count"], not item["topics_completed"], item["display_name"].lower()))
+    return result
+
+
+def _send_reviewer_topics_request_email(conference, reviewer_user, request=None):
+    """Send the reviewer topic-selection email when someone receives a reviewer role."""
+    if not getattr(reviewer_user, "email", ""):
+        EmailLog.objects.create(
+            conference=conference,
+            event="reviewer_topics_request",
+            recipient="",
+            status="skipped",
+            message="Reviewer topic request email skipped because reviewer has no email address.",
+        )
+        return
+
+    from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
+    from .emails import render_template_text, validate_template_placeholders
+
+    default_data = DEFAULT_EMAIL_TEMPLATES_2026.get("reviewer_topics_request", {})
+    template, _ = EmailTemplate.objects.get_or_create(
+        conference=conference,
+        event="reviewer_topics_request",
+        defaults={
+            "enabled": default_data.get("enabled", True),
+            "send_to_author": False,
+            "send_to_coauthors": False,
+            "send_to_reviewer": True,
+            "send_to_managers": False,
+            "send_to_layout_reviewers": False,
+            "subject": default_data.get("subject", "Please select your reviewer expertise topics – {{ conference_name }}"),
+            "body": default_data.get("body", "Please select your reviewer expertise topics: {{ reviewer_topics_link }}"),
+        },
+    )
+
+    if not template.enabled:
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event="reviewer_topics_request",
+            recipient=reviewer_user.email,
+            status="skipped",
+            message="Reviewer topic request template is disabled.",
+        )
+        return
+
+    topic_url = request.build_absolute_uri(reverse("reviewer_topics", args=[conference.slug])) if request else ""
+    context = {
+        "conference_name": conference.title_en,
+        "conference_contact_email": conference.contact_email,
+        "conference_link": request.build_absolute_uri(reverse("conference_overview", args=[conference.slug])) if request else "",
+        "reviewer_name": _user_display_name(reviewer_user),
+        "reviewer_email": reviewer_user.email,
+        "reviewer_topics_link": topic_url,
+    }
+
+    subject = render_template_text(template.subject, context).strip()
+    body = render_template_text(template.body, context).strip()
+    warning = ""
+    unknown = validate_template_placeholders(template)
+    if unknown:
+        warning = "Unknown placeholder(s): " + ", ".join(unknown)
+
+    try:
+        send_mail(subject, body, getattr(settings, "DEFAULT_FROM_EMAIL", None), [reviewer_user.email], fail_silently=False)
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event="reviewer_topics_request",
+            recipient=reviewer_user.email,
+            subject=subject,
+            status="sent",
+            message=warning or "Reviewer topic selection request sent.",
+        )
+    except Exception as exc:
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event="reviewer_topics_request",
+            recipient=reviewer_user.email,
+            subject=subject,
+            status="failed",
+            message=f"Reviewer topic selection request failed: {exc}",
+        )
 
 @login_required
 def assign_papers(request, slug, submission_id=None):
@@ -365,20 +486,15 @@ def assign_papers(request, slug, submission_id=None):
     submission_data = []
 
     for submission in submissions:
-        topic_ids = [
-            topic.id
-            for topic in [submission.topic, submission.secondary_topic]
-            if topic
-        ]
-
-        suggested_reviewers = reviewers.filter(
-            topics__id__in=topic_ids
-        ).distinct() if topic_ids else reviewers.none()
+        reviewer_data = _reviewer_role_match_data(reviewers, submission)
+        suggested_reviewers = [item for item in reviewer_data if item["match_count"] > 0]
+        reviewers_without_topics = [item for item in reviewer_data if not item["topics_completed"]]
 
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
-            "all_reviewers": reviewers,
+            "all_reviewers": reviewer_data,
+            "reviewers_without_topics": reviewers_without_topics,
             "assignments": submission.review_assignments.all(),
         })
 
@@ -709,8 +825,11 @@ def conference_settings(request, slug):
     if not is_manager:
         return redirect("/")
 
+    storage_usage = get_supabase_storage_usage()
+
     return render(request, "conferences/conference_settings.html", {
-        "conference": conference
+        "conference": conference,
+        "storage_usage": storage_usage,
     })
 
 
@@ -834,41 +953,6 @@ def edit_email_template(request, template_id):
     })
 
 
-
-@login_required
-def send_test_email_template(request, template_id):
-    template = get_object_or_404(EmailTemplate, id=template_id)
-    conference = template.conference
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    is_judge = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="judge"
-    ).exists()
-
-    if not (is_manager or is_judge):
-        return redirect("/")
-
-    if request.method != "POST":
-        return redirect("email_templates", slug=conference.slug)
-
-    recipient = request.POST.get("test_recipient") or request.user.email
-    ok, message = send_test_template_email(template, recipient, request=request)
-
-    if ok:
-        messages.success(request, message)
-    else:
-        messages.error(request, message)
-
-    return redirect("email_templates", slug=conference.slug)
-
-
 @login_required
 def preview_email_template(request, template_id):
     template = get_object_or_404(EmailTemplate, id=template_id)
@@ -897,6 +981,16 @@ def submit_paper(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
     if request.method == "POST":
+        recent_cutoff = timezone.now() - timezone.timedelta(minutes=10)
+        recent_count = Submission.objects.filter(
+            author=request.user,
+            created_at__gte=recent_cutoff,
+        ).count()
+
+        if recent_count >= 3:
+            messages.error(request, "Too many submissions in a short period. Please wait a few minutes and try again.")
+            return redirect("submit_paper", slug=conference.slug)
+
         form = SubmissionForm(request.POST, request.FILES, conference=conference)
 
         if form.is_valid():
@@ -949,10 +1043,18 @@ def submit_paper(request, slug):
                             f"{submission.paper_code}_submission_{submission.id}"
                         )
 
-                        save_local_file_to_field(
-                            submission.full_paper_file,
+                        cloudinary.uploader.upload(
                             source_path,
-                            f"originals/{submission.paper_code}_submission_{submission.id}{extension}",
+                            resource_type="raw",
+                            public_id=original_public_id,
+                            overwrite=True,
+                            invalidate=True,
+                            unique_filename=False,
+                            use_filename=False,
+                        )
+
+                        submission.full_paper_file.name = (
+                            f"{original_public_id}{extension}"
                         )
 
                         # =========================
@@ -984,10 +1086,18 @@ def submit_paper(request, slug):
                                 f"{submission.paper_code}_submission_{submission.id}"
                             )
 
-                            save_local_file_to_field(
-                                submission.anonymized_paper_file,
+                            cloudinary.uploader.upload(
                                 anonymized_path,
-                                f"{submission.paper_code}_submission_{submission.id}.docx",
+                                resource_type="raw",
+                                public_id=anonymous_public_id,
+                                overwrite=True,
+                                invalidate=True,
+                                unique_filename=False,
+                                use_filename=False,
+                            )
+
+                            submission.anonymized_paper_file.name = (
+                                f"{anonymous_public_id}.docx"
                             )
 
                         submission.save()
@@ -1406,7 +1516,7 @@ def reviewer_topics(request, slug):
     reviewer_role = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
-        role__in=["content_reviewer", "layout_reviewer"]
+        role="content_reviewer"
     ).first()
 
     if not reviewer_role:
@@ -1424,7 +1534,19 @@ def reviewer_topics(request, slug):
 
     if request.method == "POST":
         selected_topic_ids = request.POST.getlist("topics")
-        reviewer_role.topics.set(selected_topic_ids)
+
+        if len(selected_topic_ids) < 1 or len(selected_topic_ids) > 2:
+            messages.error(request, "Please select one or two topics that best match your expertise.")
+            return redirect("reviewer_topics", slug=conference.slug)
+
+        valid_topics = ConferenceTopic.objects.filter(
+            conference=conference,
+            enabled=True,
+            id__in=selected_topic_ids,
+        )
+
+        reviewer_role.topics.set(valid_topics)
+        messages.success(request, "Your reviewer expertise topics have been saved.")
         return redirect("reviewer_topics", slug=conference.slug)
 
     selected_topics = reviewer_role.topics.values_list("id", flat=True)
@@ -1468,17 +1590,17 @@ def upload_revision(request, submission_id):
                     next_round = submission.revision_round or 1
                     revised_public_id = f"media/revised_papers/{submission.paper_code}-r{next_round}"
 
-                    revised_storage_name = f"{submission.paper_code}-r{next_round}{extension}"
-                    save_local_file_to_field(
-                        submission.revised_paper_file,
+                    cloudinary.uploader.upload(
                         source_path,
-                        revised_storage_name,
+                        resource_type="raw",
+                        public_id=revised_public_id,
+                        overwrite=True,
+                        unique_filename=False,
+                        use_filename=True,
                     )
-                    save_local_file_to_field(
-                        submission.full_paper_file,
-                        source_path,
-                        revised_storage_name,
-                    )
+
+                    submission.revised_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
+                    submission.full_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
 
                     if extension == ".docx":
                         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
@@ -1486,11 +1608,15 @@ def upload_revision(request, submission_id):
 
                         anonymize_docx(source_path, anonymized_path)
 
-                        save_local_file_to_field(
-                            submission.anonymized_paper_file,
+                        cloudinary.uploader.upload(
                             anonymized_path,
-                            f"{submission.paper_code}-r{next_round}.docx",
+                            resource_type="raw",
+                            public_id=f"media/anonymous_papers/{submission.paper_code}-r{next_round}",
+                            overwrite=True,
+                            unique_filename=False,
+                            use_filename=True,
                         )
+                        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}-r{next_round}.docx"
 
                     submission.status = "revised_submitted"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
@@ -1498,17 +1624,17 @@ def upload_revision(request, submission_id):
                     next_round = submission.layout_revision_round or 1
                     layout_public_id = f"media/layout_revised_papers/{submission.paper_code}-layout-r{next_round}"
 
-                    layout_storage_name = f"{submission.paper_code}-layout-r{next_round}{extension}"
-                    save_local_file_to_field(
-                        submission.layout_revised_paper_file,
+                    cloudinary.uploader.upload(
                         source_path,
-                        layout_storage_name,
+                        resource_type="raw",
+                        public_id=layout_public_id,
+                        overwrite=True,
+                        unique_filename=False,
+                        use_filename=True,
                     )
-                    save_local_file_to_field(
-                        submission.full_paper_file,
-                        source_path,
-                        layout_storage_name,
-                    )
+
+                    submission.layout_revised_paper_file.name = f"layout_revised_papers/{submission.paper_code}-layout-r{next_round}{extension}"
+                    submission.full_paper_file.name = f"layout_revised_papers/{submission.paper_code}-layout-r{next_round}{extension}"
                     submission.status = "layout_revision_submitted"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
@@ -1595,18 +1721,13 @@ def layout_decision(request, submission_id):
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
+            final_publication_file = form.cleaned_data.get("final_publication_file")
 
             submission.status = status
             submission.final_comment = comment
 
-            final_publication_file = form.cleaned_data.get("final_publication_file")
             if final_publication_file:
-                extension = Path(final_publication_file.name).suffix.lower()
-                submission.final_publication_file.save(
-                    f"{submission.paper_code}-final{extension}",
-                    final_publication_file,
-                    save=False,
-                )
+                submission.final_publication_file = final_publication_file
 
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
@@ -1614,11 +1735,13 @@ def layout_decision(request, submission_id):
 
             submission.save()
 
+            if status == "final_accepted":
+                cleanup_submission_temporary_files(submission)
+
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted":
                 send_event_email("manuscript_accepted", submission, request=request)
-                cleanup_submission_temporary_files(submission)
 
             messages.success(request, "Layout decision saved successfully.")
             return redirect("layout_dashboard")
@@ -1751,60 +1874,12 @@ def delete_footer_partner(request, partner_id):
     })
 
 
-@login_required
-def storage_status(request, slug):
-    conference = get_object_or_404(Conference, slug=slug)
+def privacy_policy(request):
+    return render(request, "conferences/privacy_policy.html")
 
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role__in=["manager", "judge"]
-    ).exists()
 
-    if not is_manager:
-        return redirect("conference_overview", slug=conference.slug)
-
-    supabase_usage = get_supabase_storage_usage()
-
-    cloudinary_fallback_files = 0
-    supabase_files_in_db = 0
-
-    file_fields = [
-        "full_paper_file",
-        "revised_paper_file",
-        "layout_revised_paper_file",
-        "final_publication_file",
-        "anonymized_paper_file",
-    ]
-
-    for submission in Submission.objects.filter(conference=conference):
-        for field_name in file_fields:
-            field = getattr(submission, field_name, None)
-            name = getattr(field, "name", "") or ""
-            if name.startswith("supabase:"):
-                supabase_files_in_db += 1
-            elif name:
-                cloudinary_fallback_files += 1
-
-    reviewer_file_names = Review.objects.filter(
-        submission__conference=conference
-    ).exclude(
-        commented_paper_file=""
-    ).values_list("commented_paper_file", flat=True)
-
-    for name in reviewer_file_names:
-        name = str(name or "")
-        if name.startswith("supabase:"):
-            supabase_files_in_db += 1
-        elif name:
-            cloudinary_fallback_files += 1
-
-    return render(request, "conferences/storage_status.html", {
-        "conference": conference,
-        "supabase_usage": supabase_usage,
-        "supabase_files_in_db": supabase_files_in_db,
-        "cloudinary_fallback_files": cloudinary_fallback_files,
-    })
+def terms_of_use(request):
+    return render(request, "conferences/terms_of_use.html")
 
 
 def register(request):
@@ -1879,11 +1954,16 @@ def download_review_paper(request, submission_id):
         anonymize_docx(source_path, anonymized_path)
 
         public_id = f"media/anonymous_papers/{submission.paper_code}"
-        save_local_file_to_field(
-            submission.anonymized_paper_file,
+        cloudinary.uploader.upload(
             anonymized_path,
-            f"{submission.paper_code}.docx",
+            resource_type="raw",
+            public_id=public_id,
+            overwrite=True,
+            unique_filename=False,
+            use_filename=True,
         )
+
+        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}.docx"
         submission.save(update_fields=["anonymized_paper_file", "updated_at"])
 
         return redirect(submission.anonymized_paper_file.url)
@@ -1963,11 +2043,17 @@ def conference_people(request, slug):
 
         if role in dict(role_options):
             if action == "add":
-                ConferenceRole.objects.get_or_create(
+                conference_role, created = ConferenceRole.objects.get_or_create(
                     conference=conference,
                     user=selected_user,
                     role=role
                 )
+
+                if role == "content_reviewer" and created:
+                    _send_reviewer_topics_request_email(conference, selected_user, request=request)
+                    messages.success(request, "Content reviewer role added and topic selection email sent.")
+                elif role == "content_reviewer":
+                    messages.info(request, "This user is already a content reviewer for this conference.")
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
