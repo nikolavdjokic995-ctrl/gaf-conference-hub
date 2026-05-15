@@ -1,12 +1,12 @@
 import re
 
 from django.conf import settings
-from django.contrib.auth.models import User
 from django.core.mail import send_mail
 from django.template import Context, Template
 from django.urls import reverse
+from django.utils import timezone
 
-from .models import ConferenceRole, EmailLog, EmailTemplate
+from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment
 
 
 def split_people(value):
@@ -43,7 +43,34 @@ def absolute_url(request, name, *args, **kwargs):
         return ""
 
 
-def build_email_context(submission=None, reviewer=None, request=None, extra=None):
+def find_assignment(submission=None, reviewer=None, assignment=None):
+    if assignment:
+        return assignment
+    if submission and reviewer:
+        return ReviewAssignment.objects.filter(
+            submission=submission,
+            reviewer=reviewer,
+            role="content_reviewer",
+        ).first()
+    return None
+
+
+def format_date(value):
+    if not value:
+        return ""
+    try:
+        return value.strftime("%d.%m.%Y.")
+    except Exception:
+        return str(value)
+
+
+def build_email_context(submission=None, reviewer=None, request=None, extra=None, assignment=None):
+    assignment = find_assignment(submission=submission, reviewer=reviewer, assignment=assignment)
+    if assignment and not submission:
+        submission = assignment.submission
+    if assignment and not reviewer:
+        reviewer = assignment.reviewer
+
     conference = submission.conference if submission else None
     first_author = submission.first_author if submission else ""
     first_author_email = submission.first_author_email if submission else ""
@@ -58,8 +85,33 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
     all_author_emails = [email for email in all_author_emails if email]
 
     article_type = getattr(submission, "article_type", "") if submission else ""
-    if not article_type:
+    if article_type == "research_paper":
         article_type = "Research paper"
+    elif article_type == "review_paper":
+        article_type = "Review paper"
+    elif not article_type:
+        article_type = "Research paper"
+
+    proposed_deadline = assignment.proposed_deadline if assignment else None
+    accepted_deadline = assignment.accepted_deadline if assignment else None
+    final_deadline = assignment.final_deadline() if assignment else (conference.review_deadline if conference else None)
+
+    today = timezone.now().date()
+    days_until_due = ""
+    review_days = ""
+    if final_deadline:
+        days_until_due = str((final_deadline - today).days)
+    if proposed_deadline:
+        base_date = assignment.assigned_at.date() if assignment and assignment.assigned_at else today
+        review_days = str(max((proposed_deadline - base_date).days, 0))
+
+    review_form_link = absolute_url(request, "review_submission", submission.id) if submission else ""
+    invitation_link = absolute_url(request, "review_invitation_response", assignment.id) if assignment else ""
+
+    if assignment and assignment.invitation_status == "pending":
+        main_review_link = invitation_link
+    else:
+        main_review_link = review_form_link
 
     context = {
         "conference_name": conference.title_en if conference else "",
@@ -87,19 +139,22 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "final_comment": submission.final_comment if submission else "",
         "upload_revision_link": absolute_url(request, "upload_revision", submission.id) if submission else "",
         "submission_result_link": absolute_url(request, "submission_result", submission.id) if submission else "",
-        "review_link": absolute_url(request, "review_submission", submission.id) if submission else "",
-        "review_invitation_link": "",
+        "review_link": main_review_link,
+        "review_form_link": review_form_link,
+        "review_invitation_link": invitation_link,
         "layout_decision_link": absolute_url(request, "layout_decision", submission.id) if submission else "",
         "conference_link": absolute_url(request, "conference_overview", conference.slug) if conference else "",
         "article_type": article_type,
         "abstract": submission.abstract if submission else "",
         "keywords": submission.keywords if submission else "",
-        "submitted_on": submission.created_at.strftime("%d.%m.%Y.") if submission and submission.created_at else "",
-        "review_deadline": conference.review_deadline.strftime("%d.%m.%Y.") if conference and conference.review_deadline else "",
-        "review_days": "",
-        "review_deadline_days": "",
-        "days_until_due": "2",
-        "date_agreed": "",
+        "submitted_on": format_date(submission.created_at) if submission and submission.created_at else "",
+        "review_deadline": format_date(final_deadline),
+        "proposed_review_deadline": format_date(proposed_deadline),
+        "accepted_review_deadline": format_date(accepted_deadline),
+        "review_days": review_days or "10",
+        "review_deadline_days": review_days or "10",
+        "days_until_due": days_until_due or "2",
+        "date_agreed": format_date(assignment.accepted_at) if assignment and assignment.accepted_at else "",
         "editor_decision": submission.get_status_display() if submission else "",
         "editor_comments": submission.final_comment if submission else "",
         "reviewer_comments": "",
@@ -154,7 +209,7 @@ def recipients_for_template(template, submission=None, reviewer=None):
     return clean
 
 
-def send_event_email(event, submission, request=None, reviewer=None, extra=None):
+def send_event_email(event, submission, request=None, reviewer=None, extra=None, assignment=None):
     template = EmailTemplate.objects.filter(
         conference=submission.conference,
         event=event,
@@ -181,7 +236,14 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None)
         )
         return []
 
-    context = build_email_context(submission=submission, reviewer=reviewer, request=request, extra=extra)
+    assignment = find_assignment(submission=submission, reviewer=reviewer, assignment=assignment)
+    context = build_email_context(
+        submission=submission,
+        reviewer=reviewer,
+        request=request,
+        extra=extra,
+        assignment=assignment,
+    )
     subject = render_template_text(template.subject, context).strip()
     body = render_template_text(template.body, context).strip()
     recipients = recipients_for_template(template, submission=submission, reviewer=reviewer)
@@ -254,7 +316,8 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "final_comment": "Final decision note.",
             "upload_revision_link": "https://example.com/upload-revision/",
             "submission_result_link": "https://example.com/submission-result/",
-            "review_link": "https://example.com/review/",
+            "review_link": "https://example.com/review-invitation/",
+            "review_form_link": "https://example.com/review-form/",
             "review_invitation_link": "https://example.com/review-invitation/",
             "layout_decision_link": "https://example.com/layout-decision/",
             "conference_link": "https://example.com/conference/",
@@ -263,6 +326,8 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "keywords": "green building, sustainability",
             "submitted_on": "20.02.2026.",
             "review_deadline": "18.04.2026.",
+            "proposed_review_deadline": "18.04.2026.",
+            "accepted_review_deadline": "18.04.2026.",
             "review_days": "10",
             "review_deadline_days": "10",
             "days_until_due": "2",

@@ -379,7 +379,7 @@ class ReviewAssignment(models.Model):
         max_length=20,
         choices=INVITATION_STATUS_CHOICES,
         default="pending",
-        help_text="Reviewer invitation status before the review form is opened."
+        help_text="Reviewer invitation status for this assignment."
     )
 
     proposed_deadline = models.DateField(
@@ -396,17 +396,25 @@ class ReviewAssignment(models.Model):
 
     deadline_extension_requested = models.BooleanField(
         default=False,
-        help_text="Reviewer requested a different deadline when accepting the invitation."
+        help_text="Reviewer requested a deadline different from the proposed one."
     )
 
     decline_reason = models.TextField(blank=True)
-    responded_at = models.DateTimeField(null=True, blank=True)
+    review_invitation_sent_at = models.DateTimeField(null=True, blank=True)
+    accepted_at = models.DateTimeField(null=True, blank=True)
+    declined_at = models.DateTimeField(null=True, blank=True)
+
+    due_soon_reminder_sent = models.BooleanField(default=False)
+    overdue_reminder_sent = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ("submission", "reviewer", "role")
 
+    def final_deadline(self):
+        return self.accepted_deadline or self.proposed_deadline or self.submission.conference.review_deadline
+
     def __str__(self):
-        return f"{self.submission.title} — {self.reviewer.username} — {self.role} — {self.invitation_status}"
+        return f"{self.submission.title} — {self.reviewer.username} — {self.role}"
 
 
 class Review(models.Model):

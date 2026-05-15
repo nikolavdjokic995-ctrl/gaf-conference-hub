@@ -60,26 +60,23 @@
             color: #14532d;
         }
 
-        select, input[type="date"] {
+        select, input[type="date"], input[type="number"] {
             padding: 10px;
             min-width: 220px;
             border-radius: 8px;
             border: 1px solid #ccc;
             margin-right: 8px;
+            margin-bottom: 8px;
         }
 
-        .deadline-label {
-            display: inline-block;
-            margin-left: 10px;
-            margin-right: 6px;
-            color: #14532d;
-            font-weight: bold;
+        .deadline-row {
+            margin-top: 10px;
         }
 
-        .assignment-meta {
-            color: #475569;
+        .help {
+            color: #64748b;
             font-size: 13px;
-            margin-left: 4px;
+            margin: 6px 0 10px;
         }
 
         button {
@@ -168,11 +165,8 @@
                 {% for assignment in item.assignments %}
                     <span class="badge">
                         {{ assignment.reviewer.username }} — {{ assignment.get_role_display }} — {{ assignment.get_invitation_status_display }}
+                        {% if assignment.accepted_deadline %} — deadline {{ assignment.accepted_deadline|date:"d.m.Y." }}{% elif assignment.proposed_deadline %} — proposed {{ assignment.proposed_deadline|date:"d.m.Y." }}{% endif %}
                     </span>
-                    <span class="assignment-meta">
-                        Proposed: {{ assignment.proposed_deadline|default:"not set" }}
-                        {% if assignment.accepted_deadline %} | Final: {{ assignment.accepted_deadline }}{% endif %}
-                    </span><br>
                 {% endfor %}
             {% else %}
                 <div class="empty">
@@ -203,11 +197,14 @@
                         {% endfor %}
                     </select>
 
-                    <span class="deadline-label">Proposed deadline</span>
-                    <input type="date" name="proposed_deadline" required>
+                    <div class="deadline-row">
+                        <input type="date" name="proposed_deadline">
+                        <input type="number" name="review_days" min="1" value="10" style="min-width:120px;">
+                        <span class="help">Choose a proposed deadline date, or leave date empty and use number of days.</span>
+                    </div>
 
                     <button type="submit">
-                        Assign
+                        Send invitation
                     </button>
                 </form>
             {% else %}

@@ -17,8 +17,8 @@ class Migration(migrations.Migration):
                     ("accepted", "Accepted"),
                     ("declined", "Declined"),
                 ],
-                default="pending",
-                help_text="Reviewer invitation status before the review form is opened.",
+                default="accepted",
+                help_text="Reviewer invitation status for this assignment.",
                 max_length=20,
             ),
         ),
@@ -45,7 +45,7 @@ class Migration(migrations.Migration):
             name="deadline_extension_requested",
             field=models.BooleanField(
                 default=False,
-                help_text="Reviewer requested a different deadline when accepting the invitation.",
+                help_text="Reviewer requested a deadline different from the proposed one.",
             ),
         ),
         migrations.AddField(
@@ -55,7 +55,41 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name="reviewassignment",
-            name="responded_at",
+            name="review_invitation_sent_at",
             field=models.DateTimeField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name="reviewassignment",
+            name="accepted_at",
+            field=models.DateTimeField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name="reviewassignment",
+            name="declined_at",
+            field=models.DateTimeField(blank=True, null=True),
+        ),
+        migrations.AddField(
+            model_name="reviewassignment",
+            name="due_soon_reminder_sent",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AddField(
+            model_name="reviewassignment",
+            name="overdue_reminder_sent",
+            field=models.BooleanField(default=False),
+        ),
+        migrations.AlterField(
+            model_name="reviewassignment",
+            name="invitation_status",
+            field=models.CharField(
+                choices=[
+                    ("pending", "Invitation pending"),
+                    ("accepted", "Accepted"),
+                    ("declined", "Declined"),
+                ],
+                default="pending",
+                help_text="Reviewer invitation status for this assignment.",
+                max_length=20,
+            ),
         ),
     ]
