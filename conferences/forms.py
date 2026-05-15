@@ -356,7 +356,6 @@ class EmailTemplateForm(forms.ModelForm):
     class Meta:
         model = EmailTemplate
         fields = [
-            "event",
             "enabled",
             "send_to_author",
             "send_to_coauthors",
