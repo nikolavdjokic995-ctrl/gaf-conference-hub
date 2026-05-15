@@ -20,18 +20,12 @@ class RegisterForm(UserCreationForm):
 
     TITLE_CHOICES = [
         ("", "Select"),
+        ("Prof. Dr.", "Prof. Dr."),
+        ("Assoc. Prof. Dr.", "Assoc. Prof. Dr."),
+        ("Asst. Prof. Dr.", "Asst. Prof. Dr."),
         ("Dr.", "Dr."),
         ("Mr.", "Mr."),
-        ("Mrs.", "Mrs."),
         ("Ms.", "Ms."),
-        ("Mx.", "Mx."),
-        ("Prof.", "Prof."),
-        ("Prof. Dr.", "Prof. Dr."),
-        ("Doc. dr.", "Doc. dr."),
-        ("MA", "MA"),
-        ("MS", "MS"),
-        ("MSc", "MSc"),
-        ("PhD", "PhD"),
     ]
 
     title = forms.ChoiceField(choices=TITLE_CHOICES)
