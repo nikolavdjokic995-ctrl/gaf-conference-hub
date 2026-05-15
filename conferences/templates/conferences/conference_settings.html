@@ -97,6 +97,14 @@
         </div>
 
         <div class="card">
+            <h3>Storage usage</h3>
+            <p>Check Supabase document storage, fallback files and cleanup status.</p>
+            <a class="btn" href="{% url 'storage_status' conference.slug %}">
+                Open storage status
+            </a>
+        </div>
+
+        <div class="card">
             <h3>Review management</h3>
             <p>Assign papers to judges and reviewers.</p>
             <a class="btn" href="{% url 'submit_paper' conference.slug %}">

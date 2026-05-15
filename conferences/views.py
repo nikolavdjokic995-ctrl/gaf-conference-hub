@@ -50,10 +50,11 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template, send_test_template_email, validate_template_placeholders
+from .emails import send_event_email, preview_template, send_test_template_email
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .utils import anonymize_docx
-from .mail_scheduler import run_review_reminders_throttled
+from .document_storage import save_local_file_to_field, cleanup_submission_temporary_files
+from .storage_backends import get_supabase_storage_usage
 
 
 def home(request):
@@ -633,11 +634,6 @@ def judge_dashboard(request):
     if not judge_roles.exists():
         return redirect("/")
 
-    try:
-        run_review_reminders_throttled()
-    except Exception as exc:
-        messages.warning(request, f"Review reminder check could not run: {exc}")
-
     conferences = [role.conference for role in judge_roles]
 
     submissions = Submission.objects.filter(conference__in=conferences)
@@ -759,11 +755,6 @@ def email_templates(request, slug):
     if not is_manager:
         return redirect("/")
 
-    try:
-        run_review_reminders_throttled()
-    except Exception as exc:
-        messages.warning(request, f"Review reminder check could not run: {exc}")
-
     from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
 
     for event, template_data in DEFAULT_EMAIL_TEMPLATES_2026.items():
@@ -798,9 +789,6 @@ def email_templates(request, slug):
         if event in templates_by_event
     ]
 
-    for template in templates:
-        template.unknown_placeholders = validate_template_placeholders(template)
-
     logs = EmailLog.objects.filter(
         conference=conference
     ).select_related("submission", "template")[:40]
@@ -830,30 +818,19 @@ def edit_email_template(request, template_id):
         form = EmailTemplateForm(request.POST, instance=template)
 
         if form.is_valid():
-            saved_template = form.save()
-            unknown_placeholders = validate_template_placeholders(saved_template)
-            if unknown_placeholders:
-                messages.warning(
-                    request,
-                    "Template saved, but it contains unknown placeholder(s): " + ", ".join(unknown_placeholders)
-                )
-            else:
-                messages.success(request, "Email template saved successfully.")
+            form.save()
+            messages.success(request, "Email template saved successfully.")
             return redirect("email_templates", slug=conference.slug)
-        else:
-            messages.error(request, "Email template could not be saved. Please check the form fields.")
     else:
         form = EmailTemplateForm(instance=template)
 
     preview = preview_template(template, request=request)
-    unknown_placeholders = validate_template_placeholders(template)
 
     return render(request, "conferences/email_template_form.html", {
         "conference": conference,
         "template": template,
         "form": form,
         "preview": preview,
-        "unknown_placeholders": unknown_placeholders,
     })
 
 
@@ -972,18 +949,10 @@ def submit_paper(request, slug):
                             f"{submission.paper_code}_submission_{submission.id}"
                         )
 
-                        cloudinary.uploader.upload(
+                        save_local_file_to_field(
+                            submission.full_paper_file,
                             source_path,
-                            resource_type="raw",
-                            public_id=original_public_id,
-                            overwrite=True,
-                            invalidate=True,
-                            unique_filename=False,
-                            use_filename=False,
-                        )
-
-                        submission.full_paper_file.name = (
-                            f"{original_public_id}{extension}"
+                            f"originals/{submission.paper_code}_submission_{submission.id}{extension}",
                         )
 
                         # =========================
@@ -1015,18 +984,10 @@ def submit_paper(request, slug):
                                 f"{submission.paper_code}_submission_{submission.id}"
                             )
 
-                            cloudinary.uploader.upload(
+                            save_local_file_to_field(
+                                submission.anonymized_paper_file,
                                 anonymized_path,
-                                resource_type="raw",
-                                public_id=anonymous_public_id,
-                                overwrite=True,
-                                invalidate=True,
-                                unique_filename=False,
-                                use_filename=False,
-                            )
-
-                            submission.anonymized_paper_file.name = (
-                                f"{anonymous_public_id}.docx"
+                                f"{submission.paper_code}_submission_{submission.id}.docx",
                             )
 
                         submission.save()
@@ -1507,17 +1468,17 @@ def upload_revision(request, submission_id):
                     next_round = submission.revision_round or 1
                     revised_public_id = f"media/revised_papers/{submission.paper_code}-r{next_round}"
 
-                    cloudinary.uploader.upload(
+                    revised_storage_name = f"{submission.paper_code}-r{next_round}{extension}"
+                    save_local_file_to_field(
+                        submission.revised_paper_file,
                         source_path,
-                        resource_type="raw",
-                        public_id=revised_public_id,
-                        overwrite=True,
-                        unique_filename=False,
-                        use_filename=True,
+                        revised_storage_name,
                     )
-
-                    submission.revised_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
-                    submission.full_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
+                    save_local_file_to_field(
+                        submission.full_paper_file,
+                        source_path,
+                        revised_storage_name,
+                    )
 
                     if extension == ".docx":
                         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
@@ -1525,15 +1486,11 @@ def upload_revision(request, submission_id):
 
                         anonymize_docx(source_path, anonymized_path)
 
-                        cloudinary.uploader.upload(
+                        save_local_file_to_field(
+                            submission.anonymized_paper_file,
                             anonymized_path,
-                            resource_type="raw",
-                            public_id=f"media/anonymous_papers/{submission.paper_code}-r{next_round}",
-                            overwrite=True,
-                            unique_filename=False,
-                            use_filename=True,
+                            f"{submission.paper_code}-r{next_round}.docx",
                         )
-                        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}-r{next_round}.docx"
 
                     submission.status = "revised_submitted"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
@@ -1541,17 +1498,17 @@ def upload_revision(request, submission_id):
                     next_round = submission.layout_revision_round or 1
                     layout_public_id = f"media/layout_revised_papers/{submission.paper_code}-layout-r{next_round}"
 
-                    cloudinary.uploader.upload(
+                    layout_storage_name = f"{submission.paper_code}-layout-r{next_round}{extension}"
+                    save_local_file_to_field(
+                        submission.layout_revised_paper_file,
                         source_path,
-                        resource_type="raw",
-                        public_id=layout_public_id,
-                        overwrite=True,
-                        unique_filename=False,
-                        use_filename=True,
+                        layout_storage_name,
                     )
-
-                    submission.layout_revised_paper_file.name = f"layout_revised_papers/{submission.paper_code}-layout-r{next_round}{extension}"
-                    submission.full_paper_file.name = f"layout_revised_papers/{submission.paper_code}-layout-r{next_round}{extension}"
+                    save_local_file_to_field(
+                        submission.full_paper_file,
+                        source_path,
+                        layout_storage_name,
+                    )
                     submission.status = "layout_revision_submitted"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
@@ -1633,7 +1590,7 @@ def layout_decision(request, submission_id):
         return redirect("layout_dashboard")
 
     if request.method == "POST":
-        form = LayoutDecisionForm(request.POST)
+        form = LayoutDecisionForm(request.POST, request.FILES)
 
         if form.is_valid():
             status = form.cleaned_data["status"]
@@ -1641,6 +1598,15 @@ def layout_decision(request, submission_id):
 
             submission.status = status
             submission.final_comment = comment
+
+            final_publication_file = form.cleaned_data.get("final_publication_file")
+            if final_publication_file:
+                extension = Path(final_publication_file.name).suffix.lower()
+                submission.final_publication_file.save(
+                    f"{submission.paper_code}-final{extension}",
+                    final_publication_file,
+                    save=False,
+                )
 
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
@@ -1652,6 +1618,7 @@ def layout_decision(request, submission_id):
                 send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted":
                 send_event_email("manuscript_accepted", submission, request=request)
+                cleanup_submission_temporary_files(submission)
 
             messages.success(request, "Layout decision saved successfully.")
             return redirect("layout_dashboard")
@@ -1784,6 +1751,62 @@ def delete_footer_partner(request, partner_id):
     })
 
 
+@login_required
+def storage_status(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role__in=["manager", "judge"]
+    ).exists()
+
+    if not is_manager:
+        return redirect("conference_overview", slug=conference.slug)
+
+    supabase_usage = get_supabase_storage_usage()
+
+    cloudinary_fallback_files = 0
+    supabase_files_in_db = 0
+
+    file_fields = [
+        "full_paper_file",
+        "revised_paper_file",
+        "layout_revised_paper_file",
+        "final_publication_file",
+        "anonymized_paper_file",
+    ]
+
+    for submission in Submission.objects.filter(conference=conference):
+        for field_name in file_fields:
+            field = getattr(submission, field_name, None)
+            name = getattr(field, "name", "") or ""
+            if name.startswith("supabase:"):
+                supabase_files_in_db += 1
+            elif name:
+                cloudinary_fallback_files += 1
+
+    reviewer_file_names = Review.objects.filter(
+        submission__conference=conference
+    ).exclude(
+        commented_paper_file=""
+    ).values_list("commented_paper_file", flat=True)
+
+    for name in reviewer_file_names:
+        name = str(name or "")
+        if name.startswith("supabase:"):
+            supabase_files_in_db += 1
+        elif name:
+            cloudinary_fallback_files += 1
+
+    return render(request, "conferences/storage_status.html", {
+        "conference": conference,
+        "supabase_usage": supabase_usage,
+        "supabase_files_in_db": supabase_files_in_db,
+        "cloudinary_fallback_files": cloudinary_fallback_files,
+    })
+
+
 def register(request):
     if request.method == "POST":
         form = RegisterForm(request.POST)
@@ -1856,16 +1879,11 @@ def download_review_paper(request, submission_id):
         anonymize_docx(source_path, anonymized_path)
 
         public_id = f"media/anonymous_papers/{submission.paper_code}"
-        cloudinary.uploader.upload(
+        save_local_file_to_field(
+            submission.anonymized_paper_file,
             anonymized_path,
-            resource_type="raw",
-            public_id=public_id,
-            overwrite=True,
-            unique_filename=False,
-            use_filename=True,
+            f"{submission.paper_code}.docx",
         )
-
-        submission.anonymized_paper_file.name = f"anonymous_papers/{submission.paper_code}.docx"
         submission.save(update_fields=["anonymized_paper_file", "updated_at"])
 
         return redirect(submission.anonymized_paper_file.url)

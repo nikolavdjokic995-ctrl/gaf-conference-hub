@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
+from .storage_backends import HybridDocumentStorage
+
 
 class UserProfile(models.Model):
     user = models.OneToOneField(
@@ -216,7 +218,7 @@ class Submission(models.Model):
 
     full_paper_file = models.FileField(
         upload_to="papers/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True
     )
@@ -252,21 +254,21 @@ class Submission(models.Model):
 
     revised_paper_file = models.FileField(
         upload_to="revised_papers/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True
     )
 
     layout_revised_paper_file = models.FileField(
         upload_to="layout_revised_papers/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True
     )
 
     final_publication_file = models.FileField(
         upload_to="final_publication_papers/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         help_text="Final print-ready paper uploaded by the layout reviewer."
@@ -274,7 +276,7 @@ class Submission(models.Model):
 
     anonymized_paper_file = models.FileField(
         upload_to="anonymous_papers/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True
     )
@@ -664,7 +666,7 @@ class Review(models.Model):
 
     commented_paper_file = models.FileField(
         upload_to="reviewer_commented_papers/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         help_text="Optional reviewer-uploaded paper with comments for the author."
@@ -818,7 +820,7 @@ class ConferenceInfoCard(models.Model):
 
     file = models.FileField(
         upload_to="conference_files/",
-        storage=RawMediaCloudinaryStorage(),
+        storage=HybridDocumentStorage(),
         blank=True,
         null=True
 

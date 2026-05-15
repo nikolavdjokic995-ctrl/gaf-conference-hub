@@ -17,7 +17,7 @@
         {% if submission.full_paper_file %}<a href="{{ submission.full_paper_file.url }}" target="_blank">Download current paper</a>{% endif %}
     </div>
 
-    <form method="post">
+    <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         {{ form.as_p }}
         <button type="submit">Save layout decision</button>
