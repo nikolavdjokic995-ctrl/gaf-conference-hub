@@ -458,3 +458,89 @@ def send_test_template_email(template, recipient, request=None):
             message=f"Test email failed: {exc}",
         )
         return False, f"Test email failed: {exc}"
+
+
+def send_conference_role_email(event, conference, reviewer, request=None, extra=None):
+    """Send a conference-level email to a reviewer/user, without requiring a submission.
+
+    Used for Scientific Committee / reviewer login information and reviewer topic
+    selection instructions. The template must be enabled before it will send.
+    """
+    template = EmailTemplate.objects.filter(
+        conference=conference,
+        event=event,
+        enabled=True,
+    ).first()
+
+    recipient = (getattr(reviewer, "email", "") or "").strip()
+
+    if not template:
+        EmailLog.objects.create(
+            conference=conference,
+            event=event,
+            recipient=recipient,
+            status="skipped",
+            message="Template not found or disabled.",
+        )
+        return False, "Template not found or disabled."
+
+    if not recipient or "@" not in recipient:
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event=event,
+            recipient=recipient,
+            status="skipped",
+            subject=template.subject,
+            message="Reviewer email address is empty or invalid.",
+        )
+        return False, "Reviewer email address is empty or invalid."
+
+    reviewer_name = user_full_name(reviewer)
+    context = {
+        "conference_name": conference.title_en,
+        "conference_location": conference.location,
+        "conference_dates": f"{conference.start_date} — {conference.end_date}",
+        "conference_contact_email": conference.contact_email,
+        "conference_link": absolute_url(request, "conference_overview", conference.slug),
+        "reviewer_topics_link": absolute_url(request, "reviewer_topics", conference.slug),
+        "reviewer_name": reviewer_name,
+        "reviewer_email": recipient,
+        "temporary_password": "",
+    }
+    if extra:
+        context.update(extra)
+
+    subject = render_template_text(template.subject, context).strip()
+    body = render_template_text(template.body, context)
+
+    try:
+        send_mail(
+            subject,
+            body,
+            getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            [recipient],
+            fail_silently=False,
+        )
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event=event,
+            recipient=recipient,
+            subject=subject,
+            status="sent",
+            message="Conference role email sent successfully.",
+        )
+        return True, "Conference role email sent successfully."
+    except Exception as exc:
+        EmailLog.objects.create(
+            conference=conference,
+            template=template,
+            event=event,
+            recipient=recipient,
+            subject=subject,
+            status="failed",
+            message=f"Conference role email failed: {exc}",
+        )
+        return False, f"Conference role email failed: {exc}"
+

@@ -5,8 +5,6 @@ import urllib.request
 from datetime import timedelta
 import cloudinary.uploader
 
-from django.conf import settings
-
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
@@ -19,7 +17,6 @@ from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
 from django.http import HttpResponse
-from django.urls import reverse
 from pathlib import Path
 
 from .models import (
@@ -54,7 +51,7 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template
+from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .utils import anonymize_docx, get_supabase_storage_usage, cleanup_submission_temporary_files
 
@@ -258,122 +255,6 @@ def make_decision(request, submission_id):
     })
 
 
-
-def _user_display_name(user):
-    full_name = f"{user.first_name} {user.last_name}".strip()
-    return full_name or user.username
-
-
-def _topic_label(topic):
-    return f"{topic.code} — {topic.title}" if getattr(topic, "code", "") else topic.title
-
-
-def _reviewer_role_match_data(reviewers, submission):
-    """Return reviewer role data sorted by topic match for a submission."""
-    submission_topics = [topic for topic in [submission.topic, submission.secondary_topic] if topic]
-    submission_topic_ids = {topic.id for topic in submission_topics}
-    result = []
-
-    for reviewer_role in reviewers:
-        reviewer_topics = list(reviewer_role.topics.all())
-        matching_topics = [topic for topic in reviewer_topics if topic.id in submission_topic_ids]
-
-        result.append({
-            "role": reviewer_role,
-            "id": reviewer_role.id,
-            "user": reviewer_role.user,
-            "display_name": _user_display_name(reviewer_role.user),
-            "topics": reviewer_topics,
-            "matching_topics": matching_topics,
-            "match_count": len(matching_topics),
-            "topics_completed": bool(reviewer_topics),
-        })
-
-    result.sort(key=lambda item: (-item["match_count"], not item["topics_completed"], item["display_name"].lower()))
-    return result
-
-
-def _send_reviewer_topics_request_email(conference, reviewer_user, request=None):
-    """Send the reviewer topic-selection email when someone receives a reviewer role."""
-    if not getattr(reviewer_user, "email", ""):
-        EmailLog.objects.create(
-            conference=conference,
-            event="reviewer_topics_request",
-            recipient="",
-            status="skipped",
-            message="Reviewer topic request email skipped because reviewer has no email address.",
-        )
-        return
-
-    from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
-    from .emails import render_template_text, validate_template_placeholders
-
-    default_data = DEFAULT_EMAIL_TEMPLATES_2026.get("reviewer_topics_request", {})
-    template, _ = EmailTemplate.objects.get_or_create(
-        conference=conference,
-        event="reviewer_topics_request",
-        defaults={
-            "enabled": default_data.get("enabled", True),
-            "send_to_author": False,
-            "send_to_coauthors": False,
-            "send_to_reviewer": True,
-            "send_to_managers": False,
-            "send_to_layout_reviewers": False,
-            "subject": default_data.get("subject", "Please select your reviewer expertise topics – {{ conference_name }}"),
-            "body": default_data.get("body", "Please select your reviewer expertise topics: {{ reviewer_topics_link }}"),
-        },
-    )
-
-    if not template.enabled:
-        EmailLog.objects.create(
-            conference=conference,
-            template=template,
-            event="reviewer_topics_request",
-            recipient=reviewer_user.email,
-            status="skipped",
-            message="Reviewer topic request template is disabled.",
-        )
-        return
-
-    topic_url = request.build_absolute_uri(reverse("reviewer_topics", args=[conference.slug])) if request else ""
-    context = {
-        "conference_name": conference.title_en,
-        "conference_contact_email": conference.contact_email,
-        "conference_link": request.build_absolute_uri(reverse("conference_overview", args=[conference.slug])) if request else "",
-        "reviewer_name": _user_display_name(reviewer_user),
-        "reviewer_email": reviewer_user.email,
-        "reviewer_topics_link": topic_url,
-    }
-
-    subject = render_template_text(template.subject, context).strip()
-    body = render_template_text(template.body, context).strip()
-    warning = ""
-    unknown = validate_template_placeholders(template)
-    if unknown:
-        warning = "Unknown placeholder(s): " + ", ".join(unknown)
-
-    try:
-        send_mail(subject, body, getattr(settings, "DEFAULT_FROM_EMAIL", None), [reviewer_user.email], fail_silently=False)
-        EmailLog.objects.create(
-            conference=conference,
-            template=template,
-            event="reviewer_topics_request",
-            recipient=reviewer_user.email,
-            subject=subject,
-            status="sent",
-            message=warning or "Reviewer topic selection request sent.",
-        )
-    except Exception as exc:
-        EmailLog.objects.create(
-            conference=conference,
-            template=template,
-            event="reviewer_topics_request",
-            recipient=reviewer_user.email,
-            subject=subject,
-            status="failed",
-            message=f"Reviewer topic selection request failed: {exc}",
-        )
-
 @login_required
 def assign_papers(request, slug, submission_id=None):
     conference = get_object_or_404(Conference, slug=slug)
@@ -486,15 +367,20 @@ def assign_papers(request, slug, submission_id=None):
     submission_data = []
 
     for submission in submissions:
-        reviewer_data = _reviewer_role_match_data(reviewers, submission)
-        suggested_reviewers = [item for item in reviewer_data if item["match_count"] > 0]
-        reviewers_without_topics = [item for item in reviewer_data if not item["topics_completed"]]
+        topic_ids = [
+            topic.id
+            for topic in [submission.topic, submission.secondary_topic]
+            if topic
+        ]
+
+        suggested_reviewers = reviewers.filter(
+            topics__id__in=topic_ids
+        ).distinct() if topic_ids else reviewers.none()
 
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
-            "all_reviewers": reviewer_data,
-            "reviewers_without_topics": reviewers_without_topics,
+            "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
         })
 
@@ -974,6 +860,32 @@ def preview_email_template(request, template_id):
         "template": template,
         "preview": preview,
     })
+
+
+
+@login_required
+def send_test_email_template(request, template_id):
+    template = get_object_or_404(EmailTemplate, id=template_id)
+    conference = template.conference
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    if request.method == "POST":
+        recipient = request.POST.get("test_recipient", "").strip()
+        ok, message = send_test_template_email(template, recipient, request=request)
+        if ok:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+
+    return redirect("email_templates", slug=conference.slug)
 
 
 @login_required
@@ -1516,7 +1428,7 @@ def reviewer_topics(request, slug):
     reviewer_role = ConferenceRole.objects.filter(
         conference=conference,
         user=request.user,
-        role="content_reviewer"
+        role__in=["content_reviewer", "layout_reviewer"]
     ).first()
 
     if not reviewer_role:
@@ -1534,19 +1446,7 @@ def reviewer_topics(request, slug):
 
     if request.method == "POST":
         selected_topic_ids = request.POST.getlist("topics")
-
-        if len(selected_topic_ids) < 1 or len(selected_topic_ids) > 2:
-            messages.error(request, "Please select one or two topics that best match your expertise.")
-            return redirect("reviewer_topics", slug=conference.slug)
-
-        valid_topics = ConferenceTopic.objects.filter(
-            conference=conference,
-            enabled=True,
-            id__in=selected_topic_ids,
-        )
-
-        reviewer_role.topics.set(valid_topics)
-        messages.success(request, "Your reviewer expertise topics have been saved.")
+        reviewer_role.topics.set(selected_topic_ids)
         return redirect("reviewer_topics", slug=conference.slug)
 
     selected_topics = reviewer_role.topics.values_list("id", flat=True)
@@ -2049,11 +1949,13 @@ def conference_people(request, slug):
                     role=role
                 )
 
-                if role == "content_reviewer" and created:
-                    _send_reviewer_topics_request_email(conference, selected_user, request=request)
-                    messages.success(request, "Content reviewer role added and topic selection email sent.")
-                elif role == "content_reviewer":
-                    messages.info(request, "This user is already a content reviewer for this conference.")
+                if created and role == "content_reviewer":
+                    send_conference_role_email(
+                        "committee_login_info",
+                        conference,
+                        selected_user,
+                        request=request,
+                    )
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
