@@ -57,9 +57,30 @@ from .utils import anonymize_docx
 def review_invitation_response(request, token, response):
     return HttpResponse("Review invitation response endpoint is active.")
 
-def send_test_email_template(request, conference_slug, template_id):
-    messages.success(request, "Test email sent successfully.")
-    return redirect("email_templates", conference_slug=conference_slug)
+@login_required
+def send_test_email_template(request, template_id):
+    template = get_object_or_404(EmailTemplate, id=template_id)
+    conference = template.conference
+
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
+
+    if not is_manager:
+        return redirect("/")
+
+    if request.method == "POST":
+        recipient = request.POST.get("test_recipient", "").strip()
+        ok, message = send_test_template_email(template, recipient, request=request)
+
+        if ok:
+            messages.success(request, message)
+        else:
+            messages.error(request, message)
+
+    return redirect("email_templates", slug=conference.slug)
 
 def home(request):
     conferences = Conference.objects.all()
@@ -1836,6 +1857,7 @@ def run_email_automation_now(request, slug):
         f"Email automation completed. Due soon sent: {result['due_soon_sent']}; overdue sent: {result['overdue_sent']}; skipped: {result['skipped']}."
     )
     return redirect("email_health_dashboard", slug=conference.slug)
+
 def terms_of_use(request):
     return render(request, "conferences/terms_of_use.html")
 
