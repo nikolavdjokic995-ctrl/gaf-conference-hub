@@ -520,6 +520,13 @@
                         <div class="keywords-preview" id="keywordsPreview"></div>
                         <div class="help">Enter keywords separated by commas.</div>
                     </div>
+
+                    <div class="field">
+                        <label for="{{ form.article_type.id_for_label }}">{{ form.article_type.label }}</label>
+                        {{ form.article_type }}
+                        {{ form.article_type.errors }}
+                        <div class="help">Select whether the submission is a research paper or a review paper.</div>
+                    </div>
                 </section>
 
                 <section class="form-step" data-step="2">
@@ -541,6 +548,13 @@
                     </div>
 
                     <div class="field">
+                        <label for="{{ form.first_author_country.id_for_label }}">{{ form.first_author_country.label }}</label>
+                        {{ form.first_author_country }}
+                        {{ form.first_author_country.errors }}
+                        <div class="help">Select the country of the first author. This will be used for conference statistics.</div>
+                    </div>
+
+                    <div class="field">
                         <label for="{{ form.coauthors.id_for_label }}">{{ form.coauthors.label }}</label>
                         {{ form.coauthors }}
                         {{ form.coauthors.errors }}
@@ -552,6 +566,13 @@
                         {{ form.coauthor_emails }}
                         {{ form.coauthor_emails.errors }}
                         <div class="help">Enter co-author emails, one per line.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.coauthor_countries.id_for_label }}">{{ form.coauthor_countries.label }}</label>
+                        {{ form.coauthor_countries }}
+                        {{ form.coauthor_countries.errors }}
+                        <div class="help">Enter co-author countries, one per line, in the same order as co-authors. Leave empty if there are no co-authors.</div>
                     </div>
 
                     <div class="info-box">

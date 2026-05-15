@@ -56,41 +56,48 @@ class RegisterForm(UserCreationForm):
 
 class SubmissionForm(forms.ModelForm):
 
+    first_author_country = CountryField(blank_label="Select country").formfield(
+        required=True,
+        widget=CountrySelectWidget()
+    )
+
+    coauthor_countries = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Enter co-author countries, one per line, in the same order as co-authors.",
+        })
+    )
+
     class Meta:
         model = Submission
         fields = [
             "title",
             "abstract",
             "keywords",
+            "article_type",
             "first_author",
             "first_author_email",
+            "first_author_country",
             "coauthors",
             "coauthor_emails",
+            "coauthor_countries",
             "topic",
             "secondary_topic",
             "full_paper_file",
         ]
 
-    def clean_full_paper_file(self):
-        file = self.cleaned_data.get("full_paper_file")
-
-        if file:
-            allowed_extensions = [".doc", ".docx"]
-            file_name = file.name.lower()
-
-            if not any(file_name.endswith(ext) for ext in allowed_extensions):
-                raise forms.ValidationError(
-                    "Please upload your paper in Word format only (.doc or .docx)."
-                )
-    
-        return file
         labels = {
             "title": "Paper title",
             "abstract": "Abstract",
             "keywords": "Keywords",
+            "article_type": "Article type",
             "first_author": "First author (First Name Last Name)",
+            "first_author_email": "First author email",
+            "first_author_country": "First author country",
             "coauthors": "Co-authors (First Name Last Name)",
             "coauthor_emails": "Co-author email addresses",
+            "coauthor_countries": "Co-author countries",
             "topic": "Primary conference topic",
             "secondary_topic": "Second conference topic (optional)",
             "full_paper_file": "Full paper file",
@@ -115,6 +122,20 @@ class SubmissionForm(forms.ModelForm):
             }),
         }
 
+    def clean_full_paper_file(self):
+        file = self.cleaned_data.get("full_paper_file")
+
+        if file:
+            allowed_extensions = [".doc", ".docx"]
+            file_name = file.name.lower()
+
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    "Please upload your paper in Word format only (.doc or .docx)."
+                )
+
+        return file
+
     def __init__(self, *args, **kwargs):
         conference = kwargs.pop("conference", None)
         super().__init__(*args, **kwargs)
@@ -136,68 +157,75 @@ class SubmissionForm(forms.ModelForm):
         self.fields["full_paper_file"].required = True
         self.fields["first_author"].required = True
         self.fields["first_author_email"].required = True
-
-        self.fields["title"].label = "Paper title"
-        self.fields["first_author"].label = "First author (First Name Last Name)"
-        self.fields["first_author_email"].label = "First author email"
-        self.fields["coauthors"].label = "Co-authors (First Name Last Name)"
-        self.fields["coauthor_emails"].label = "Co-author email addresses"
-
+        self.fields["first_author_country"].required = True
 
 class ReviewForm(forms.ModelForm):
 
     class Meta:
         model = Review
         fields = [
-            "content_context",
-            "research_design",
-            "arguments_discussion",
-            "results_presented",
-            "references_adequate",
-            "conclusions_supported",
-            "english_quality",
+            "no_conflict_confirmed",
+            "extension_requested",
+            "requested_deadline",
+            "quality_originality",
+            "quality_scientific_contribution",
+            "quality_methodological_approach",
+            "quality_references",
+            "quality_clarity_expression",
+            "paper_classification",
+            "reviewer_competency",
             "comments_for_authors",
-            "conflict_of_interest",
-            "plagiarism_detected",
-            "inappropriate_self_citations",
-            "ethical_concerns",
-            "originality",
-            "contribution",
-            "structure_clarity",
-            "logical_coherence",
-            "engagement_sources",
-            "overall_merit",
-            "references_relevant",
-            "comments_for_editors",
             "commented_paper_file",
+            "comments_for_editors",
             "overall_recommendation",
             "wants_final_notification",
         ]
 
         widgets = {
-            "content_context": forms.RadioSelect,
-            "research_design": forms.RadioSelect,
-            "arguments_discussion": forms.RadioSelect,
-            "results_presented": forms.RadioSelect,
-            "references_adequate": forms.RadioSelect,
-            "conclusions_supported": forms.RadioSelect,
-            "english_quality": forms.RadioSelect,
-            "conflict_of_interest": forms.RadioSelect,
-            "plagiarism_detected": forms.RadioSelect,
-            "inappropriate_self_citations": forms.RadioSelect,
-            "ethical_concerns": forms.RadioSelect,
-            "originality": forms.RadioSelect,
-            "contribution": forms.RadioSelect,
-            "structure_clarity": forms.RadioSelect,
-            "logical_coherence": forms.RadioSelect,
-            "engagement_sources": forms.RadioSelect,
-            "overall_merit": forms.RadioSelect,
-            "references_relevant": forms.RadioSelect,
+            "requested_deadline": forms.DateInput(attrs={"type": "date"}),
+            "quality_originality": forms.RadioSelect,
+            "quality_scientific_contribution": forms.RadioSelect,
+            "quality_methodological_approach": forms.RadioSelect,
+            "quality_references": forms.RadioSelect,
+            "quality_clarity_expression": forms.RadioSelect,
+            "paper_classification": forms.RadioSelect,
+            "reviewer_competency": forms.RadioSelect,
             "overall_recommendation": forms.RadioSelect,
             "wants_final_notification": forms.RadioSelect,
-            "comments_for_authors": forms.Textarea(attrs={"rows": 4}),
-            "comments_for_editors": forms.Textarea(attrs={"rows": 4}),
+            "comments_for_authors": forms.Textarea(attrs={"rows": 8}),
+            "comments_for_editors": forms.Textarea(attrs={"rows": 6}),
         }
+
+        labels = {
+            "no_conflict_confirmed": "I confirm that I have no conflict of interest for this paper.",
+            "extension_requested": "Request review deadline extension",
+            "requested_deadline": "Requested new deadline",
+            "quality_originality": "Originality of the topic",
+            "quality_scientific_contribution": "Scientific contribution",
+            "quality_methodological_approach": "Methodological approach",
+            "quality_references": "Quality of references",
+            "quality_clarity_expression": "Clarity in expression",
+            "paper_classification": "You would categorize this paper as",
+            "reviewer_competency": "Reviewer competency in relation to the paper topic",
+            "comments_for_authors": "Comments to the authors",
+            "comments_for_editors": "Comments to the Editor (optional)",
+            "commented_paper_file": "Review file",
+            "overall_recommendation": "Overall recommendation",
+            "wants_final_notification": "Would you like to be notified about the final decision?",
+        }
+
+    def clean(self):
+        cleaned_data = super().clean()
+        extension_requested = cleaned_data.get("extension_requested")
+        requested_deadline = cleaned_data.get("requested_deadline")
+
+        if extension_requested and not requested_deadline:
+            self.add_error("requested_deadline", "Please select a requested deadline.")
+
+        if not cleaned_data.get("no_conflict_confirmed"):
+            self.add_error("no_conflict_confirmed", "You must confirm that you have no conflict of interest before submitting the review.")
+
+        return cleaned_data
 
     def clean_commented_paper_file(self):
         file = self.cleaned_data.get("commented_paper_file")
@@ -212,8 +240,6 @@ class ReviewForm(forms.ModelForm):
                 )
 
         return file
-
-
 class ConferenceForm(forms.ModelForm):
 
     class Meta:
@@ -254,6 +280,22 @@ class ConferenceOverviewForm(forms.ModelForm):
             "logo",
             "template_style",
             "hero_image",
+            "overview_section_padding",
+            "overview_section_radius",
+            "overview_grid_min_width",
+            "overview_grid_gap",
+            "overview_card_padding",
+            "overview_card_radius",
+            "overview_card_title_size",
+            "overview_card_text_size",
+            "overview_stats_card_padding",
+            "overview_stats_card_radius",
+            "overview_stats_number_size",
+            "overview_stats_label_size",
+            "overview_about_padding",
+            "overview_about_radius",
+            "overview_about_title_size",
+            "overview_about_text_size",
         ]
 
 

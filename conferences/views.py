@@ -135,16 +135,33 @@ def conference_overview(request, slug):
         enabled=True
     ).order_by("order", "name")
 
-    participating_countries = (
-        Submission.objects.filter(
-            conference=conference,
-            author__profile__country__isnull=False
+    country_set = set()
+
+    registered_countries = (
+        UserProfile.objects.filter(
+            user__submission__conference=conference
         )
-        .exclude(author__profile__country="")
-        .values("author__profile__country")
+        .exclude(country="")
+        .values_list("country", flat=True)
         .distinct()
-        .count()
     )
+    country_set.update(str(country).strip() for country in registered_countries if str(country).strip())
+
+    submission_country_rows = Submission.objects.filter(
+        conference=conference
+    ).values_list("first_author_country", "coauthor_countries")
+
+    for first_author_country, coauthor_countries in submission_country_rows:
+        if first_author_country and str(first_author_country).strip():
+            country_set.add(str(first_author_country).strip())
+
+        if coauthor_countries:
+            for country in str(coauthor_countries).replace(";", "\n").replace(",", "\n").splitlines():
+                country = country.strip()
+                if country:
+                    country_set.add(country)
+
+    participating_countries = len(country_set)
 
     stats = {
         "submitted_papers": Submission.objects.filter(conference=conference).count(),
@@ -571,12 +588,21 @@ def edit_submission_settings(request, slug):
 def email_templates(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
-    from .email_defaults import EMAIL_TEMPLATE_DEFAULTS
+    is_manager = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role="manager"
+    ).exists()
 
-    for template_data in EMAIL_TEMPLATE_DEFAULTS:
+    if not is_manager:
+        return redirect("/")
+
+    from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
+
+    for event, template_data in DEFAULT_EMAIL_TEMPLATES_2026.items():
         EmailTemplate.objects.get_or_create(
             conference=conference,
-            event=template_data["event"],
+            event=event,
             defaults={
                 "enabled": template_data.get("enabled", True),
                 "send_to_author": template_data.get("send_to_author", True),
@@ -588,15 +614,6 @@ def email_templates(request, slug):
                 "body": template_data["body"],
             }
         )
-
-    is_manager = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role="manager"
-    ).exists()
-
-    if not is_manager:
-        return redirect("/")
 
     templates_qs = EmailTemplate.objects.filter(
         conference=conference,
@@ -623,6 +640,7 @@ def email_templates(request, slug):
         "templates": templates,
         "logs": logs,
     })
+
 
 @login_required
 def edit_email_template(request, template_id):

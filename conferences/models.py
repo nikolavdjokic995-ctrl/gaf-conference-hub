@@ -87,6 +87,24 @@ class Conference(models.Model):
         null=True
     )
 
+    # Overview page layout settings
+    overview_section_padding = models.PositiveIntegerField(default=40)
+    overview_section_radius = models.PositiveIntegerField(default=26)
+    overview_grid_min_width = models.PositiveIntegerField(default=280)
+    overview_grid_gap = models.PositiveIntegerField(default=26)
+    overview_card_padding = models.PositiveIntegerField(default=28)
+    overview_card_radius = models.PositiveIntegerField(default=20)
+    overview_card_title_size = models.PositiveIntegerField(default=20)
+    overview_card_text_size = models.PositiveIntegerField(default=16)
+    overview_stats_card_padding = models.PositiveIntegerField(default=28)
+    overview_stats_card_radius = models.PositiveIntegerField(default=22)
+    overview_stats_number_size = models.PositiveIntegerField(default=38)
+    overview_stats_label_size = models.PositiveIntegerField(default=15)
+    overview_about_padding = models.PositiveIntegerField(default=38)
+    overview_about_radius = models.PositiveIntegerField(default=24)
+    overview_about_title_size = models.PositiveIntegerField(default=42)
+    overview_about_text_size = models.PositiveIntegerField(default=18)
+
     def __str__(self):
         return self.title_en
 
@@ -100,6 +118,7 @@ class ConferenceTopic(models.Model):
 
     code = models.CharField(max_length=10)
     title = models.CharField(max_length=255)
+
     description = models.TextField(blank=True)
 
     order = models.PositiveIntegerField(default=0)
@@ -114,6 +133,11 @@ class ConferenceTopic(models.Model):
 
 
 class Submission(models.Model):
+    ARTICLE_TYPE_CHOICES = [
+        ("research_paper", "Research paper"),
+        ("review_paper", "Review paper"),
+    ]
+
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under content review"),
@@ -141,6 +165,13 @@ class Submission(models.Model):
 
     paper_code = models.CharField(max_length=50, blank=True, unique=True)
 
+    article_type = models.CharField(
+        max_length=30,
+        choices=ARTICLE_TYPE_CHOICES,
+        default="research_paper",
+        help_text="Select whether this is a research paper or a review paper."
+    )
+
     coauthors = models.TextField(
         blank=True,
         help_text="Separate co-authors with commas or new lines."
@@ -151,10 +182,21 @@ class Submission(models.Model):
         help_text="Email address of the first author. This can be different from the submitting user email."
     )
 
+    first_author_country = models.CharField(
+        max_length=100,
+        blank=True,
+        help_text="Country of the first author."
+    )
+
     coauthor_emails = models.TextField(
         blank=True,
         help_text="Enter co-author emails, one per line."
     )    
+
+    coauthor_countries = models.TextField(
+        blank=True,
+        help_text="Enter co-author countries, one per line, in the same order as co-authors."
+    )
 
     title = models.CharField(max_length=255)
     abstract = models.TextField(
@@ -354,6 +396,18 @@ class Review(models.Model):
         ("no_answer", "No answer"),
     ]
 
+    QUALITY_CHOICES = [
+        ("poor", "Poor"),
+        ("normal", "Normal"),
+        ("good", "Good"),
+        ("excellent", "Excellent"),
+    ]
+
+    PAPER_CLASSIFICATION_CHOICES = [
+        ("review_paper", "Review paper"),
+        ("research_paper", "Research paper"),
+    ]
+
     ENGLISH_CHOICES = [
         ("needs_improvement", "The English could be improved."),
         ("fine", "The English is fine and does not require improvement."),
@@ -427,6 +481,22 @@ class Review(models.Model):
 
     comments_for_authors = models.TextField(blank=True)
 
+    no_conflict_confirmed = models.BooleanField(
+        default=False,
+        help_text="Reviewer confirms there is no conflict of interest for this paper."
+    )
+
+    extension_requested = models.BooleanField(
+        default=False,
+        help_text="Reviewer requests an extension of the review deadline."
+    )
+
+    requested_deadline = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Requested new review deadline, if an extension is requested."
+    )
+
     conflict_of_interest = models.CharField(
         max_length=10,
         choices=YES_NO_CHOICES,
@@ -493,6 +563,48 @@ class Review(models.Model):
         default="yes"
     )
 
+    quality_originality = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_scientific_contribution = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_methodological_approach = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_references = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    quality_clarity_expression = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
+    paper_classification = models.CharField(
+        max_length=30,
+        choices=PAPER_CLASSIFICATION_CHOICES,
+        default="research_paper"
+    )
+
+    reviewer_competency = models.CharField(
+        max_length=20,
+        choices=QUALITY_CHOICES,
+        default="normal"
+    )
+
     comments_for_editors = models.TextField(blank=True)
 
     overall_recommendation = models.CharField(
@@ -524,84 +636,42 @@ class Review(models.Model):
         unique_together = ("submission", "reviewer", "review_round")
 
     def calculate_auto_score(self):
-        """Calculate a balanced 1-5 review score from reviewer answers.
-
-        Author-scale answers and scientific ratings are scored equally:
-        yes/high = 5, can_be_improved/average = 3.5, must_be_improved/low = 2.
-        Non-applicable/no-answer fields are ignored instead of being counted as zero.
-        Small penalties/bonuses are then applied for recommendation and red flags.
-        """
-        total = 0.0
-        count = 0
-
-        author_score_map = {
-            "yes": 5.0,
-            "can_be_improved": 3.5,
-            "must_be_improved": 2.0,
+        """Calculate a 1-5 score from the current Green Building review form."""
+        quality_map = {
+            "poor": 1.5,
+            "normal": 3.0,
+            "good": 4.0,
+            "excellent": 5.0,
         }
 
-        rating_score_map = {
-            "high": 5.0,
-            "average": 3.5,
-            "low": 2.0,
-        }
-
-        author_fields = [
-            self.content_context,
-            self.research_design,
-            self.arguments_discussion,
-            self.results_presented,
-            self.references_adequate,
-            self.conclusions_supported,
+        fields = [
+            self.quality_originality,
+            self.quality_scientific_contribution,
+            self.quality_methodological_approach,
+            self.quality_references,
+            self.quality_clarity_expression,
+            self.reviewer_competency,
         ]
 
-        for value in author_fields:
-            mapped_score = author_score_map.get(value)
-            if mapped_score is not None:
-                total += mapped_score
-                count += 1
-
-        rating_fields = [
-            self.originality,
-            self.contribution,
-            self.structure_clarity,
-            self.logical_coherence,
-            self.engagement_sources,
-            self.overall_merit,
-        ]
-
-        for value in rating_fields:
-            mapped_score = rating_score_map.get(value)
-            if mapped_score is not None:
-                total += mapped_score
-                count += 1
-
-        score = total / count if count else 3.0
-
-        if self.english_quality == "needs_improvement":
-            score -= 0.3
-
-        if self.references_relevant == "no":
-            score -= 0.3
-
-        editor_flags = [
-            self.conflict_of_interest,
-            self.plagiarism_detected,
-            self.inappropriate_self_citations,
-            self.ethical_concerns,
-        ]
-
-        for value in editor_flags:
-            if value == "yes":
-                score -= 0.8
+        values = [quality_map.get(value) for value in fields if quality_map.get(value) is not None]
+        score = sum(values) / len(values) if values else 3.0
 
         recommendation_adjustments = {
-            "accept": 0.5,
-            "minor_revision": -0.2,
-            "major_revision": -0.7,
+            "accept": 0.4,
+            "minor_revision": -0.1,
+            "major_revision": -0.6,
             "reject": -1.5,
         }
         score += recommendation_adjustments.get(self.overall_recommendation, 0.0)
+
+        if not self.no_conflict_confirmed:
+            score -= 0.3
+        if self.plagiarism_detected == "yes":
+            score -= 1.0
+        if self.ethical_concerns == "yes":
+            score -= 1.0
+        if self.conflict_of_interest == "yes":
+            score -= 0.8
 
         return max(1.0, min(5.0, round(score, 1)))
 
