@@ -138,13 +138,12 @@ def conference_overview(request, slug):
     country_set = set()
 
     registered_countries = (
-        UserProfile.objects.filter(
-            user__submission__conference=conference
-        )
+        UserProfile.objects.all()
         .exclude(country="")
         .values_list("country", flat=True)
         .distinct()
     )
+
     country_set.update(str(country).strip() for country in registered_countries if str(country).strip())
 
     submission_country_rows = Submission.objects.filter(
