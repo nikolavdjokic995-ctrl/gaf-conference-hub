@@ -1505,7 +1505,10 @@ def upload_revision(request, submission_id):
                     )
 
                     submission.revised_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
-                    submission.full_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
+
+                    # Keep full_paper_file as the latest full author version for layout/publication.
+                    # Content reviewers still use anonymized_paper_file, so do not overwrite
+                    # full_paper_file with the content-review revision here.
 
                     if extension == ".docx":
                         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
@@ -1642,6 +1645,11 @@ def layout_decision(request, submission_id):
 
             submission.status = status
             submission.final_comment = comment
+
+            final_file = request.FILES.get("final_publication_file")
+            if final_file:
+                submission.final_publication_file = final_file
+                submission.full_paper_file = final_file
 
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
