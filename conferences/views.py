@@ -1598,8 +1598,21 @@ def layout_dashboard(request):
         "secondary_topic",
     ).order_by("-updated_at")
 
+    accepted_publication_submissions = Submission.objects.filter(
+        conference__in=conferences,
+        status="final_accepted"
+    ).select_related(
+        "conference",
+        "author",
+        "topic",
+        "secondary_topic",
+    ).prefetch_related(
+        "reviews__reviewer"
+    ).order_by("-updated_at")
+
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,
+        "accepted_publication_submissions": accepted_publication_submissions,
     })
 
 
