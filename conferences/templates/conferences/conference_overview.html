@@ -23,8 +23,8 @@
 
         .hero{
             position:relative;
-            min-height:82vh;
-            background-size:cover;
+            height:680px;
+            background-size: 100% auto;
             background-position:center;
             display:flex;
             flex-direction:column;
@@ -496,12 +496,10 @@
 {% if conference.hero_image %}
 <section class="hero"
     style="background-image:
-        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
         url('{{ conference.hero_image.url }}');">
 {% else %}
 <section class="hero"
     style="background-image:
-        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
         url('{% static "conferences/images/hero.jpg" %}');">
 {% endif %}
 

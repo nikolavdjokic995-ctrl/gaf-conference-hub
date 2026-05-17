@@ -733,9 +733,12 @@
 
     function updateAbstractCount() {
         if (!abstractField || !abstractCount) return;
-        const words = abstractField.value.trim().split(/\s+/).filter(Boolean);
-        abstractCount.textContent = words.length;
-        abstractCount.style.color = words.length > 300 ? "#b91c1c" : "";
+
+        const characters = abstractField.value.length;
+
+        abstractCount.textContent = characters;
+
+        abstractCount.style.color = characters > 300 ? "#b91c1c" : "";
     }
 
     function updateKeywordsPreview() {
