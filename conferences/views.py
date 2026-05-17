@@ -861,32 +861,6 @@ def submit_paper(request, slug):
 
                 submission.paper_code = generated_code
 
-                # Save dynamic co-author data from the submit form.
-                # The UI stores co-authors in coauthors_json; here we also populate
-                # the legacy text fields so dashboards and email recipients keep working.
-                parsed_coauthors = form.cleaned_data.get("parsed_coauthors", [])
-
-                if hasattr(submission, "coauthors_data"):
-                    submission.coauthors_data = parsed_coauthors
-
-                submission.coauthors = "\n".join(
-                    item.get("name", "").strip()
-                    for item in parsed_coauthors
-                    if item.get("name", "").strip()
-                )
-
-                submission.coauthor_emails = "\n".join(
-                    item.get("email", "").strip()
-                    for item in parsed_coauthors
-                    if item.get("email", "").strip()
-                )
-
-                submission.coauthor_countries = "\n".join(
-                    item.get("country", "").strip()
-                    for item in parsed_coauthors
-                    if item.get("country", "").strip()
-                )
-
                 submission.save()
 
                 uploaded_file = request.FILES.get("full_paper_file")
@@ -929,10 +903,6 @@ def submit_paper(request, slug):
                         )
 
                         submission.full_paper_file.name = (
-                            f"{original_public_id}{extension}"
-                        )
-
-                        submission.original_submission_file.name = (
                             f"{original_public_id}{extension}"
                         )
 
@@ -1495,7 +1465,39 @@ def reviewer_topics(request, slug):
 
 @login_required
 def upload_revision(request, submission_id):
-    submission = get_object_or_404(Submission, id=submission_id, author=request.user)
+    submission = get_object_or_404(Submission, id=submission_id)
+
+    # Allow revision upload for:
+    # - the account that submitted the paper
+    # - the linked author account
+    # - the first author email
+    # - any co-author email stored in legacy or structured co-author fields
+    user_email = (request.user.email or "").strip().lower()
+
+    coauthor_emails = set()
+
+    if getattr(submission, "coauthor_emails", ""):
+        for email in str(submission.coauthor_emails).replace(",", "\n").replace(";", "\n").splitlines():
+            email = email.strip().lower()
+            if email:
+                coauthor_emails.add(email)
+
+    for item in (getattr(submission, "coauthors_data", None) or []):
+        if isinstance(item, dict):
+            email = str(item.get("email", "")).strip().lower()
+            if email:
+                coauthor_emails.add(email)
+
+    can_upload_revision = (
+        submission.author_id == request.user.id
+        or getattr(submission, "submitted_by_id", None) == request.user.id
+        or user_email == (getattr(submission, "first_author_email", "") or "").strip().lower()
+        or user_email in coauthor_emails
+    )
+
+    if not can_upload_revision:
+        messages.error(request, "You do not have permission to upload a revision for this submission.")
+        return redirect("my_submissions")
 
     allowed_statuses = [
         "revision_required",
@@ -1535,9 +1537,7 @@ def upload_revision(request, submission_id):
                     )
 
                     submission.revised_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
-
-                    # Do not overwrite original/current author file during content revision.
-                    # The anonymized reviewer file is updated below.
+                    submission.full_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
 
                     if extension == ".docx":
                         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
