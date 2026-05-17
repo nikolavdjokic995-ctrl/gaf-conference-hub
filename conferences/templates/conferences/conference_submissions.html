@@ -19,7 +19,7 @@
         }
 
         .container {
-            max-width: 1720px;
+            max-width: 1650px;
             margin: 45px auto;
             background: white;
             padding: 38px;
@@ -36,19 +36,6 @@
         .conference-title {
             margin-bottom: 28px;
             color: #333;
-        }
-
-        .messages {
-            margin-bottom: 20px;
-        }
-
-        .message {
-            padding: 12px 16px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            background: #ecfdf5;
-            color: #065f46;
-            font-weight: bold;
         }
 
         table {
@@ -71,14 +58,33 @@
             font-size: 14px;
         }
 
-        .paper-col { width: 30%; }
-        .authors-col { width: 13%; }
-        .topic-col { width: 16%; }
-        .assigned-col { width: 17%; }
-        .status-col { width: 8%; }
-        .submitted-col { width: 7%; }
-        .days-col { width: 7%; }
-        .actions-col { width: 12%; }
+        .paper-col {
+            width: 34%;
+        }
+
+        .authors-col {
+            width: 16%;
+        }
+
+        .topic-col {
+            width: 18%;
+        }
+
+        .status-col {
+            width: 10%;
+        }
+
+        .submitted-col {
+            width: 8%;
+        }
+
+        .days-col {
+            width: 8%;
+        }
+
+        .actions-col {
+            width: 16%;
+        }
 
         .paper-title {
             font-weight: bold;
@@ -115,9 +121,7 @@
             color: #92400e;
         }
 
-        .status-accepted,
-        .status-final_accepted,
-        .status-accepted_for_layout {
+        .status-accepted {
             background: #dcfce7;
             color: #166534;
         }
@@ -142,51 +146,25 @@
             text-decoration: underline;
         }
 
-        .reviewer-badge {
-            display: inline-block;
-            padding: 7px 10px;
-            margin: 3px 3px 5px 0;
-            border-radius: 999px;
-            background: #dcfce7;
-            color: #166534;
-            font-weight: bold;
-            font-size: 13px;
-        }
-
-        .no-reviewer {
-            color: #6b7280;
-            font-style: italic;
-            margin-bottom: 10px;
-        }
-
-        .assign-form {
-            margin-top: 10px;
+        .actions {
             display: flex;
-            gap: 8px;
-            align-items: center;
+            flex-direction: column;
+            gap: 10px;
+            align-items: flex-start;
         }
 
-        .assign-form select {
-            width: 100%;
-            max-width: 230px;
-            padding: 9px 10px;
-            border-radius: 8px;
-            border: 1px solid #cbd5e1;
-            background: white;
-        }
-
-        .assign-inline-btn {
+        .assign-btn {
+            display: inline-block;
             background: #16a34a;
             color: white;
-            border: 0;
-            padding: 10px 12px;
+            padding: 10px 14px;
             border-radius: 8px;
+            text-decoration: none;
             font-weight: bold;
-            cursor: pointer;
-            white-space: nowrap;
+            text-align: center;
         }
 
-        .assign-inline-btn:hover {
+        .assign-btn:hover {
             background: #15803d;
         }
 
@@ -199,7 +177,6 @@
             text-decoration: none;
             font-weight: bold;
             text-align: center;
-            margin-top: 12px;
         }
 
         .delete-btn:hover {
@@ -252,16 +229,6 @@
         {{ conference.plain_title }}
     </div>
 
-    {% if messages %}
-        <div class="messages">
-            {% for message in messages %}
-                <div class="message">
-                    {{ message }}
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
     {% if submissions %}
 
         <table>
@@ -269,7 +236,7 @@
                 <th class="paper-col">Paper</th>
                 <th class="authors-col">Authors</th>
                 <th class="topic-col">Topic</th>
-                <th class="assigned-col">Assigned reviewers</th>
+                <th>Assigned reviewers</th>
                 <th class="status-col">Status</th>
                 <th class="submitted-col">Submitted</th>
                 <th class="days-col">Days since submit</th>
@@ -280,21 +247,22 @@
 
                 <tr>
 
-                    <td class="paper-col">
+                    
+                        <td class="paper-col">
 
-                        <div style="
-                            font-size: 12px;
-                            font-weight: 700;
-                            color: #14532d;
-                            margin-bottom: 6px;
-                            letter-spacing: 0.4px;
-                        ">
-                            {{ submission.paper_code }}
-                        </div>
+                            <div style="
+                                font-size: 12px;
+                                font-weight: 700;
+                                color: #14532d;
+                                margin-bottom: 6px;
+                                letter-spacing: 0.4px;
+                            ">
+                                {{ submission.paper_code }}
+                            </div>
 
-                        <div class="paper-title">
-                            {{ submission.title }}
-                        </div>
+                            <div class="paper-title">
+                                {{ submission.title }}
+                            </div>
 
                         {% if submission.keywords %}
                             <div class="meta-row">
@@ -327,48 +295,6 @@
 
                     </td>
 
-                    <td class="assigned-col">
-
-                        {% if submission.review_assignments.all %}
-                            {% for assignment in submission.review_assignments.all %}
-                                <span class="reviewer-badge">
-                                    {{ assignment.reviewer.username }}
-                                </span>
-                            {% empty %}
-                                <div class="no-reviewer">
-                                    No reviewer assigned.
-                                </div>
-                            {% endfor %}
-                        {% else %}
-                            <div class="no-reviewer">
-                                No reviewer assigned.
-                            </div>
-                        {% endif %}
-
-                        <form method="post" class="assign-form">
-                            {% csrf_token %}
-
-                            <input type="hidden"
-                                   name="submission_id"
-                                   value="{{ submission.id }}">
-
-                            <select name="reviewer_role_id" required>
-                                <option value="">Select reviewer</option>
-
-                                {% for reviewer_role in reviewers %}
-                                    <option value="{{ reviewer_role.id }}">
-                                        {{ reviewer_role.user.username }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-
-                            <button type="submit" class="assign-inline-btn">
-                                Assign
-                            </button>
-                        </form>
-
-                    </td>
-
                     <td class="status-col">
 
                         <span class="status status-{{ submission.status }}">
@@ -392,21 +318,101 @@
 
                     </td>
 
+                    <td>
+
+                        {% with assignments=submission.reviewassignment_set.all %}
+                            {% if assignments %}
+                                {% for assignment in assignments %}
+                                    <div style="margin-bottom:10px;">
+                                        <span style="
+                                            display:inline-block;
+                                            background:#dcfce7;
+                                            color:#166534;
+                                            padding:6px 10px;
+                                            border-radius:999px;
+                                            font-weight:bold;
+                                            font-size:13px;
+                                        ">
+                                            {{ assignment.reviewer.username }}
+                                        </span>
+
+                                        {% if assignment.deadline %}
+                                            <div style="
+                                                margin-top:6px;
+                                                font-size:12px;
+                                                color:#555;
+                                            ">
+                                                Deadline:
+                                                {{ assignment.deadline|date:"d.m.Y." }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <span style="color:#777;">
+                                    No reviewer assigned.
+                                </span>
+                            {% endif %}
+                        {% endwith %}
+
+                    </td>
+
                     <td class="actions-col">
 
-                        {% if submission.full_paper_file %}
-                            <a class="download-link"
-                               href="{{ submission.full_paper_file.url }}">
-                                Download paper
+                        <div class="actions">
+
+                            {% if submission.full_paper_file %}
+                                <a class="download-link"
+                                   href="{{ submission.full_paper_file.url }}">
+                                    Download paper
+                                </a>
+                            {% endif %}
+
+                            <form method="post"
+                                  action="{% url 'assign_inline_reviewer' conference.slug submission.id %}"
+                                  style="display:flex; flex-direction:column; gap:8px; width:100%;">
+
+                                {% csrf_token %}
+
+                                <select name="reviewer_id"
+                                        required
+                                        style="
+                                            padding:10px;
+                                            border:1px solid #d1d5db;
+                                            border-radius:8px;
+                                        ">
+                                    <option value="">Select reviewer</option>
+
+                                    {% for reviewer in reviewers %}
+                                        <option value="{{ reviewer.id }}">
+                                            {{ reviewer.get_full_name|default:reviewer.username }}
+                                        </option>
+                                    {% endfor %}
+                                </select>
+
+                                <input type="date"
+                                       name="deadline"
+                                       required
+                                       style="
+                                            padding:10px;
+                                            border:1px solid #d1d5db;
+                                            border-radius:8px;
+                                       ">
+
+                                <button type="submit"
+                                        class="assign-btn"
+                                        style="border:none; cursor:pointer;">
+                                    Assign
+                                </button>
+
+                            </form>
+
+                            <a class="delete-btn"
+                               href="/submission/{{ submission.id }}/delete/">
+                                Delete
                             </a>
-                        {% endif %}
 
-                        <br>
-
-                        <a class="delete-btn"
-                           href="/submission/{{ submission.id }}/delete/">
-                            Delete
-                        </a>
+                        </div>
 
                     </td>
 

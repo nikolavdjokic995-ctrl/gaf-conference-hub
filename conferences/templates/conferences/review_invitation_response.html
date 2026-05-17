@@ -42,6 +42,19 @@
 
     {% if assignment.invitation_status == "accepted" %}
         <p>You have already accepted this invitation.</p>
+        <p>
+            <strong>Your review deadline:</strong>
+            {% if assignment.accepted_deadline %}
+                {{ assignment.accepted_deadline|date:"d.m.Y." }}
+            {% elif assignment.proposed_deadline %}
+                {{ assignment.proposed_deadline|date:"d.m.Y." }}
+            {% else %}
+                Not defined
+            {% endif %}
+        </p>
+        {% if assignment.deadline_extension_requested %}
+            <p class="help">You requested a deadline different from the originally proposed one.</p>
+        {% endif %}
         <a class="btn accept" href="{% url 'review_submission' submission.id %}" style="display:inline-block;text-decoration:none;">Open review form</a>
     {% elif assignment.invitation_status == "declined" %}
         <p>You have declined this invitation.</p>
