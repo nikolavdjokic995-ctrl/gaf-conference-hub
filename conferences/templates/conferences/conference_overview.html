@@ -17,16 +17,15 @@
 
         body{
             font-family:Arial,sans-serif;
-            background:#f4f4f4;
-            color:white;
+            background:#f8faf9;
+            color:#0f3d2e;
         }
 
         .hero{
             position:relative;
-            height:680px;
-            background-size:contain;
-            background-repeat:no-repeat;
-            background-position:center center;
+            height:520px;
+            background-size:cover;
+            background-position:center;
             display:flex;
             flex-direction:column;
         }
@@ -35,24 +34,46 @@
             display:flex;
             justify-content:space-between;
             align-items:center;
-            padding:28px 45px;
+            padding:18px 44px;
+            background:linear-gradient(90deg,#064e3b,#075f46);
+            color:white;
+            box-shadow:0 4px 18px rgba(0,0,0,0.14);
+            position:relative;
+            z-index:10;
         }
 
         .logo-text{
-            font-size:28px;
-            font-weight:700;
+            font-size:24px;
+            font-weight:800;
+            display:flex;
+            align-items:center;
+            gap:12px;
+        }
+
+        .logo-mark{
+            width:46px;
+            height:46px;
+            object-fit:contain;
+            filter:brightness(0) invert(1);
         }
 
         .nav-links{
             display:flex;
             align-items:center;
-            gap:28px;
+            gap:24px;
         }
 
         .nav-links a{
             color:white;
             text-decoration:none;
-            font-weight:600;
+            font-weight:700;
+            padding:8px 0;
+            border-bottom:3px solid transparent;
+        }
+
+        .nav-links a:hover,
+        .nav-links a.active-top{
+            border-bottom-color:#ffffff;
         }
 
         .nav-btn.disabled {
@@ -67,68 +88,111 @@
         }
 
         .logout-btn{
-            background:none;
-            border:none;
+            background:rgba(255,255,255,0.08);
+            border:1px solid rgba(255,255,255,0.35);
             color:white;
             cursor:pointer;
             font-size:16px;
-            font-weight:600;
+            font-weight:800;
+            padding:12px 18px;
+            border-radius:10px;
         }
 
         .hero-content{
             flex:1;
+            display:grid;
+            grid-template-columns:280px 1fr 280px;
+            align-items:center;
+            gap:40px;
+            width:100%;
+            max-width:1320px;
+            margin:0 auto;
+            padding:55px 55px 105px;
+            text-align:center;
+        }
+
+        .hero-title-block{
             display:flex;
             flex-direction:column;
-            justify-content:center;
             align-items:center;
-            text-align:center;
-            margin-top:80px;
-            padding:20px;
+            justify-content:center;
+        }
+
+        .hero-title-line{
+            width:92px;
+            height:3px;
+            background:#16a34a;
+            border-radius:99px;
+            margin:18px auto 24px;
         }
 
         .conference-logo{
-            display:none;
+            width:240px;
+            max-width:100%;
+            opacity:0.92;
+            justify-self:start;
         }
 
         .hero-content h1{
-            font-size:78px;
-            font-weight:800;
-            margin-bottom:18px;
+            font-size:52px;
+            font-weight:900;
+            line-height:1.28;
+            margin-bottom:0;
+            color:#064e3b;
+            text-shadow:0 2px 0 rgba(255,255,255,0.55);
+        }
+
+        .hero-content h1 *{
+            font-size:inherit !important;
+            color:inherit !important;
+            line-height:inherit !important;
         }
 
         .hero-content p{
-            font-size:22px;
-            margin-bottom:40px;
+            font-size:18px;
+            font-weight:700;
+            color:#1f2937;
+            margin-bottom:0;
         }
 
         .hero-buttons{
-            display:flex;
-            flex-wrap:wrap;
-            justify-content:center;
-            gap:18px;
+            max-width:1300px;
+            margin:-55px auto 0;
+            background:rgba(255,255,255,0.96);
+            border:1px solid #e5e7eb;
+            border-radius:18px;
+            padding:22px 28px;
+            display:grid;
+            grid-template-columns:repeat(6,minmax(0,1fr));
+            gap:14px;
+            box-shadow:0 18px 45px rgba(15,23,42,0.12);
+            position:relative;
+            z-index:12;
         }
 
         .hero-btn{
-            padding:16px 34px;
-            border:2px solid white;
-            border-radius:18px;
-            color:white;
+            padding:18px 18px;
+            border:1px solid #cbd5d1;
+            border-radius:12px;
+            color:#065f46;
             text-decoration:none;
-            font-weight:700;
-            font-size:18px;
+            font-weight:800;
+            font-size:16px;
             transition:0.25s;
-            background:transparent;
+            background:#ffffff;
+            text-align:center;
         }
 
         .hero-btn:hover{
-            background:white;
-            color:black;
+            transform:translateY(-2px);
+            box-shadow:0 10px 22px rgba(0,0,0,0.08);
         }
 
         .hero-btn.active{
-            background:#22c55e;
-            border-color:#22c55e;
+            background:#16a34a;
+            border-color:#16a34a;
             color:white;
+            box-shadow:0 10px 22px rgba(22,163,74,0.25);
         }
 
         .overview-section{
@@ -230,17 +294,28 @@
                 justify-content:center;
             }
 
+            .hero-content{
+                display:flex;
+                padding:40px 24px 40px;
+            }
+
+            .conference-logo{
+                width:170px;
+                justify-self:center;
+            }
+
             .hero-content h1{
-                font-size:48px;
+                font-size:38px;
             }
 
             .hero-buttons{
-                flex-direction:column;
+                grid-template-columns:1fr;
+                margin:20px 16px 0;
             }
 
             .hero-btn{
                 width:100%;
-                max-width:320px;
+                max-width:none;
                 text-align:center;
             }
 
@@ -265,7 +340,7 @@
     
         .countdown-section{
             max-width:1050px;
-            margin:-32px auto 34px;
+            margin:34px auto 34px;
             position:relative;
             z-index:8;
             padding:0 20px;
@@ -495,17 +570,22 @@
 {% if conference.hero_image %}
 <section class="hero"
     style="background-image:
+        linear-gradient(90deg, rgba(248,250,248,0.88) 0%, rgba(248,250,248,0.70) 46%, rgba(248,250,248,0.45) 100%),
         url('{{ conference.hero_image.url }}');">
 {% else %}
 <section class="hero"
     style="background-image:
+        linear-gradient(90deg, rgba(248,250,248,0.88) 0%, rgba(248,250,248,0.70) 46%, rgba(248,250,248,0.45) 100%),
         url('{% static "conferences/images/hero.jpg" %}');">
 {% endif %}
 
     <div class="navbar">
 
         <div class="logo-text">
-            GAF Conference Hub
+            {% if conference.logo %}
+                <img src="{{ conference.logo.url }}" class="logo-mark" alt="{{ conference.plain_title }}">
+            {% endif %}
+            <span>GAF Conference Hub</span>
         </div>
 
         <div class="nav-links">
@@ -516,7 +596,7 @@
                     Welcome, {{ user.username }}
                 </span>
 
-                <a href="{% url 'conference_overview' conference.slug %}">
+                <a class="active-top" href="{% url 'conference_overview' conference.slug %}">
                     Home
                 </a>
 
@@ -573,27 +653,35 @@
     </div>
 
     <div class="hero-content">
-        {% if conference.logo %}
-            <img
-                src="{{ conference.logo.url }}"
-                class="conference-logo"
-                alt="{{ conference.plain_title }}"
-            >
-        {% endif %}
-               
-        <h1 class="conference-title">
-            {{ conference.title_en|safe }}
-        </h1>
+        <div>
+            {% if conference.logo %}
+                <img
+                    src="{{ conference.logo.url }}"
+                    class="conference-logo"
+                    alt="{{ conference.plain_title }}"
+                >
+            {% endif %}
+        </div>
 
-        <p>
-            {{ conference.location }}
-            •
-            {{ conference.start_date }}
-            —
-            {{ conference.end_date }}
-        </p>
+        <div class="hero-title-block">
+            <h1 class="conference-title">
+                {{ conference.title_en|safe }}
+            </h1>
+            <div class="hero-title-line"></div>
+            <p>
+                📍 {{ conference.location }}
+                •
+                {{ conference.start_date }}
+                —
+                {{ conference.end_date }}
+            </p>
+        </div>
 
-        <div class="hero-buttons">
+        <div></div>
+
+    </div>
+
+    <div class="hero-buttons">
 
             <a class="hero-btn active"
                href="{% url 'conference_overview' conference.slug %}">
@@ -635,8 +723,6 @@
             {% endif %}
 
         </div>
-
-    </div>
 
 </section>
 
