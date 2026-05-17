@@ -1,7 +1,7 @@
 import re
 
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template import Context, Template
 from django.urls import reverse
 from django.utils import timezone
@@ -265,7 +265,14 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
     for recipient in recipients:
         try:
-            send_mail(subject, body, from_email, [recipient], fail_silently=False)
+            email_message = EmailMultiAlternatives(
+                subject,
+                body,
+                from_email,
+                [recipient],
+            )
+            email_message.attach_alternative(body, "text/html")
+            email_message.send()
             EmailLog.objects.create(
                 conference=submission.conference,
                 submission=submission,
@@ -379,13 +386,14 @@ def send_test_template_email(template, recipient, request=None):
     )
 
     try:
-        send_mail(
+        email_message = EmailMultiAlternatives(
             subject,
             body,
             getattr(settings, "DEFAULT_FROM_EMAIL", None),
             [recipient],
-            fail_silently=False,
         )
+        email_message.attach_alternative(body, "text/html")
+        email_message.send()
         EmailLog.objects.create(
             conference=template.conference,
             template=template,
@@ -475,7 +483,14 @@ def send_conference_role_email(event, conference, user, request=None, extra=None
         return []
 
     try:
-        send_mail(subject, body, getattr(settings, "DEFAULT_FROM_EMAIL", None), [recipient], fail_silently=False)
+        email_message = EmailMultiAlternatives(
+            subject,
+            body,
+            getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            [recipient],
+        )
+        email_message.attach_alternative(body, "text/html")
+        email_message.send()
         EmailLog.objects.create(
             conference=conference,
             template=template,
