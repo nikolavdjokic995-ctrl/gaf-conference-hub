@@ -16,6 +16,7 @@ from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
 from pathlib import Path
+from datetime import datetime
 
 from .models import (
     Conference,
@@ -54,9 +55,6 @@ from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
 
-def review_invitation_response(request, token, response):
-    return HttpResponse("Review invitation response endpoint is active.")
-
 @login_required
 def send_test_email_template(request, template_id):
     template = get_object_or_404(EmailTemplate, id=template_id)
@@ -81,6 +79,97 @@ def send_test_email_template(request, template_id):
             messages.error(request, message)
 
     return redirect("email_templates", slug=conference.slug)
+
+@login_required
+def review_invitation_response(request, assignment_id):
+    assignment = get_object_or_404(
+        ReviewAssignment,
+        id=assignment_id,
+        reviewer=request.user
+    )
+
+    submission = assignment.submission
+    conference = submission.conference
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+
+        if action == "accept":
+            deadline_choice = request.POST.get("deadline_choice")
+
+            assignment.invitation_status = "accepted"
+            assignment.accepted_at = timezone.now()
+
+            if deadline_choice == "proposed":
+                assignment.accepted_deadline = assignment.proposed_deadline
+                assignment.deadline_extension_requested = False
+
+            elif deadline_choice == "custom":
+                requested_deadline = request.POST.get("requested_deadline")
+
+                if not requested_deadline:
+                    messages.error(
+                        request,
+                        "Please select the date by which you can complete the review."
+                    )
+                    return redirect(
+                        "review_invitation_response",
+                        assignment_id=assignment.id
+                    )
+
+                try:
+                    parsed_date = datetime.strptime(
+                        requested_deadline,
+                        "%Y-%m-%d"
+                    ).date()
+                except ValueError:
+                    messages.error(
+                        request,
+                        "Invalid requested deadline format."
+                    )
+                    return redirect(
+                        "review_invitation_response",
+                        assignment_id=assignment.id
+                    )
+
+                assignment.accepted_deadline = parsed_date
+                assignment.deadline_extension_requested = True
+
+            assignment.save()
+
+            messages.success(
+                request,
+                "Review invitation accepted successfully."
+            )
+
+            return redirect(
+                "review_submission",
+                submission_id=submission.id
+            )
+
+        if action == "decline":
+            assignment.invitation_status = "declined"
+            assignment.declined_at = timezone.now()
+            assignment.decline_reason = request.POST.get("decline_reason", "")
+            assignment.save()
+
+            messages.success(
+                request,
+                "Review invitation declined."
+            )
+
+            return redirect("my_reviews")
+
+    return render(
+        request,
+        "conferences/review_invitation_response.html",
+        {
+            "assignment": assignment,
+            "submission": submission,
+            "conference": conference,
+        }
+    )
+
 
 def home(request):
     conferences = Conference.objects.all()
@@ -302,6 +391,7 @@ def assign_papers(request, slug):
     if request.method == "POST":
         submission_id = request.POST.get("submission_id")
         reviewer_role_id = request.POST.get("reviewer_role_id")
+        proposed_deadline = request.POST.get("proposed_deadline")
 
         submission = get_object_or_404(
             Submission,
@@ -318,8 +408,21 @@ def assign_papers(request, slug):
         assignment, created = ReviewAssignment.objects.get_or_create(
             submission=submission,
             reviewer=reviewer_role.user,
-            role=reviewer_role.role
+            role=reviewer_role.role,
+            defaults={
+                "proposed_deadline": proposed_deadline or None
+            }
         )
+
+        if not created and proposed_deadline:
+            assignment.proposed_deadline = proposed_deadline
+            assignment.invitation_status = "pending"
+            assignment.accepted_deadline = None
+            assignment.deadline_extension_requested = False
+            assignment.accepted_at = None
+            assignment.declined_at = None
+            assignment.decline_reason = ""
+            assignment.save()
 
         if created:
             send_event_email(
@@ -721,16 +824,42 @@ def submit_paper(request, slug):
                 submission.submitted_by = request.user
                 submission.status = "submitted"
 
-                # Generate paper code
-                existing_count = (
-                    Submission.objects.filter(conference=conference).count() + 1
-                )
-
+                # Generate unique paper code safely
                 conference_code = conference.slug.replace("-", "").upper()[:6]
 
-                submission.paper_code = (
-                    f"{conference_code}-{existing_count:03d}"
+                last_submission = (
+                    Submission.objects
+                    .filter(conference=conference)
+                    .exclude(paper_code="")
+                    .order_by("-id")
+                    .first()
                 )
+
+                next_number = 1
+
+                if last_submission and last_submission.paper_code:
+                    try:
+                        next_number = int(
+                            last_submission.paper_code.split("-")[-1]
+                        ) + 1
+                    except Exception:
+                        next_number = (
+                            Submission.objects.filter(
+                                conference=conference
+                            ).count() + 1
+                        )
+
+                while True:
+                    generated_code = f"{conference_code}-{next_number:03d}"
+
+                    if not Submission.objects.filter(
+                        paper_code=generated_code
+                    ).exists():
+                        break
+
+                    next_number += 1
+
+                submission.paper_code = generated_code
 
                 submission.save()
 
@@ -1215,6 +1344,7 @@ def conference_submissions(request, slug):
     if request.method == "POST":
         submission_id = request.POST.get("submission_id")
         reviewer_role_id = request.POST.get("reviewer_role_id")
+        proposed_deadline = request.POST.get("proposed_deadline")
 
         submission = get_object_or_404(
             Submission,
@@ -1232,8 +1362,21 @@ def conference_submissions(request, slug):
         assignment, created = ReviewAssignment.objects.get_or_create(
             submission=submission,
             reviewer=reviewer_role.user,
-            role=reviewer_role.role
+            role=reviewer_role.role,
+            defaults={
+                "proposed_deadline": proposed_deadline or None
+            }
         )
+
+        if not created and proposed_deadline:
+            assignment.proposed_deadline = proposed_deadline
+            assignment.invitation_status = "pending"
+            assignment.accepted_deadline = None
+            assignment.deadline_extension_requested = False
+            assignment.accepted_at = None
+            assignment.declined_at = None
+            assignment.decline_reason = ""
+            assignment.save()
 
         if created:
             send_event_email(
