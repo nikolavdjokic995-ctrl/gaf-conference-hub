@@ -577,16 +577,14 @@
 
     <div class="hero-content">
 
-        {% if conference.logo %}
-            <img
-                src="{{ conference.logo.url }}"
-                class="conference-logo"
-                alt="{{ conference.title_en|striptags }}"
-            >
-        {% endif %}
+        <img
+            src="{% static 'conferences/images/logo.png' %}"
+            class="conference-logo"
+            alt="Green Building Conference 2026"
+        >
 
         <h1>
-            {{ conference.title_en|safe }}
+            {{ conference.title_en }}
         </h1>
 
         <p>
@@ -740,7 +738,7 @@
         </div>
 
         <h2>
-            About {{ conference.title_en|safe }}
+            About {{ conference.title_en|striptags|linebreaksbr }}
         </h2>
 
         {% if conference.description_en %}
@@ -816,7 +814,7 @@
     <div class="footer-main">
 
         <div>
-            <h3>{{ conference.title_en|safe }}</h3>
+            <h3>{{ conference.title_en|striptags|linebreaksbr }}</h3>
 
             {% if conference.footer_description %}
                 <p>{{ conference.footer_description|linebreaksbr }}</p>
