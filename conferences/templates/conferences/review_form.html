@@ -294,6 +294,21 @@
                 To ensure anonymity throughout the peer review process, please do not include any identifying information in your review report or in the metadata of any files that you upload. Comments for authors can be made available to other reviewers. Your identity will remain confidential.
             </div>
 
+
+            <h3>Final decision notification</h3>
+
+            <div class="help">
+                Would you like to receive an email notification about the final paper decision?
+            </div>
+
+            {{ form.wants_final_notification.errors }}
+
+            <div class="radio-scale">
+                {% for radio in form.wants_final_notification %}
+                    <label>{{ radio.tag }} {{ radio.choice_label }}</label>
+                {% endfor %}
+            </div>
+
             <div class="actions">
                 <button class="btn" type="submit">Submit review</button>
                 <a class="back-link" href="/my-reviews/">Back to my reviews</a>
