@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ conference.title_en }}</title>
+    <title>{{ conference.title_en|striptags }}</title>
 
     <style>
 
@@ -581,13 +581,7 @@
             <img
                 src="{{ conference.logo.url }}"
                 class="conference-logo"
-                alt="{{ conference.title_en }}"
-            >
-        {% else %}
-            <img
-                src="{% static 'conferences/images/logo.png' %}"
-                class="conference-logo"
-                alt="Green Building Conference 2026"
+                alt="{{ conference.title_en|striptags }}"
             >
         {% endif %}
 

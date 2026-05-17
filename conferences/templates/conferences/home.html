@@ -14,7 +14,7 @@
             margin: 0;
             background:
                 linear-gradient(rgba(10,20,30,0.58), rgba(10,20,30,0.58)),
-                url('{% static "conferences/images/gaf-building.png" %}') center top/cover no-repeat;
+                url('{% static "conferences/images/GB2026_HUB_Naslovna_2560x1440.jpg" %}') center top/cover no-repeat;
 
             background-attachment: scroll;
             min-height: 100vh;
@@ -207,7 +207,7 @@
             <details class="conference-card">
                 <summary class="conference-summary">
                     <div>
-                        <h3>{{ conference.title_en }}</h3>
+                        <h3>{{ conference.title_en|safe }}</h3>
                         <div class="summary-hint">Click to view conference details</div>
                     </div>
                     <div class="toggle-icon">+</div>
