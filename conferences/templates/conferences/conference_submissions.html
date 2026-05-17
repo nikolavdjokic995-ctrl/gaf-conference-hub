@@ -320,7 +320,7 @@
 
                     <td>
 
-                        {% with assignments=submission.reviewassignment_set.all %}
+                        {% with assignments=submission.review_assignments.all %}
                             {% if assignments %}
                                 {% for assignment in assignments %}
                                     <div style="margin-bottom:10px;">
@@ -343,7 +343,7 @@
                                                 color:#555;
                                             ">
                                                 Deadline:
-                                                {{ assignment.deadline|date:"d.m.Y." }}
+                                                {{ assignment.final_deadline|date:"d.m.Y." }}
                                             </div>
                                         {% endif %}
                                     </div>
