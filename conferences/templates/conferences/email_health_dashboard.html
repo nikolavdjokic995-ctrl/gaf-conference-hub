@@ -30,7 +30,7 @@
 <div class="topbar">
     <a class="back" href="{% url 'email_templates' conference.slug %}">← Back to email templates</a>
     <h1>Email health dashboard</h1>
-    <p>{{ conference.title_en }}</p>
+    <p>{{ conference.plain_title }}</p>
 </div>
 <div class="container">
     {% if messages %}

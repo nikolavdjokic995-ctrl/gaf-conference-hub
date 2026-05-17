@@ -28,7 +28,7 @@
             <div class="review-card">
                 <div class="paper-title">{{ assignment.submission.title }}</div>
                 <div class="meta">
-                    <strong>Conference:</strong> {{ assignment.submission.conference.title_en }}<br>
+                    <strong>Conference:</strong> {{ assignment.submission.conference.plain_title }}<br>
                     <strong>Topics:</strong>
                     {% for topic in assignment.submission.topic_list %}
                         {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}

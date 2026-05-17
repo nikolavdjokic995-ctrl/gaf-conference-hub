@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Conference Topics | {{ conference.title_en }}</title>
+    <title>Conference Topics | {{ conference.plain_title }}</title>
 
     <style>
         body {
@@ -130,7 +130,7 @@
     <h1>Conference Topics</h1>
 
     <div class="subtitle">
-        {{ conference.title_en }}
+        {{ conference.plain_title }}
     </div>
 
     {% if is_manager %}

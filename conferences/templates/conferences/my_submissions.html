@@ -124,7 +124,7 @@
                         <p><strong>Keywords:</strong> {{ submission.keywords }}</p>
                     {% endif %}
 
-                    <p><strong>Conference:</strong> {{ submission.conference.title_en }}</p>
+                    <p><strong>Conference:</strong> {{ submission.conference.plain_title }}</p>
 
                     <p><strong>Topics:</strong>
                         {% for topic in submission.topic_list %}

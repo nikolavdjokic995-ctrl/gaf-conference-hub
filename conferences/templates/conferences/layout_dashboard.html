@@ -191,7 +191,7 @@
                 <div class="title">{{ submission.title }}</div>
 
                 <div class="meta">
-                    <strong>Conference:</strong> {{ submission.conference.title_en }}<br>
+                    <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
                     <strong>First author:</strong> {{ submission.first_author }}<br>
 
                     <strong>Topics:</strong>
@@ -276,7 +276,7 @@
 
                     <td>
                         <div class="paper-title">{{ submission.title }}</div>
-                        <div class="small">{{ submission.conference.title_en }}</div>
+                        <div class="small">{{ submission.conference.plain_title }}</div>
                     </td>
 
                     <td>

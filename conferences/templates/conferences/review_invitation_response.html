@@ -31,7 +31,7 @@
         <h2>{{ submission.title }}</h2>
         <div class="meta">
             <strong>Paper ID:</strong> {{ submission.paper_code }}<br>
-            <strong>Conference:</strong> {{ conference.title_en }}<br>
+            <strong>Conference:</strong> {{ conference.plain_title }}<br>
             <strong>Article type:</strong> {{ submission.get_article_type_display }}<br>
             <strong>Proposed deadline:</strong>
             {% if assignment.proposed_deadline %}{{ assignment.proposed_deadline|date:"d.m.Y." }}{% else %}Not defined{% endif %}<br>
