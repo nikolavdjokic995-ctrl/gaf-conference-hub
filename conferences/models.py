@@ -210,13 +210,6 @@ class Submission(models.Model):
         help_text="Enter co-author countries, one per line, in the same order as co-authors."
     )
 
-    coauthors_data = models.JSONField(
-        default=list,
-        blank=True,
-        help_text="Structured co-author data."
-    )
-
-
     title = models.CharField(max_length=255)
     abstract = models.TextField(
         max_length=2500,
@@ -241,6 +234,14 @@ class Submission(models.Model):
         null=True,
         max_length=500
 
+    )
+
+    original_submission_file = models.FileField(
+        upload_to="original_submission_papers/",
+        storage=HybridDocumentStorage(),
+        blank=True,
+        null=True,
+        max_length=500
     )
 
     topic = models.ForeignKey(

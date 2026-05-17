@@ -194,17 +194,6 @@
                     <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
                     <strong>First author:</strong> {{ submission.first_author }}<br>
 
-                    {% if submission.author %}
-                        <strong>Author email:</strong> {{ submission.author.email }}<br>
-                    {% endif %}
-
-                    {% if submission.coauthors %}
-                        <strong>Co-authors:</strong><br>
-                        <div style="margin-left:12px;">
-                            {{ submission.coauthors|linebreaksbr }}
-                        </div>
-                    {% endif %}
-
                     <strong>Topics:</strong>
                     {% for topic in submission.topic_list %}
                         {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
@@ -236,9 +225,15 @@
                         </a>
                     {% endif %}
 
+                    {% if submission.original_submission_file %}
+                        <a class="btn btn-outline" href="{{ submission.original_submission_file.url }}" target="_blank">
+                            Download original author submission
+                        </a>
+                    {% endif %}
+
                     {% if submission.full_paper_file %}
                         <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
-                            Download judge-approved/current paper
+                            Download latest/current paper version
                         </a>
                     {% endif %}
 
@@ -329,7 +324,7 @@
 
         <div class="bottom-actions">
             <a class="btn btn-dark"
-               href="{% url 'conference_overview' accepted_publication_submissions.first.conference.slug %}">
+               href="{% url 'conference_overview' accepted_publication_submissions.0.conference.slug %}">
                 ← Back to conference
             </a>
         </div>
