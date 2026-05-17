@@ -373,7 +373,7 @@
 
                                 {% csrf_token %}
 
-                                <select name="reviewer_id"
+                                <select name="reviewer_role_id"
                                         required
                                         style="
                                             padding:10px;
@@ -384,13 +384,13 @@
 
                                     {% for reviewer in reviewers %}
                                         <option value="{{ reviewer.id }}">
-                                            {{ reviewer.get_full_name|default:reviewer.username }}
+                                            {{ reviewer.user.get_full_name|default:reviewer.user.username }}
                                         </option>
                                     {% endfor %}
                                 </select>
 
                                 <input type="date"
-                                       name="deadline"
+                                       name="proposed_deadline"
                                        required
                                        style="
                                             padding:10px;
