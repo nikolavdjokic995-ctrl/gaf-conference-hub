@@ -81,6 +81,11 @@ class SubmissionForm(forms.ModelForm):
         })
     )
 
+    coauthors_json = forms.CharField(
+        required=False,
+        widget=forms.HiddenInput()
+    )
+
     submission_consent = forms.BooleanField(
         required=True,
         label="I confirm that the submission information is accurate and that I have permission to submit this manuscript on behalf of all listed authors."
@@ -102,6 +107,7 @@ class SubmissionForm(forms.ModelForm):
             "topic",
             "secondary_topic",
             "full_paper_file",
+            "coauthors_json",
             "submission_consent",
         ]
 
@@ -138,6 +144,35 @@ class SubmissionForm(forms.ModelForm):
                 "placeholder": "Enter co-author emails, one per line",
             }),
         }
+
+
+    def clean_coauthors_json(self):
+        import json
+
+        raw = self.cleaned_data.get("coauthors_json", "[]")
+
+        try:
+            data = json.loads(raw)
+        except Exception:
+            raise forms.ValidationError("Invalid co-author data.")
+
+        valid = []
+
+        for item in data:
+            name = str(item.get("name", "")).strip()
+            email = str(item.get("email", "")).strip()
+            country = str(item.get("country", "")).strip()
+
+            if name:
+                valid.append({
+                    "name": name,
+                    "email": email,
+                    "country": country,
+                })
+
+        self.cleaned_data["parsed_coauthors"] = valid
+        return raw
+
 
     def clean_abstract(self):
         abstract = self.cleaned_data.get("abstract", "")

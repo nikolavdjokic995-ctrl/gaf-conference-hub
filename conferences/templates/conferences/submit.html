@@ -554,30 +554,19 @@
                         <div class="help">Select the country of the first author. This will be used for conference statistics.</div>
                     </div>
 
-                    <div class="field">
-                        <label for="{{ form.coauthors.id_for_label }}">{{ form.coauthors.label }}</label>
-                        {{ form.coauthors }}
-                        {{ form.coauthors.errors }}
-                        <div class="help">Separate co-authors with commas or new lines.</div>
-                    </div>
+                    
+                    <div id="coauthorsContainer"></div>
 
-                    <div class="field">
-                        <label for="{{ form.coauthor_emails.id_for_label }}">{{ form.coauthor_emails.label }}</label>
-                        {{ form.coauthor_emails }}
-                        {{ form.coauthor_emails.errors }}
-                        <div class="help">Enter co-author emails, one per line.</div>
-                    </div>
+                    <button type="button" class="btn-outline" id="addCoauthorBtn" style="margin-top:10px;">
+                        + Add co-author
+                    </button>
 
-                    <div class="field">
-                        <label for="{{ form.coauthor_countries.id_for_label }}">{{ form.coauthor_countries.label }}</label>
-                        {{ form.coauthor_countries }}
-                        {{ form.coauthor_countries.errors }}
-                        <div class="help">Enter co-author countries, one per line, in the same order as co-authors. Leave empty if there are no co-authors.</div>
-                    </div>
+                    {{ form.coauthors_json }}
 
                     <div class="info-box">
-                        ℹ️ Enter author and co-author email addresses carefully. These emails will be used later for automatic conference notifications.
+                        ℹ️ Each co-author now has separate fields for name, email and country. All authors will receive conference emails correctly.
                     </div>
+
                 </section>
 
                 <section class="form-step" data-step="3">
@@ -804,7 +793,74 @@
         updateKeywordsPreview();
     }
 
-    showStep(1);
+    
+    const addCoauthorBtn = document.getElementById("addCoauthorBtn");
+    const coauthorsContainer = document.getElementById("coauthorsContainer");
+    const coauthorsJsonInput = document.getElementById("id_coauthors_json");
+
+    function createCoauthorRow(data = {}) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "review-box";
+        wrapper.style.marginBottom = "14px";
+
+        wrapper.innerHTML = `
+            <div class="field">
+                <label>Co-author full name</label>
+                <input type="text" class="coauthor-name" value="${data.name || ''}">
+            </div>
+
+            <div class="field-grid">
+                <div class="field">
+                    <label>Email</label>
+                    <input type="email" class="coauthor-email" value="${data.email || ''}">
+                </div>
+
+                <div class="field">
+                    <label>Country</label>
+                    <input type="text" class="coauthor-country" value="${data.country || ''}">
+                </div>
+            </div>
+
+            <button type="button" class="btn-secondary remove-coauthor">
+                Remove
+            </button>
+        `;
+
+        wrapper.querySelector(".remove-coauthor").addEventListener("click", () => {
+            wrapper.remove();
+            syncCoauthors();
+        });
+
+        wrapper.querySelectorAll("input").forEach(input => {
+            input.addEventListener("input", syncCoauthors);
+        });
+
+        coauthorsContainer.appendChild(wrapper);
+    }
+
+    function syncCoauthors() {
+        const rows = document.querySelectorAll("#coauthorsContainer .review-box");
+
+        const data = Array.from(rows).map(row => ({
+            name: row.querySelector(".coauthor-name").value,
+            email: row.querySelector(".coauthor-email").value,
+            country: row.querySelector(".coauthor-country").value,
+        }));
+
+        coauthorsJsonInput.value = JSON.stringify(data);
+    }
+
+    if (addCoauthorBtn) {
+        addCoauthorBtn.addEventListener("click", () => {
+            createCoauthorRow();
+            syncCoauthors();
+        });
+    }
+
+    document.getElementById("submissionForm").addEventListener("submit", syncCoauthors);
+
+
+showStep(1);
 </script>
 
 </body>
