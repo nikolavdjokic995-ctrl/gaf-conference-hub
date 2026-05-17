@@ -369,8 +369,7 @@
                             {% endif %}
 
                             <form method="post"
-                                  action="{% url 'assign_inline_reviewer' conference.slug submission.id %}"
-                                  style="display:flex; flex-direction:column; gap:8px; width:100%;">
+                                style="display:flex; flex-direction:column; gap:8px; width:100%;">
 
                                 {% csrf_token %}
 
