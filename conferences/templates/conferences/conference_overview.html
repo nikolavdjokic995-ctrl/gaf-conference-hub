@@ -868,7 +868,7 @@
         {% if conference.footer_copyright %}
             {{ conference.footer_copyright }}
         {% else %}
-            © {{ conference.start_date|date:"Y" }} {{ conference.title_en }}. All rights reserved.
+            © {{ conference.start_date|date:"Y" }} {{ conference.title_en|striptags }}. All rights reserved.
         {% endif %}
     </div>
 

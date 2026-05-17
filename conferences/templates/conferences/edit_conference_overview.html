@@ -154,8 +154,38 @@
         box-shadow:0 0 0 4px rgba(22,163,74,0.12);
     }
 
-    .hidden-description{
+    .hidden-description,
+    .hidden-title{
         display:none;
+    }
+
+    .title-rich-editor{
+        min-height:120px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:0 0 16px 16px;
+        padding:16px;
+        background:white;
+        color:#123524;
+        line-height:1.25;
+        outline:none;
+        overflow:auto;
+        font-size:34px;
+        font-weight:900;
+    }
+
+    .title-rich-editor:focus{
+        border-color:#16a34a;
+        box-shadow:0 0 0 4px rgba(22,163,74,0.12);
+    }
+
+    .color-input{
+        width:44px;
+        height:36px;
+        padding:3px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:10px;
+        background:white;
+        cursor:pointer;
     }
 
     .helptext{
@@ -234,7 +264,7 @@
 
             <h1>Edit conference overview</h1>
 
-            <form method="post" enctype="multipart/form-data">
+            <form id="overview-form" method="post" enctype="multipart/form-data">
                 {% csrf_token %}
 
                 {% if form.non_field_errors %}
@@ -245,8 +275,41 @@
 
                     <div class="form-row">
                         <label for="{{ form.title_en.id_for_label }}">Conference title</label>
-                        {{ form.title_en }}
+
+                        <div class="rich-toolbar">
+                            <select class="tool-select" onchange="titleFontSize(this.value); this.selectedIndex=0;">
+                                <option value="">Font size</option>
+                                <option value="48px">48 px</option>
+                                <option value="56px">56 px</option>
+                                <option value="64px">64 px</option>
+                                <option value="72px">72 px</option>
+                                <option value="82px">82 px</option>
+                                <option value="96px">96 px</option>
+                            </select>
+
+                            <button type="button" class="tool-btn" onclick="titleCmd('bold')"><b>B</b></button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('italic')"><i>I</i></button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('underline')"><u>U</u></button>
+
+                            <button type="button" class="tool-btn" onclick="titleCmd('justifyLeft')">Left</button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('justifyCenter')">Center</button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('justifyRight')">Right</button>
+
+                            <input class="color-input" type="color" value="#ffffff" onchange="titleColor(this.value)" title="Title color">
+                            <button type="button" class="tool-btn" onclick="titleCmd('removeFormat')">Clear</button>
+                        </div>
+
+                        <div id="rich-title" class="title-rich-editor" contenteditable="true"></div>
+
+                        <div class="hidden-title">
+                            {{ form.title_en }}
+                        </div>
+
                         {{ form.title_en.errors }}
+
+                        <span class="helptext">
+                            Press Enter for a new line. Use color, size, bold and alignment to format the public title.
+                        </span>
                     </div>
 
                     <div class="form-row">
@@ -500,21 +563,26 @@
 </div>
 
 <script>
+    function focusEditor(id) {
+        const editor = document.getElementById(id);
+        if (editor) editor.focus();
+    }
+
     function cmd(command) {
         document.execCommand(command, false, null);
-        document.getElementById("rich-description").focus();
+        focusEditor("rich-description");
     }
 
     function formatBlock(tag) {
         if (!tag) return;
         document.execCommand("formatBlock", false, tag);
-        document.getElementById("rich-description").focus();
+        focusEditor("rich-description");
     }
 
     function fontSize(size) {
         if (!size) return;
         document.execCommand("fontSize", false, size);
-        document.getElementById("rich-description").focus();
+        focusEditor("rich-description");
     }
 
     function addLink() {
@@ -522,19 +590,66 @@
         if (url) {
             document.execCommand("createLink", false, url);
         }
-        document.getElementById("rich-description").focus();
+        focusEditor("rich-description");
+    }
+
+    function titleCmd(command) {
+        focusEditor("rich-title");
+        document.execCommand(command, false, null);
+    }
+
+    function titleColor(color) {
+        focusEditor("rich-title");
+        document.execCommand("foreColor", false, color);
+    }
+
+    function titleFontSize(size) {
+        if (!size) return;
+
+        focusEditor("rich-title");
+        document.execCommand("fontSize", false, "7");
+
+        const editor = document.getElementById("rich-title");
+        const fonts = editor.querySelectorAll("font[size='7']");
+
+        fonts.forEach(function (font) {
+            const span = document.createElement("span");
+            span.style.fontSize = size;
+            span.innerHTML = font.innerHTML;
+            font.parentNode.replaceChild(span, font);
+        });
     }
 
     document.addEventListener("DOMContentLoaded", function () {
-        const textarea = document.querySelector('textarea[name="description_en"]');
-        const editor = document.getElementById("rich-description");
         const form = document.getElementById("overview-form");
 
-        if (textarea && editor) {
-            editor.innerHTML = textarea.value || "";
+        const titleInput = document.querySelector('[name="title_en"]');
+        const titleEditor = document.getElementById("rich-title");
 
+        if (titleInput && titleEditor) {
+            titleEditor.innerHTML = titleInput.value || "";
+
+            if (!titleEditor.innerHTML.trim()) {
+                titleEditor.innerHTML = "Green Building<br>International Scientific<br>Conference 2026";
+            }
+        }
+
+        const descriptionTextarea = document.querySelector('textarea[name="description_en"]');
+        const descriptionEditor = document.getElementById("rich-description");
+
+        if (descriptionTextarea && descriptionEditor) {
+            descriptionEditor.innerHTML = descriptionTextarea.value || "";
+        }
+
+        if (form) {
             form.addEventListener("submit", function () {
-                textarea.value = editor.innerHTML;
+                if (titleInput && titleEditor) {
+                    titleInput.value = titleEditor.innerHTML.trim();
+                }
+
+                if (descriptionTextarea && descriptionEditor) {
+                    descriptionTextarea.value = descriptionEditor.innerHTML;
+                }
             });
         }
     });
