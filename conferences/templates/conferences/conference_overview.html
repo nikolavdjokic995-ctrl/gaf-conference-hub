@@ -23,9 +23,11 @@
 
         .hero{
             position:relative;
-            height:520px;
-            background-size:cover;
-            background-position:center;
+            min-height:760px;
+            background-size:contain;
+            background-repeat:no-repeat;
+            background-position:center center;
+            background-color:#f8faf8;
             display:flex;
             flex-direction:column;
         }
@@ -100,14 +102,13 @@
 
         .hero-content{
             flex:1;
-            display:grid;
-            grid-template-columns:280px 1fr 280px;
+            display:flex;
+            justify-content:center;
             align-items:center;
-            gap:40px;
             width:100%;
             max-width:1320px;
             margin:0 auto;
-            padding:55px 55px 105px;
+            padding:70px 55px 90px;
             text-align:center;
         }
 
@@ -127,10 +128,7 @@
         }
 
         .conference-logo{
-            width:240px;
-            max-width:100%;
-            opacity:0.92;
-            justify-self:start;
+            display:none;
         }
 
         .hero-content h1{
@@ -157,7 +155,7 @@
 
         .hero-buttons{
             max-width:1300px;
-            margin:-55px auto 0;
+            margin:30px auto 0;
             background:rgba(255,255,255,0.96);
             border:1px solid #e5e7eb;
             border-radius:18px;
@@ -296,7 +294,7 @@
 
             .hero-content{
                 display:flex;
-                padding:40px 24px 40px;
+                padding:40px 24px 70px;
             }
 
             .conference-logo{
@@ -340,7 +338,7 @@
     
         .countdown-section{
             max-width:1050px;
-            margin:34px auto 34px;
+            margin:50px auto 40px;
             position:relative;
             z-index:8;
             padding:0 20px;
@@ -570,12 +568,12 @@
 {% if conference.hero_image %}
 <section class="hero"
     style="background-image:
-        linear-gradient(90deg, rgba(248,250,248,0.88) 0%, rgba(248,250,248,0.70) 46%, rgba(248,250,248,0.45) 100%),
+        linear-gradient(90deg, rgba(248,250,248,0.18) 0%, rgba(248,250,248,0.08) 46%, rgba(248,250,248,0.02) 100%),
         url('{{ conference.hero_image.url }}');">
 {% else %}
 <section class="hero"
     style="background-image:
-        linear-gradient(90deg, rgba(248,250,248,0.88) 0%, rgba(248,250,248,0.70) 46%, rgba(248,250,248,0.45) 100%),
+        linear-gradient(90deg, rgba(248,250,248,0.18) 0%, rgba(248,250,248,0.08) 46%, rgba(248,250,248,0.02) 100%),
         url('{% static "conferences/images/hero.jpg" %}');">
 {% endif %}
 
@@ -653,16 +651,6 @@
     </div>
 
     <div class="hero-content">
-        <div>
-            {% if conference.logo %}
-                <img
-                    src="{{ conference.logo.url }}"
-                    class="conference-logo"
-                    alt="{{ conference.plain_title }}"
-                >
-            {% endif %}
-        </div>
-
         <div class="hero-title-block">
             <h1 class="conference-title">
                 {{ conference.title_en|safe }}
@@ -677,7 +665,6 @@
             </p>
         </div>
 
-        <div></div>
 
     </div>
 
