@@ -12,9 +12,20 @@
     <h1>Layout decision</h1>
     <div class="box">
         <strong>Paper:</strong> {{ submission.title }}<br>
-        <strong>Author:</strong> {{ submission.first_author }}<br>
+        <strong>First author:</strong> {{ submission.first_author }}<br>
+
+        {% if submission.author %}
+            <strong>Author email:</strong> {{ submission.author.email }}<br>
+        {% endif %}
+
+        {% if submission.coauthors %}
+            <strong>Co-authors:</strong><br>
+            <div style="margin-left:14px;">
+                {{ submission.coauthors|linebreaksbr }}
+            </div>
+        {% endif %}
         <strong>Status:</strong> {{ submission.get_status_display }}<br>
-        {% if submission.full_paper_file %}<a href="{{ submission.full_paper_file.url }}" target="_blank">Download current paper</a>{% endif %}
+        {% if submission.full_paper_file %}<a href="{{ submission.full_paper_file.url }}" target="_blank">Download full author version for publication/layout</a>{% endif %}
     </div>
 
     <form method="post" enctype="multipart/form-data">

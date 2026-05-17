@@ -194,6 +194,17 @@
                     <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
                     <strong>First author:</strong> {{ submission.first_author }}<br>
 
+                    {% if submission.author %}
+                        <strong>Author email:</strong> {{ submission.author.email }}<br>
+                    {% endif %}
+
+                    {% if submission.coauthors %}
+                        <strong>Co-authors:</strong><br>
+                        <div style="margin-left:12px;">
+                            {{ submission.coauthors|linebreaksbr }}
+                        </div>
+                    {% endif %}
+
                     <strong>Topics:</strong>
                     {% for topic in submission.topic_list %}
                         {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
