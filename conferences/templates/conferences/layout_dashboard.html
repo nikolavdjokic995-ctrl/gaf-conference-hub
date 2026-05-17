@@ -229,9 +229,17 @@
                         <a class="btn btn-outline" href="{{ submission.original_submission_file.url }}" target="_blank">
                             Download original author submission
                         </a>
+                    {% elif submission.full_paper_file %}
+                        <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
+                            Download original/current author submission
+                        </a>
                     {% endif %}
 
-                    {% if submission.full_paper_file %}
+                    {% if submission.layout_revised_paper_file %}
+                        <a class="btn btn-outline" href="{{ submission.layout_revised_paper_file.url }}" target="_blank">
+                            Download latest revised paper version
+                        </a>
+                    {% elif submission.full_paper_file %}
                         <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
                             Download latest/current paper version
                         </a>
