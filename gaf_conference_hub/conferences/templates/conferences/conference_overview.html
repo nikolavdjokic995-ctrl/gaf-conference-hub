@@ -1,0 +1,959 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ conference.plain_title }}</title>
+
+    <style>
+
+        *{
+            margin:0;
+            padding:0;
+            box-sizing:border-box;
+        }
+
+        body{
+            font-family:Arial,sans-serif;
+            background:#f4f4f4;
+            color:white;
+        }
+
+        .hero{
+            position:relative;
+            min-height:82vh;
+            background-size:cover;
+            background-position:center;
+            display:flex;
+            flex-direction:column;
+        }
+
+        .navbar{
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            padding:28px 45px;
+        }
+
+        .logo-text{
+            font-size:28px;
+            font-weight:700;
+        }
+
+        .nav-links{
+            display:flex;
+            align-items:center;
+            gap:28px;
+        }
+
+        .nav-links a{
+            color:white;
+            text-decoration:none;
+            font-weight:600;
+        }
+
+        .nav-btn.disabled {
+            background: #777;
+            color: white;
+            cursor: not-allowed;
+            opacity: 0.75;
+        }  
+
+        .nav-links span{
+            font-weight:500;
+        }
+
+        .logout-btn{
+            background:none;
+            border:none;
+            color:white;
+            cursor:pointer;
+            font-size:16px;
+            font-weight:600;
+        }
+
+        .hero-content{
+            flex:1;
+            display:flex;
+            flex-direction:column;
+            justify-content:center;
+            align-items:center;
+            text-align:center;
+            margin-top:80px;
+            padding:20px;
+        }
+
+        .conference-logo{
+            width:220px;
+            max-width:100%;
+            margin-bottom:25px;
+        }
+
+        .hero-content h1{
+            font-size:78px;
+            font-weight:800;
+            margin-bottom:18px;
+        }
+
+        .hero-content p{
+            font-size:22px;
+            margin-bottom:40px;
+        }
+
+        .hero-buttons{
+            display:flex;
+            flex-wrap:wrap;
+            justify-content:center;
+            gap:18px;
+        }
+
+        .hero-btn{
+            padding:16px 34px;
+            border:2px solid white;
+            border-radius:18px;
+            color:white;
+            text-decoration:none;
+            font-weight:700;
+            font-size:18px;
+            transition:0.25s;
+            background:transparent;
+        }
+
+        .hero-btn:hover{
+            background:white;
+            color:black;
+        }
+
+        .hero-btn.active{
+            background:#22c55e;
+            border-color:#22c55e;
+            color:white;
+        }
+
+        .overview-section{
+            max-width:1380px;
+            margin:-40px auto 60px;
+            background:white;
+            border-radius:{{ conference.overview_section_radius|default:26 }}px;
+            padding:{{ conference.overview_section_padding|default:40 }}px;
+            position:relative;
+            z-index:5;
+            color:#111827;
+            box-shadow:0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .overview-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax({{ conference.overview_grid_min_width|default:280 }}px,1fr));
+            gap:{{ conference.overview_grid_gap|default:26 }}px;
+        }
+
+        .overview-card{
+            background:#f9fafb;
+            border-radius:{{ conference.overview_card_radius|default:20 }}px;
+            padding:{{ conference.overview_card_padding|default:28 }}px;
+        }
+
+        .overview-card h3{
+            margin-bottom:18px;
+            color:#065f46;
+            font-size:{{ conference.overview_card_title_size|default:20 }}px;
+        }
+
+        .overview-card p{
+            line-height:1.6;
+            color:#111827;
+            font-size:{{ conference.overview_card_text_size|default:16 }}px;
+            word-break:break-word;
+            overflow-wrap:break-word;
+        }
+
+        .about-overview{
+            margin-top:34px;
+            padding:{{ conference.overview_about_padding|default:38 }}px;
+            border-radius:{{ conference.overview_about_radius|default:24 }}px;
+            background:#ffffff;
+            border:1px solid #e5e7eb;
+            box-shadow:0 10px 26px rgba(0,0,0,0.06);
+        }
+
+        .about-kicker{
+            display:inline-flex;
+            align-items:center;
+            gap:8px;
+            margin-bottom:12px;
+            padding:8px 14px;
+            border-radius:999px;
+            background:#ecfdf5;
+            color:#047857;
+            font-size:13px;
+            font-weight:800;
+            letter-spacing:0.08em;
+            text-transform:uppercase;
+        }
+
+        .about-overview h2{
+            margin-bottom:18px;
+            padding-bottom:14px;
+            border-bottom:1px solid #d1d5db;
+            color:#1f2937;
+            font-size:{{ conference.overview_about_title_size|default:42 }}px;
+            line-height:1.15;
+        }
+
+        .about-content{
+            color:#111827;
+            font-size:{{ conference.overview_about_text_size|default:18 }}px;
+            line-height:1.8;
+        }
+
+        .about-content p{
+            margin-bottom:18px;
+        }
+
+        .about-empty{
+            color:#6b7280;
+            font-size:16px;
+            line-height:1.7;
+        }
+
+        @media(max-width:900px){
+ 
+            .navbar{
+                flex-direction:column;
+                gap:18px;
+            }
+
+            .nav-links{
+                flex-wrap:wrap;
+                justify-content:center;
+            }
+
+            .hero-content h1{
+                font-size:48px;
+            }
+
+            .hero-buttons{
+                flex-direction:column;
+            }
+
+            .hero-btn{
+                width:100%;
+                max-width:320px;
+                text-align:center;
+            }
+
+            .overview-section{
+                margin:-30px 16px 40px;
+                padding:24px;
+            }
+
+            .about-overview{
+                padding:26px;
+            }
+
+            .about-overview h2{
+                font-size:32px;
+            }
+
+            .about-content{
+                font-size:16px;
+            }
+        }
+
+    
+        .countdown-section{
+            max-width:1050px;
+            margin:-32px auto 34px;
+            position:relative;
+            z-index:8;
+            padding:0 20px;
+        }
+
+        .countdown-card{
+            background:rgba(255,255,255,0.92);
+            backdrop-filter:blur(14px);
+            border:1px solid rgba(255,255,255,0.75);
+            border-radius:26px;
+            box-shadow:0 18px 45px rgba(0,0,0,0.16);
+            padding:28px;
+            text-align:center;
+        }
+
+        .countdown-kicker{
+            color:#059669;
+            font-size:13px;
+            font-weight:900;
+            text-transform:uppercase;
+            letter-spacing:.12em;
+            margin-bottom:8px;
+        }
+
+        .countdown-title{
+            color:#064e3b;
+            font-size:25px;
+            font-weight:900;
+            margin-bottom:22px;
+        }
+
+        .countdown-grid{
+            display:grid;
+            grid-template-columns:repeat(4,1fr);
+            gap:16px;
+            max-width:780px;
+            margin:0 auto;
+        }
+
+        .countdown-box{
+            background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 100%);
+            border:1px solid #bbf7d0;
+            border-radius:20px;
+            padding:20px 14px;
+        }
+
+        .countdown-number{
+            color:#065f46;
+            font-size:42px;
+            font-weight:950;
+            line-height:1;
+            margin-bottom:8px;
+        }
+
+        .countdown-label{
+            color:#374151;
+            font-size:13px;
+            font-weight:800;
+            text-transform:uppercase;
+            letter-spacing:.08em;
+        }
+
+        .countdown-ended{
+            color:#065f46;
+            font-weight:900;
+            font-size:20px;
+            padding:18px;
+        }
+
+        @media(max-width:760px){
+            .countdown-grid{
+                grid-template-columns:repeat(2,1fr);
+            }
+
+            .countdown-title{
+                font-size:21px;
+            }
+
+            .countdown-number{
+                font-size:34px;
+            }
+        }
+
+        @media(max-width:460px){
+            .countdown-grid{
+                grid-template-columns:1fr;
+            }
+        }
+
+        .stats-section{
+            margin-top:34px;
+            display:grid;
+            grid-template-columns:repeat(4,minmax(180px,1fr));
+            gap:22px;
+        }
+
+        .stat-card{
+            padding:{{ conference.overview_stats_card_padding|default:28 }}px;
+            border-radius:{{ conference.overview_stats_card_radius|default:22 }}px;
+            background:linear-gradient(135deg,#ecfdf5 0%,#ffffff 100%);
+            border:1px solid #d1fae5;
+            box-shadow:0 10px 26px rgba(0,0,0,0.05);
+        }
+
+        .stat-number{
+            color:#065f46;
+            font-size:{{ conference.overview_stats_number_size|default:38 }}px;
+            font-weight:900;
+            line-height:1;
+            margin-bottom:10px;
+        }
+
+        .stat-label{
+            color:#374151;
+            font-size:{{ conference.overview_stats_label_size|default:15 }}px;
+            font-weight:700;
+        }
+
+        .conference-footer{
+            margin-top:70px;
+            background:#052e24;
+            color:white;
+        }
+
+        .footer-partners{
+            background:#eef2f1;
+            padding:70px 30px;
+            color:#111827;
+        }
+
+        .partner-group{
+            max-width:1300px;
+            margin:0 auto 50px;
+        }
+
+        .partner-group h2{
+            text-align:center;
+            color:#065f46;
+            font-size:34px;
+            margin-bottom:36px;
+        }
+
+        .partners-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+            gap:28px;
+        }
+
+        .partner-card{
+            background:white;
+            border-radius:22px;
+            padding:28px;
+            text-align:center;
+            box-shadow:0 8px 24px rgba(0,0,0,0.08);
+        }
+
+        .partner-card img{
+            max-height:110px;
+            max-width:100%;
+            object-fit:contain;
+            margin-bottom:18px;
+        }
+
+        .partner-card h3{
+            color:#111827;
+            margin-bottom:12px;
+            font-size:18px;
+            line-height:1.35;
+        }
+
+        .partner-card a{
+            color:#059669;
+            text-decoration:none;
+            font-weight:700;
+        }
+
+        .footer-main{
+            max-width:1300px;
+            margin:auto;
+            padding:55px 30px;
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+            gap:40px;
+        }
+
+        .footer-main h3{
+            margin-bottom:18px;
+            color:white;
+        }
+
+        .footer-main a,
+        .footer-main p{
+            display:block;
+            color:#d1d5db;
+            margin-bottom:12px;
+            text-decoration:none;
+            line-height:1.7;
+            word-break:break-word;
+            overflow-wrap:break-word;
+        }
+
+        .footer-bottom{
+            border-top:1px solid rgba(255,255,255,0.1);
+            text-align:center;
+            padding:22px;
+            color:#d1d5db;
+        }
+
+        @media(max-width:900px){
+            .stats-section{
+                grid-template-columns:repeat(2,minmax(0,1fr));
+            }
+        }
+
+        @media(max-width:560px){
+            .stats-section{
+                grid-template-columns:1fr;
+            }
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+{% if conference.hero_image %}
+<section class="hero"
+    style="background-image:
+        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+        url('{{ conference.hero_image.url }}');">
+{% else %}
+<section class="hero"
+    style="background-image:
+        linear-gradient(rgba(0,0,0,0.45), rgba(0,0,0,0.45)),
+        url('{% static "conferences/images/hero.jpg" %}');">
+{% endif %}
+
+    <div class="navbar">
+
+        <div class="logo-text">
+            GAF Conference Hub
+        </div>
+
+        <div class="nav-links">
+
+            {% if user.is_authenticated %}
+
+                <span>
+                    Welcome, {{ user.username }}
+                </span>
+
+                <a href="{% url 'conference_overview' conference.slug %}">
+                    Home
+                </a>
+
+                <a href="{% url 'my_submissions' %}">
+                    My submissions
+                </a>
+
+                {% if is_reviewer %}
+                    <a href="{% url 'my_reviews' %}">
+                        My Reviews
+                    </a>
+                {% endif %}
+
+                {% if is_judge %}
+                    <a href="{% url 'judge_dashboard' %}">
+                        Judge Dashboard
+                    </a>
+                {% endif %}
+
+                {% if is_layout_reviewer %}
+                    <a href="{% url 'layout_dashboard' %}">
+                        Layout Review
+                    </a>
+                {% endif %}
+
+                <a href="{% url 'password_change' %}">
+                    Change password
+                </a>
+
+                <form method="post"
+                      action="{% url 'logout' %}"
+                      style="display:inline;">
+                    {% csrf_token %}
+
+                    <button class="logout-btn">
+                        Logout
+                    </button>
+                </form>
+
+            {% else %}
+
+                <a href="{% url 'login' %}">
+                    Login
+                </a>
+
+                <a href="{% url 'register' %}">
+                    Register
+                </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    <div class="hero-content">
+        {% if conference.logo %}
+            <img
+                src="{{ conference.logo.url }}"
+                class="conference-logo"
+                alt="{{ conference.plain_title }}"
+            >
+        {% endif %}
+               
+        <h1 class="conference-title">
+            {{ conference.title_en|safe }}
+        </h1>
+
+        <p>
+            {{ conference.location }}
+            •
+            {{ conference.start_date }}
+            —
+            {{ conference.end_date }}
+        </p>
+
+        <div class="hero-buttons">
+
+            <a class="hero-btn active"
+               href="{% url 'conference_overview' conference.slug %}">
+                Overview
+            </a>
+
+            <a class="hero-btn"
+               href="{% url 'important_information' conference.slug %}">
+                Important Information
+            </a>
+
+            {% if submission_closed and not is_manager %}
+                <span class="hero-btn disabled">Submission closed</span>
+            {% else %}
+                <a class="hero-btn" href="{% url 'submit_paper' conference.slug %}">
+                    Submit Paper
+            </a>
+            {% endif %}
+
+            {% if is_manager or is_judge %}
+
+                <a class="hero-btn"
+                   href="{% url 'conference_submissions' conference.slug %}">
+                    Manage Submissions
+                </a>
+
+                <a class="hero-btn"
+                   href="{% url 'conference_people' conference.slug %}">
+                    People Management
+                </a>
+
+                {% if is_manager %}
+                    <a class="hero-btn"
+                       href="{% url 'conference_settings' conference.slug %}">
+                        Conference Settings
+                    </a>
+                {% endif %}
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<section class="countdown-section">
+    <div class="countdown-card"
+         data-submission-deadline="{{ conference.submission_deadline|date:'Y-m-d' }}"
+         data-conference-start="{{ conference.start_date|date:'Y-m-d' }}">
+
+        <div class="countdown-kicker" id="countdown-kicker">Important deadline</div>
+        <div class="countdown-title" id="countdown-title">Loading countdown...</div>
+
+        <div class="countdown-grid" id="countdown-grid">
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-days">0</div>
+                <div class="countdown-label">Days</div>
+            </div>
+
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-hours">0</div>
+                <div class="countdown-label">Hours</div>
+            </div>
+
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-minutes">0</div>
+                <div class="countdown-label">Minutes</div>
+            </div>
+
+            <div class="countdown-box">
+                <div class="countdown-number" id="countdown-seconds">0</div>
+                <div class="countdown-label">Seconds</div>
+            </div>
+        </div>
+
+        <div class="countdown-ended" id="countdown-ended" style="display:none;"></div>
+    </div>
+</section>
+
+<section class="overview-section">
+
+    <div class="overview-grid">
+
+        <div class="overview-card">
+            <h3>📍 Location</h3>
+            <p>{{ conference.location }}</p>
+        </div>
+
+        <div class="overview-card">
+            <h3>🗓️ Conference Dates</h3>
+            <p>
+                {{ conference.start_date }}
+                —
+                {{ conference.end_date }}
+            </p>
+        </div>
+
+        <div class="overview-card">
+            <h3>💼 Organizer</h3>
+            <p>{{ conference.organizer }}</p>
+        </div>
+
+        <div class="overview-card">
+            <h3>✉️ Contact</h3>
+            <p>{{ conference.contact_email }}</p>
+        </div>
+
+    </div>
+
+    <div class="stats-section">
+
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.submitted_papers|default:"0" }}</div>
+            <div class="stat-label">Submitted papers</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.accepted_papers|default:"0" }}</div>
+            <div class="stat-label">Accepted for publication</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.participating_countries|default:"0" }}</div>
+            <div class="stat-label">Participating countries</div>
+        </div>
+
+        <div class="stat-card">
+            <div class="stat-number">{{ stats.topics|default:"0" }}</div>
+            <div class="stat-label">Conference topics</div>
+        </div>
+
+    </div>
+
+    <div class="about-overview">
+
+        <div class="about-kicker">
+            Conference overview
+        </div>
+
+        <h2>
+            About {{ conference.plain_title }}
+        </h2>
+
+        {% if conference.description_en %}
+            <div class="about-content">
+                {{ conference.description_en|safe }}
+            </div>
+        {% else %}
+            <p class="about-empty">
+                Conference overview text has not been added yet.
+            </p>
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+
+<footer class="conference-footer">
+
+    <section class="footer-partners">
+
+        <div class="partner-group">
+            <h2>The conference is organized by</h2>
+
+            <div class="partners-grid">
+                {% for partner in footer_partners %}
+                    {% if partner.enabled and partner.partner_type == "organizer" %}
+                        <div class="partner-card">
+                            {% if partner.logo %}
+                                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
+                            {% endif %}
+
+                            <h3>{{ partner.name }}</h3>
+
+                            {% if partner.website %}
+                                <a href="{{ partner.website }}" target="_blank">Visit website</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% empty %}
+                    <div class="partner-card">
+                        <h3>{{ conference.organizer }}</h3>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="partner-group">
+            <h2>Co-organizers</h2>
+
+            <div class="partners-grid">
+                {% for partner in footer_partners %}
+                    {% if partner.enabled and partner.partner_type == "coorganizer" %}
+                        <div class="partner-card">
+                            {% if partner.logo %}
+                                <img src="{{ partner.logo.url }}" alt="{{ partner.name }}">
+                            {% endif %}
+
+                            <h3>{{ partner.name }}</h3>
+
+                            {% if partner.website %}
+                                <a href="{{ partner.website }}" target="_blank">Visit website</a>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+
+    </section>
+
+    <div class="footer-main">
+
+        <div>
+            <h3>{{ conference.plain_title }}</h3>
+
+            {% if conference.footer_description %}
+                <p>{{ conference.footer_description|linebreaksbr }}</p>
+            {% else %}
+                <p>{{ conference.organizer }}</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <h3>Navigation</h3>
+
+            <a href="{% url 'conference_overview' conference.slug %}">Overview</a>
+            <a href="{% url 'important_information' conference.slug %}">Important Information</a>
+            <a href="{% url 'submit_paper' conference.slug %}">Submit paper</a>
+            <a href="{% url 'my_submissions' %}">My Submissions</a>
+        </div>
+
+        <div>
+            <h3>Contact</h3>
+
+            {% if conference.footer_contact_email %}
+                <p>{{ conference.footer_contact_email }}</p>
+            {% else %}
+                <p>{{ conference.contact_email }}</p>
+            {% endif %}
+
+            {% if conference.footer_address %}
+                <p>{{ conference.footer_address }}</p>
+            {% else %}
+                <p>{{ conference.location }}</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <h3>Conference</h3>
+            <p>{{ conference.start_date }} — {{ conference.end_date }}</p>
+            <p>Powered by GAF Conference Hub</p>
+        </div>
+
+    </div>
+
+    <div class="footer-bottom">
+        {% if conference.footer_copyright %}
+            {{ conference.footer_copyright }}
+        {% else %}
+            © {{ conference.start_date|date:"Y" }} {{ conference.plain_title }}. All rights reserved.
+        {% endif %}
+    </div>
+
+</footer>
+
+
+<script>
+(function(){
+    const card = document.querySelector(".countdown-card");
+    if (!card) return;
+
+    const submissionDeadline = card.dataset.submissionDeadline;
+    const conferenceStart = card.dataset.conferenceStart;
+
+    const title = document.getElementById("countdown-title");
+    const kicker = document.getElementById("countdown-kicker");
+    const grid = document.getElementById("countdown-grid");
+    const ended = document.getElementById("countdown-ended");
+
+    const daysEl = document.getElementById("countdown-days");
+    const hoursEl = document.getElementById("countdown-hours");
+    const minutesEl = document.getElementById("countdown-minutes");
+    const secondsEl = document.getElementById("countdown-seconds");
+
+    function parseDate(dateString, endOfDay){
+        if (!dateString) return null;
+        const date = new Date(dateString + (endOfDay ? "T23:59:59" : "T00:00:00"));
+        return isNaN(date.getTime()) ? null : date;
+    }
+
+    function getTarget(){
+        const now = new Date();
+        const submissionDate = parseDate(submissionDeadline, true);
+        const conferenceDate = parseDate(conferenceStart, false);
+
+        if (submissionDate && now <= submissionDate) {
+            return {
+                date: submissionDate,
+                kicker: "Call for papers",
+                title: "Time left until submission deadline"
+            };
+        }
+
+        if (conferenceDate && now <= conferenceDate) {
+            return {
+                date: conferenceDate,
+                kicker: "Conference countdown",
+                title: "Time left until the conference starts"
+            };
+        }
+
+        return null;
+    }
+
+    function updateCountdown(){
+        const target = getTarget();
+
+        if (!target) {
+            grid.style.display = "none";
+            ended.style.display = "block";
+            kicker.textContent = "Conference status";
+            title.textContent = "Green Building Conference 2026";
+            ended.textContent = "The conference countdown has ended.";
+            return;
+        }
+
+        kicker.textContent = target.kicker;
+        title.textContent = target.title;
+
+        const now = new Date();
+        const distance = target.date.getTime() - now.getTime();
+
+        if (distance <= 0) {
+            updateCountdown();
+            return;
+        }
+
+        const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((distance / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((distance / (1000 * 60)) % 60);
+        const seconds = Math.floor((distance / 1000) % 60);
+
+        daysEl.textContent = days;
+        hoursEl.textContent = String(hours).padStart(2, "0");
+        minutesEl.textContent = String(minutes).padStart(2, "0");
+        secondsEl.textContent = String(seconds).padStart(2, "0");
+    }
+
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+})();
+</script>
+
+</body>
+</html>

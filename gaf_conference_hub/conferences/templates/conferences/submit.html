@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Submit paper</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        :root {
+            --green-dark: #14532d;
+            --green: #15803d;
+            --green-light: #dcfce7;
+            --green-soft: #f0fdf4;
+            --text: #111827;
+            --muted: #6b7280;
+            --border: #d1d5db;
+            --bg: #f4f6f8;
+            --danger: #b91c1c;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            color: var(--text);
+            background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+        }
+
+        .topbar {
+            background: var(--green-dark);
+            color: white;
+            padding: 20px 42px;
+            font-size: 28px;
+            font-weight: bold;
+            box-shadow: 0 4px 14px rgba(0,0,0,0.12);
+        }
+
+        .page {
+            max-width: 1220px;
+            margin: 44px auto;
+            padding: 0 24px;
+        }
+
+        .hero-card {
+            background: white;
+            border-radius: 22px;
+            padding: 34px 38px;
+            box-shadow: 0 12px 35px rgba(15, 23, 42, 0.08);
+            margin-bottom: 22px;
+        }
+
+        .hero-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        h1 {
+            margin: 0;
+            color: var(--green-dark);
+            font-size: 34px;
+            line-height: 1.12;
+        }
+
+        .subtitle {
+            margin: 10px 0 0;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .building-icon {
+            color: var(--green);
+            font-size: 42px;
+            line-height: 1;
+            opacity: 0.9;
+        }
+
+        .stepper {
+            margin-top: 34px;
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 14px;
+            position: relative;
+        }
+
+        .step-item {
+            text-align: center;
+            position: relative;
+        }
+
+        .step-number {
+            width: 42px;
+            height: 42px;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: white;
+            color: var(--muted);
+            border: 2px solid #dbe3ea;
+            font-weight: bold;
+            transition: all 0.2s ease;
+        }
+
+        .step-label {
+            display: block;
+            margin-top: 10px;
+            font-weight: bold;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .step-item.active .step-number,
+        .step-item.done .step-number {
+            background: var(--green-dark);
+            border-color: var(--green-dark);
+            color: white;
+        }
+
+        .step-item.active .step-label,
+        .step-item.done .step-label {
+            color: var(--green-dark);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 280px;
+            gap: 22px;
+            align-items: start;
+        }
+
+        .form-card,
+        .tips-card {
+            background: white;
+            border-radius: 18px;
+            box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+        }
+
+        .form-card {
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .form-step {
+            display: none;
+            padding: 28px;
+        }
+
+        .form-step.active {
+            display: block;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--green-dark);
+            font-size: 20px;
+            margin: 0 0 24px;
+        }
+
+        .section-title span {
+            display: inline-flex;
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            align-items: center;
+            justify-content: center;
+            background: var(--green-soft);
+            border: 1px solid #bbf7d0;
+        }
+
+        .field {
+            margin-bottom: 20px;
+        }
+
+        .field-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 18px;
+        }
+
+        label {
+            display: block;
+            font-weight: bold;
+            color: #1f2937;
+            margin-bottom: 7px;
+            font-size: 14px;
+        }
+
+        input,
+        textarea,
+        select {
+            width: 100%;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 13px 14px;
+            font-size: 15px;
+            font-family: Arial, sans-serif;
+            background: #fff;
+            outline: none;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        input:focus,
+        textarea:focus,
+        select:focus {
+            border-color: var(--green);
+            box-shadow: 0 0 0 4px rgba(22, 163, 74, 0.12);
+        }
+
+        .help {
+            color: var(--muted);
+            font-size: 13px;
+            margin-top: 7px;
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .errorlist {
+            color: var(--danger);
+            margin: 6px 0 0;
+            padding-left: 18px;
+            font-size: 13px;
+        }
+
+        .keywords-preview {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 9px;
+        }
+
+        .keyword-pill {
+            background: #dfeadf;
+            color: var(--green-dark);
+            border-radius: 999px;
+            padding: 5px 10px;
+            font-size: 13px;
+        }
+
+        .info-box {
+            background: var(--green-soft);
+            border: 1px solid #bbf7d0;
+            color: var(--green-dark);
+            border-radius: 12px;
+            padding: 12px 14px;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .upload-box {
+            border: 2px dashed var(--green);
+            border-radius: 18px;
+            background: #fbfffd;
+            padding: 34px;
+            text-align: center;
+        }
+
+        .upload-icon {
+            font-size: 38px;
+            color: var(--green);
+            margin-bottom: 8px;
+        }
+
+        .upload-box label {
+            font-size: 16px;
+            color: var(--green-dark);
+            margin-bottom: 12px;
+        }
+
+        .upload-box input {
+            max-width: 420px;
+            margin: 0 auto;
+        }
+
+        .review-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 14px;
+            padding: 16px;
+            margin-bottom: 14px;
+        }
+
+        .review-box strong {
+            color: var(--green-dark);
+        }
+
+        .review-box p {
+            margin: 7px 0 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            padding: 20px 28px;
+            border-top: 1px solid #e5e7eb;
+            background: rgba(249, 250, 251, 0.9);
+            position: sticky;
+            bottom: 0;
+        }
+
+        button,
+        .back-link {
+            border: none;
+            border-radius: 10px;
+            padding: 13px 18px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--green);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--green-dark);
+        }
+
+        .btn-secondary {
+            background: #e5e7eb;
+            color: #374151;
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--green-dark);
+            border: 1px solid var(--green);
+        }
+
+        .tips-card {
+            padding: 24px;
+            position: sticky;
+            top: 18px;
+            background: linear-gradient(180deg, #f0fdf4 0%, #ffffff 100%);
+        }
+
+        .tips-title {
+            color: var(--green-dark);
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 18px;
+        }
+
+        .tip {
+            display: grid;
+            grid-template-columns: 30px 1fr;
+            gap: 12px;
+            margin-bottom: 22px;
+            color: #374151;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
+        .tip-icon {
+            color: var(--green-dark);
+            font-size: 22px;
+        }
+
+        .tip strong {
+            color: #111827;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            .tips-card {
+                position: static;
+            }
+
+            .field-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .stepper {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+
+            .step-item {
+                text-align: left;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+            }
+
+            .step-label {
+                margin-top: 0;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    GAF Conference Hub
+</div>
+
+<div class="page">
+
+    <div class="hero-card">
+        <div class="hero-header">
+            <div>
+                <h1>Submit paper for {{ conference.title_en }}</h1>
+                <p class="subtitle">
+                    Please provide the details of your paper. All fields are required unless marked optional.
+                </p>
+            </div>
+            <div class="building-icon">🏢</div>
+        </div>
+
+        <div class="stepper" aria-label="Submission steps">
+            <div class="step-item active" data-step-label="1">
+                <span class="step-number">1</span>
+                <span class="step-label">Paper Details</span>
+            </div>
+            <div class="step-item" data-step-label="2">
+                <span class="step-number">2</span>
+                <span class="step-label">Authors</span>
+            </div>
+            <div class="step-item" data-step-label="3">
+                <span class="step-number">3</span>
+                <span class="step-label">Topics & Details</span>
+            </div>
+            <div class="step-item" data-step-label="4">
+                <span class="step-number">4</span>
+                <span class="step-label">Upload</span>
+            </div>
+            <div class="step-item" data-step-label="5">
+                <span class="step-number">5</span>
+                <span class="step-label">Review & Submit</span>
+            </div>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="submissionForm">
+        {% if messages %}
+    <div style="background:#fff7ed; border:1px solid #fdba74; color:#9a3412; padding:15px; border-radius:12px; margin-bottom:20px;">
+        {% for message in messages %}
+            <div>{{ message }}</div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+{% if form.errors %}
+    <div style="background:#fee2e2; border:1px solid #fca5a5; color:#991b1b; padding:15px; border-radius:12px; margin-bottom:20px;">
+        <strong>Form errors:</strong>
+        {{ form.errors }}
+    </div>
+{% endif %}
+
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="form-card" style="padding: 20px; margin-bottom: 18px;">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="layout">
+            <div class="form-card">
+
+                <section class="form-step active" data-step="1">
+                    <h2 class="section-title">
+                        <span>📄</span> SECTION 1: Paper Details
+                    </h2>
+
+                    <div class="field">
+                        <label for="{{ form.title.id_for_label }}">{{ form.title.label }}</label>
+                        {{ form.title }}
+                        {{ form.title.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.abstract.id_for_label }}">{{ form.abstract.label }}</label>
+                        {{ form.abstract }}
+                        {{ form.abstract.errors }}
+                        <div class="help">
+                            <span>Write the abstract directly. Maximum 300 words.</span>
+                            <span><span id="abstractCount">0</span>/300 words</span>
+                        </div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.keywords.id_for_label }}">{{ form.keywords.label }}</label>
+                        {{ form.keywords }}
+                        {{ form.keywords.errors }}
+                        <div class="keywords-preview" id="keywordsPreview"></div>
+                        <div class="help">Enter keywords separated by commas.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.article_type.id_for_label }}">{{ form.article_type.label }}</label>
+                        {{ form.article_type }}
+                        {{ form.article_type.errors }}
+                        <div class="help">Select whether the submission is a research paper or a review paper.</div>
+                    </div>
+                </section>
+
+                <section class="form-step" data-step="2">
+                    <h2 class="section-title">
+                        <span>👥</span> SECTION 2: Author Information
+                    </h2>
+
+                    <div class="field">
+                        <label for="{{ form.first_author.id_for_label }}">{{ form.first_author.label }}</label>
+                        {{ form.first_author }}
+                        {{ form.first_author.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.first_author_email.id_for_label }}">{{ form.first_author_email.label }}</label>
+                        {{ form.first_author_email }}
+                        {{ form.first_author_email.errors }}
+                        <div class="help">Enter the first author's email address, even if the form is submitted by another person.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.first_author_country.id_for_label }}">{{ form.first_author_country.label }}</label>
+                        {{ form.first_author_country }}
+                        {{ form.first_author_country.errors }}
+                        <div class="help">Select the country of the first author. This will be used for conference statistics.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.coauthors.id_for_label }}">{{ form.coauthors.label }}</label>
+                        {{ form.coauthors }}
+                        {{ form.coauthors.errors }}
+                        <div class="help">Separate co-authors with commas or new lines.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.coauthor_emails.id_for_label }}">{{ form.coauthor_emails.label }}</label>
+                        {{ form.coauthor_emails }}
+                        {{ form.coauthor_emails.errors }}
+                        <div class="help">Enter co-author emails, one per line.</div>
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.coauthor_countries.id_for_label }}">{{ form.coauthor_countries.label }}</label>
+                        {{ form.coauthor_countries }}
+                        {{ form.coauthor_countries.errors }}
+                        <div class="help">Enter co-author countries, one per line, in the same order as co-authors. Leave empty if there are no co-authors.</div>
+                    </div>
+
+                    <div class="info-box">
+                        ℹ️ Enter author and co-author email addresses carefully. These emails will be used later for automatic conference notifications.
+                    </div>
+                </section>
+
+                <section class="form-step" data-step="3">
+                    <h2 class="section-title">
+                        <span>🏷️</span> SECTION 3: Conference Classification
+                    </h2>
+
+                    <div class="field-grid">
+                        <div class="field">
+                            <label for="{{ form.topic.id_for_label }}">{{ form.topic.label }}</label>
+                            {{ form.topic }}
+                            {{ form.topic.errors }}
+                        </div>
+
+                        <div class="field">
+                            <label for="{{ form.secondary_topic.id_for_label }}">{{ form.secondary_topic.label }}</label>
+                            {{ form.secondary_topic }}
+                            {{ form.secondary_topic.errors }}
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        Select the primary topic that best matches your work. Use the secondary topic only if your paper clearly belongs to another area too.
+                    </div>
+                </section>
+
+                <section class="form-step" data-step="4">
+                    <h2 class="section-title">
+                        <span>☁️</span> SECTION 4: Upload Files
+                    </h2>
+
+                    <div class="upload-box">
+                        <div class="upload-icon">☁️</div>
+                        <label for="{{ form.full_paper_file.id_for_label }}">{{ form.full_paper_file.label }}</label>
+                        {{ form.full_paper_file }}
+                        {{ form.full_paper_file.errors }}
+                        <div class="help" style="justify-content:center;">
+                            Accepted formats: DOC/DOCX only. Maximum file size: 50 MB. PDF files are not accepted at this stage.
+                        </div>
+                    </div>
+                </section>
+
+                <section class="form-step" data-step="5">
+                    <h2 class="section-title">
+                        <span>✅</span> SECTION 5: Review & Submit
+                    </h2>
+
+                    <div class="review-box">
+                        <strong>Before submitting</strong>
+                        <p>Check that the title, abstract, keywords, authors, topics and uploaded file are correct.</p>
+                    </div>
+
+                    <div class="review-box">
+                        <strong>After submission</strong>
+                        <p>Your paper will appear in the judge dashboard and can be assigned to reviewers.</p>
+                    </div>
+
+                    <div class="review-box">
+                        <strong>Important</strong>
+                        <p>You may be asked to submit a revised version after content review or layout review.</p>
+                    </div>
+                </section>
+
+                <div class="review-box" style="border-left:4px solid #16a34a; margin-top:18px;">
+                    <label style="display:flex; gap:10px; align-items:flex-start; font-weight:700; color:#14532d;">
+                        {{ form.submission_consent }}
+                        <span>{{ form.submission_consent.label }}</span>
+                    </label>
+                    {% if form.submission_consent.errors %}
+                        <div class="field-error">{{ form.submission_consent.errors }}</div>
+                    {% endif %}
+                    <p class="help">By submitting, you agree that the conference team may process the submitted manuscript and author data for peer-review and conference organization purposes.</p>
+                </div>
+
+                <div class="form-actions">
+                    <a class="back-link btn-outline" href="{% url 'conference_overview' conference.slug %}">
+                        ← Back to conference
+                    </a>
+
+                    <div style="display:flex; gap:10px;">
+                        <button type="button" class="btn-secondary hidden" id="prevBtn">← Back</button>
+                        <button type="button" class="btn-primary" id="nextBtn">Save & Continue →</button>
+                        <button type="submit" class="btn-primary hidden" id="submitBtn">Submit Paper</button>
+                    </div>
+                </div>
+
+            </div>
+
+            <aside class="tips-card">
+                <div class="tips-title">💡 Tips</div>
+
+                <div class="tip">
+                    <div class="tip-icon">✏️</div>
+                    <div>
+                        <strong>Be clear and concise</strong>
+                        Provide a well-structured abstract that summarizes your work effectively.
+                    </div>
+                </div>
+
+                <div class="tip">
+                    <div class="tip-icon">🎯</div>
+                    <div>
+                        <strong>Choose relevant topics</strong>
+                        Select the topic that best matches your research area.
+                    </div>
+                </div>
+
+                <div class="tip">
+                    <div class="tip-icon">🛡️</div>
+                    <div>
+                        <strong>Check before submitting</strong>
+                        Make sure all information is accurate and your file is correct.
+                    </div>
+                </div>
+            </aside>
+        </div>
+    </form>
+</div>
+
+<script>
+    const steps = Array.from(document.querySelectorAll(".form-step"));
+    const stepItems = Array.from(document.querySelectorAll(".step-item"));
+    const prevBtn = document.getElementById("prevBtn");
+    const nextBtn = document.getElementById("nextBtn");
+    const submitBtn = document.getElementById("submitBtn");
+    const abstractField = document.getElementById("{{ form.abstract.id_for_label }}");
+    const abstractCount = document.getElementById("abstractCount");
+    const keywordsField = document.getElementById("{{ form.keywords.id_for_label }}");
+    const keywordsPreview = document.getElementById("keywordsPreview");
+    const fileField = document.getElementById("{{ form.full_paper_file.id_for_label }}");
+
+    let currentStep = 1;
+
+    function showStep(step) {
+        currentStep = step;
+
+        steps.forEach(section => {
+            section.classList.toggle("active", Number(section.dataset.step) === step);
+        });
+
+        stepItems.forEach((item, index) => {
+            const itemStep = index + 1;
+            item.classList.toggle("active", itemStep === step);
+            item.classList.toggle("done", itemStep < step);
+        });
+
+        prevBtn.classList.toggle("hidden", step === 1);
+        nextBtn.classList.toggle("hidden", step === 5);
+        submitBtn.classList.toggle("hidden", step !== 5);
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function updateAbstractCount() {
+        if (!abstractField || !abstractCount) return;
+        const words = abstractField.value.trim().split(/\s+/).filter(Boolean);
+        abstractCount.textContent = words.length;
+        abstractCount.style.color = words.length > 300 ? "#b91c1c" : "";
+    }
+
+    function updateKeywordsPreview() {
+        if (!keywordsField || !keywordsPreview) return;
+
+        keywordsPreview.innerHTML = "";
+
+        keywordsField.value
+            .split(",")
+            .map(keyword => keyword.trim())
+            .filter(Boolean)
+            .slice(0, 12)
+            .forEach(keyword => {
+                const pill = document.createElement("span");
+                pill.className = "keyword-pill";
+                pill.textContent = keyword + " ×";
+                keywordsPreview.appendChild(pill);
+            });
+    }
+
+    nextBtn.addEventListener("click", () => {
+        if (currentStep < 5) {
+            showStep(currentStep + 1);
+        }
+    });
+
+    prevBtn.addEventListener("click", () => {
+        if (currentStep > 1) {
+            showStep(currentStep - 1);
+        }
+    });
+
+    if (abstractField) {
+        abstractField.addEventListener("input", updateAbstractCount);
+        updateAbstractCount();
+    }
+
+    if (fileField) {
+        fileField.setAttribute("accept", ".doc,.docx");
+        fileField.addEventListener("change", () => {
+            const file = fileField.files && fileField.files[0];
+            if (!file) return;
+
+            const name = file.name.toLowerCase();
+            const validExtension = name.endsWith(".doc") || name.endsWith(".docx");
+            const validSize = file.size <= 50 * 1024 * 1024;
+
+            if (!validExtension) {
+                alert("Please upload a DOC or DOCX file only. PDF files are not accepted for paper submission.");
+                fileField.value = "";
+                return;
+            }
+
+            if (!validSize) {
+                alert("The paper file must be smaller than 50 MB.");
+                fileField.value = "";
+            }
+        });
+    }
+
+    if (keywordsField) {
+        keywordsField.addEventListener("input", updateKeywordsPreview);
+        updateKeywordsPreview();
+    }
+
+    showStep(1);
+</script>
+
+</body>
+</html>

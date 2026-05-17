@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Judge decision</title>
+    <style>
+        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}.container{max-width:900px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}h1{color:#14532d;margin-top:0}.box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:24px;line-height:1.7}label{display:block;font-weight:bold;margin:18px 0 8px}select,textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:12px;font-size:15px}button{margin-top:22px;background:#16a34a;color:white;border:0;border-radius:10px;padding:13px 20px;font-weight:bold;cursor:pointer}.back{display:inline-block;margin-top:18px;color:#2563eb;text-decoration:none;font-weight:bold}
+    </style>
+</head>
+<body>
+<div class="topbar">GAF Conference Hub</div>
+<div class="container">
+    <h1>Judge decision</h1>
+    <div class="box">
+        <strong>Paper:</strong> {{ submission.title }}<br>
+        <strong>Author:</strong> {{ submission.first_author }}<br>
+        <strong>Current status:</strong> {{ submission.get_status_display }}<br>
+        {% if submission.full_paper_file %}
+            <a href="{{ submission.full_paper_file.url }}" target="_blank">Download current paper</a>
+        {% endif %}
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Save decision</button>
+    </form>
+
+    <a class="back" href="{% url 'submission_result' submission.id %}">← Back to submission result</a><br>
+    <a class="back" href="{% url 'conference_overview' submission.conference.slug %}">← Back to conference</a>
+</div>
+</body>
+</html>

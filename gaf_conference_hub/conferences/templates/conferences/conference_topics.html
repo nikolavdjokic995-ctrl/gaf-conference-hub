@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Conference Topics | {{ conference.title_en }}</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f4f6f8;
+            color: #111827;
+        }
+
+        .topbar {
+            background: #14532d;
+            color: white;
+            padding: 22px 45px;
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 45px auto;
+            background: white;
+            padding: 38px;
+            border-radius: 18px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
+        }
+
+        h1 {
+            margin-top: 0;
+            color: #14532d;
+        }
+
+        .subtitle {
+            color: #555;
+            margin-bottom: 28px;
+        }
+
+        .add-btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 11px 16px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 28px;
+        }
+
+        .topic-card {
+            border-bottom: 1px solid #e5e7eb;
+            padding: 22px 0;
+        }
+
+        .topic-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .topic-title {
+            color: #d97706;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .topic-code {
+            color: #b45309;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .topic-description {
+            color: #374151;
+            line-height: 1.7;
+            font-size: 16px;
+        }
+
+        .actions {
+            margin-top: 12px;
+        }
+
+        .actions a {
+            color: #2563eb;
+            text-decoration: none;
+            margin-right: 14px;
+            font-weight: bold;
+        }
+
+        .disabled {
+            display: inline-block;
+            background: #fee2e2;
+            color: #991b1b;
+            padding: 4px 9px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+
+        .empty {
+            padding: 22px;
+            background: #f9fafb;
+            border-radius: 12px;
+            color: #555;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 28px;
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">
+    GAF Conference Hub
+</div>
+
+<div class="container">
+
+    <h1>Conference Topics</h1>
+
+    <div class="subtitle">
+        {{ conference.title_en }}
+    </div>
+
+    {% if is_manager %}
+        <a class="add-btn"
+           href="{% url 'add_conference_topic' conference.slug %}">
+            + Add topic
+        </a>
+    {% endif %}
+
+    {% if topics %}
+        {% for topic in topics %}
+            <div class="topic-card">
+
+                <div class="topic-header">
+
+                    <div>
+                        <div class="topic-title">
+                            {{ topic.title }}
+
+                            {% if is_manager and not topic.enabled %}
+                                <span class="disabled">
+                                    Disabled
+                                </span>
+                            {% endif %}
+                        </div>
+
+                        <div class="topic-description">
+                            {{ topic.description }}
+                        </div>
+                    </div>
+
+                    <div class="topic-code">
+                        {{ topic.code }}
+                    </div>
+
+                </div>
+
+                {% if is_manager %}
+                    <div class="actions">
+                        <a href="{% url 'edit_conference_topic' topic.id %}">
+                            Edit
+                        </a>
+
+                        <a href="{% url 'delete_conference_topic' topic.id %}">
+                            Delete
+                        </a>
+                    </div>
+                {% endif %}
+
+            </div>
+        {% endfor %}
+    {% else %}
+        <div class="empty">
+            There are no topics available for this conference.
+        </div>
+    {% endif %}
+
+    <a class="back-link"
+       href="{% url 'important_information' conference.slug %}">
+        ← Back to important information
+    </a>
+
+</div>
+
+</body>
+</html>

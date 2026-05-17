@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Edit submission settings</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f6f8; margin: 0; }
+        .topbar { background: #1f4e79; color: white; padding: 22px 40px; }
+        .container { max-width: 760px; margin: 35px auto; padding: 0 20px; }
+        .card { background: white; padding: 26px; border-radius: 14px; box-shadow: 0 4px 14px rgba(0,0,0,.08); }
+        label { font-weight: bold; display: block; margin-bottom: 8px; color: #123; }
+        select { width: 100%; max-width: 420px; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .help { color: #475569; line-height: 1.55; margin: 16px 0 22px; }
+        .btn { display: inline-block; padding: 10px 14px; background: #1f4e79; color: white; border: 0; border-radius: 6px; text-decoration: none; cursor: pointer; font-weight: bold; }
+        .btn.secondary { background: #555; margin-left: 8px; }
+    </style>
+</head>
+<body>
+<div class="topbar">
+    <h1>{{ conference.title_en }} — Submission settings</h1>
+    <p>Choose how authors submit papers for this conference.</p>
+</div>
+
+<div class="container">
+    <div class="card">
+        <form method="post">
+            {% csrf_token %}
+
+            <p class="help">
+                Use this page only for submission workflow mode. General public page fields
+                such as title, description, dates, logo and hero image remain in General settings.
+            </p>
+
+            <p>
+                {{ form.submission_mode.label_tag }}
+                {{ form.submission_mode }}
+                {% if form.submission_mode.errors %}
+                    <br>{{ form.submission_mode.errors }}
+                {% endif %}
+            </p>
+
+            <button class="btn" type="submit">Save submission settings</button>
+            <a class="btn secondary" href="{% url 'conference_settings' conference.slug %}">Back to settings</a>
+        </form>
+    </div>
+</div>
+</body>
+</html>

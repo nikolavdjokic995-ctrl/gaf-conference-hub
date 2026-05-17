@@ -27,8 +27,8 @@ class Conference(models.Model):
         ("abstract", "Abstract first, then full paper"),
     ]
 
-    title_en = models.CharField(max_length=255)
-    title_sr = models.CharField(max_length=255)
+    title_en = models.TextField()
+    title_sr = models.TextField()
     slug = models.SlugField(unique=True)
 
     description_en = models.TextField(blank=True)

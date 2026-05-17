@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Register | GAF Conference Hub</title>
+
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background:
+                linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.55)),
+                url("https://images.unsplash.com/photo-1518005020951-eccb494ad742?q=80&w=1600&auto=format&fit=crop");
+            background-size: cover;
+            background-position: center;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .register-card {
+            width: 430px;
+            background: rgba(255,255,255,0.95);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 10px 35px rgba(0,0,0,0.25);
+        }
+
+        .title {
+            text-align: center;
+            color: #14532d;
+            margin-bottom: 10px;
+            font-size: 38px;
+            font-weight: bold;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        form p {
+            margin-bottom: 18px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #14532d;
+        }
+
+        input {
+            width: 100%;
+            padding: 13px;
+            border-radius: 10px;
+            border: 1px solid #d1d5db;
+            font-size: 15px;
+            box-sizing: border-box;
+        }
+
+        ul {
+            margin-top: 10px;
+            color: #666;
+            padding-left: 20px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 14px;
+            background: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: 0.2s;
+        }
+
+        .register-btn:hover {
+            background: #15803d;
+        }
+
+        .bottom-link {
+            text-align: center;
+            margin-top: 22px;
+            color: #555;
+        }
+
+        .bottom-link a {
+            color: #2563eb;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .helptext {
+            color: #666;
+            font-size: 13px;
+        }
+
+        .errorlist {
+            color: #dc2626;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="register-card">
+
+    <div class="title">
+        GAF Conference Hub
+    </div>
+
+    <div class="subtitle">
+        Create your conference account
+    </div>
+
+    <form method="post">
+        {% csrf_token %}
+
+        {{ form.as_p }}
+
+        <button class="register-btn" type="submit">
+            Create Account
+        </button>
+    </form>
+
+    <div class="bottom-link">
+        Already have an account?
+        <a href="/login/">Login</a>
+    </div>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,658 @@
+{% block content %}
+
+<style>
+    .editor-page{
+        min-height:100vh;
+        background:linear-gradient(135deg,#f4f8f5 0%,#eef7f1 50%,#f8fafc 100%);
+        padding:42px 20px;
+        font-family:Calibri,Arial,sans-serif;
+        color:#123524;
+    }
+
+    .editor-shell{
+        max-width:1050px;
+        margin:0 auto;
+    }
+
+    .editor-card{
+        background:#ffffff;
+        border-radius:28px;
+        padding:36px;
+        box-shadow:0 18px 50px rgba(16,24,40,0.08);
+        border:1px solid rgba(13,92,47,0.1);
+    }
+
+    .eyebrow{
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        color:#17804b;
+        font-size:12px;
+        font-weight:800;
+        margin-bottom:10px;
+    }
+
+    h1{
+        margin:0 0 28px;
+        color:#0d5c2f;
+        font-size:42px;
+    }
+
+    form{
+        display:grid;
+        gap:24px;
+    }
+
+    .form-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:22px;
+    }
+
+    .form-row{
+        display:grid;
+        gap:10px;
+    }
+
+    .form-row.full{
+        grid-column:1 / -1;
+    }
+
+    label{
+        font-weight:800;
+        color:#0d5c2f;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="date"],
+    input[type="file"],
+    input[type="number"],
+    select,
+    textarea{
+        width:100%;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:16px;
+        padding:14px 16px;
+        font-size:15px;
+        background:#fff;
+        color:#123524;
+        box-sizing:border-box;
+    }
+
+    .current-file{
+        padding:12px 14px;
+        border-radius:14px;
+        background:#f5fbf7;
+        color:#315a45;
+        font-size:14px;
+        line-height:1.5;
+    }
+
+    .settings-section-title{
+        grid-column:1 / -1;
+        margin:14px 0 0;
+        padding-top:22px;
+        border-top:1px solid rgba(13,92,47,0.14);
+    }
+
+    .settings-section-title h2{
+        margin:0 0 6px;
+        color:#0d5c2f;
+        font-size:24px;
+    }
+
+    .settings-section-title p{
+        margin:0;
+        color:#4b6958;
+        font-size:14px;
+        line-height:1.5;
+    }
+
+    .rich-toolbar{
+        display:flex;
+        flex-wrap:wrap;
+        gap:8px;
+        padding:12px;
+        background:#f5fbf7;
+        border:1px solid rgba(13,92,47,0.16);
+        border-radius:16px 16px 0 0;
+        border-bottom:0;
+    }
+
+    .tool-btn,
+    .tool-select{
+        border:1px solid rgba(13,92,47,0.18);
+        background:white;
+        color:#0d5c2f;
+        border-radius:10px;
+        padding:8px 11px;
+        font-weight:800;
+        cursor:pointer;
+        font-size:14px;
+    }
+
+    .tool-btn:hover,
+    .tool-select:hover{
+        background:#eaf7ef;
+    }
+
+    .rich-editor{
+        min-height:380px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:0 0 16px 16px;
+        padding:18px;
+        background:white;
+        color:#123524;
+        line-height:1.75;
+        outline:none;
+        overflow:auto;
+    }
+
+    .rich-editor:focus{
+        border-color:#16a34a;
+        box-shadow:0 0 0 4px rgba(22,163,74,0.12);
+    }
+
+    .hidden-description,
+    .hidden-title{
+        display:none;
+    }
+
+    .title-rich-editor{
+        min-height:120px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:0 0 16px 16px;
+        padding:16px;
+        background:white;
+        color:#123524;
+        line-height:1.25;
+        outline:none;
+        overflow:auto;
+        font-size:34px;
+        font-weight:900;
+    }
+
+    .title-rich-editor:focus{
+        border-color:#16a34a;
+        box-shadow:0 0 0 4px rgba(22,163,74,0.12);
+    }
+
+    .color-input{
+        width:44px;
+        height:36px;
+        padding:3px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:10px;
+        background:white;
+        cursor:pointer;
+    }
+
+    .helptext{
+        color:#587568;
+        font-size:13px;
+    }
+
+    .btn-row{
+        display:flex;
+        gap:14px;
+        flex-wrap:wrap;
+        margin-top:8px;
+    }
+
+    .btn-save,
+    .btn-back{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:999px;
+        padding:12px 20px;
+        font-weight:800;
+        text-decoration:none;
+        transition:.15s ease;
+    }
+
+    .btn-save{
+        background:#16a34a;
+        color:#fff;
+        border:none;
+        cursor:pointer;
+        box-shadow:0 10px 24px rgba(22,163,74,0.25);
+    }
+
+    .btn-back{
+        background:#eef7f1;
+        color:#0d5c2f;
+        border:1px solid rgba(13,92,47,0.14);
+    }
+
+    .btn-save:hover,
+    .btn-back:hover{
+        transform:translateY(-1px);
+    }
+
+    .errorlist{
+        background:#fef2f2;
+        color:#991b1b;
+        border:1px solid #fecaca;
+        border-radius:12px;
+        padding:12px 16px;
+        margin:0;
+        list-style-position:inside;
+    }
+
+    @media(max-width:800px){
+        .form-grid{
+            grid-template-columns:1fr;
+        }
+
+        h1{
+            font-size:34px;
+        }
+
+        .editor-card{
+            padding:26px;
+        }
+    }
+</style>
+
+<div class="editor-page">
+    <div class="editor-shell">
+        <div class="editor-card">
+
+            <p class="eyebrow">Conference public page editor</p>
+
+            <h1>Edit conference overview</h1>
+
+            <form id="overview-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors }}
+                {% endif %}
+
+                <div class="form-grid">
+
+                    <div class="form-row">
+                        <label for="{{ form.title_en.id_for_label }}">Conference title</label>
+
+                        <div class="rich-toolbar">
+                            <select class="tool-select" onchange="titleFontSize(this.value); this.selectedIndex=0;">
+                                <option value="">Font size</option>
+                                <option value="48px">48 px</option>
+                                <option value="56px">56 px</option>
+                                <option value="64px">64 px</option>
+                                <option value="72px">72 px</option>
+                                <option value="82px">82 px</option>
+                                <option value="96px">96 px</option>
+                            </select>
+
+                            <button type="button" class="tool-btn" onclick="titleCmd('bold')"><b>B</b></button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('italic')"><i>I</i></button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('underline')"><u>U</u></button>
+
+                            <button type="button" class="tool-btn" onclick="titleCmd('justifyLeft')">Left</button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('justifyCenter')">Center</button>
+                            <button type="button" class="tool-btn" onclick="titleCmd('justifyRight')">Right</button>
+
+                            <input class="color-input" type="color" value="#ffffff" onchange="titleColor(this.value)" title="Title color">
+                            <button type="button" class="tool-btn" onclick="titleCmd('removeFormat')">Clear</button>
+                        </div>
+
+                        <div id="rich-title" class="title-rich-editor" contenteditable="true"></div>
+
+                        <div class="hidden-title">
+                            {{ form.title_en }}
+                        </div>
+
+                        {{ form.title_en.errors }}
+
+                        <span class="helptext">
+                            Press Enter for a new line. Use color, size, bold and alignment to format the public title.
+                        </span>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.location.id_for_label }}">Location</label>
+                        {{ form.location }}
+                        {{ form.location.errors }}
+                    </div>
+
+                    <div class="form-row full">
+                        <label>Description</label>
+
+                        <div class="rich-toolbar">
+                            <select class="tool-select" onchange="formatBlock(this.value); this.selectedIndex=0;">
+                                <option value="">Style</option>
+                                <option value="p">Paragraph</option>
+                                <option value="h2">Heading 2</option>
+                                <option value="h3">Heading 3</option>
+                                <option value="h4">Heading 4</option>
+                            </select>
+
+                            <select class="tool-select" onchange="fontSize(this.value); this.selectedIndex=0;">
+                                <option value="">Font size</option>
+                                <option value="2">Small</option>
+                                <option value="3">Normal</option>
+                                <option value="4">Large</option>
+                                <option value="5">Extra large</option>
+                            </select>
+
+                            <button type="button" class="tool-btn" onclick="cmd('bold')"><b>B</b></button>
+                            <button type="button" class="tool-btn" onclick="cmd('italic')"><i>I</i></button>
+                            <button type="button" class="tool-btn" onclick="cmd('underline')"><u>U</u></button>
+
+                            <button type="button" class="tool-btn" onclick="cmd('insertUnorderedList')">• List</button>
+                            <button type="button" class="tool-btn" onclick="cmd('insertOrderedList')">1. List</button>
+
+                            <button type="button" class="tool-btn" onclick="cmd('justifyLeft')">Left</button>
+                            <button type="button" class="tool-btn" onclick="cmd('justifyCenter')">Center</button>
+                            <button type="button" class="tool-btn" onclick="cmd('justifyRight')">Right</button>
+
+                            <button type="button" class="tool-btn" onclick="addLink()">Link</button>
+                            <button type="button" class="tool-btn" onclick="cmd('removeFormat')">Clear</button>
+                        </div>
+
+                        <div id="rich-description" class="rich-editor" contenteditable="true"></div>
+
+                        <div class="hidden-description">
+                            {{ form.description_en }}
+                        </div>
+
+                        {{ form.description_en.errors }}
+
+                        <span class="helptext">
+                            Use this editor for headings, bold text, lists, links, font size and alignment.
+                        </span>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.start_date.id_for_label }}">Start date</label>
+                        {{ form.start_date }}
+                        {{ form.start_date.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.end_date.id_for_label }}">End date</label>
+                        {{ form.end_date }}
+                        {{ form.end_date.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.submission_deadline.id_for_label }}">Submission deadline</label>
+                        {{ form.submission_deadline }}
+                        {{ form.submission_deadline.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.review_deadline.id_for_label }}">Review deadline</label>
+                        {{ form.review_deadline }}
+                        {{ form.review_deadline.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.organizer.id_for_label }}">Organizer</label>
+                        {{ form.organizer }}
+                        {{ form.organizer.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.contact_email.id_for_label }}">Contact email</label>
+                        {{ form.contact_email }}
+                        {{ form.contact_email.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.registration_url.id_for_label }}">Registration URL</label>
+                        {{ form.registration_url }}
+                        {{ form.registration_url.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.template_style.id_for_label }}">Template style</label>
+                        {{ form.template_style }}
+                        {{ form.template_style.errors }}
+                    </div>
+
+                    <div class="settings-section-title">
+                        <h2>Overview page layout</h2>
+                        <p>Adjust card sizes, spacing and text sizes without editing template code. Values are in pixels.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_padding.id_for_label }}">{{ form.overview_section_padding.label }}</label>
+                        {{ form.overview_section_padding }}
+                        {{ form.overview_section_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_radius.id_for_label }}">{{ form.overview_section_radius.label }}</label>
+                        {{ form.overview_section_radius }}
+                        {{ form.overview_section_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_grid_min_width.id_for_label }}">{{ form.overview_grid_min_width.label }}</label>
+                        {{ form.overview_grid_min_width }}
+                        {{ form.overview_grid_min_width.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_grid_gap.id_for_label }}">{{ form.overview_grid_gap.label }}</label>
+                        {{ form.overview_grid_gap }}
+                        {{ form.overview_grid_gap.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_padding.id_for_label }}">{{ form.overview_card_padding.label }}</label>
+                        {{ form.overview_card_padding }}
+                        {{ form.overview_card_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_radius.id_for_label }}">{{ form.overview_card_radius.label }}</label>
+                        {{ form.overview_card_radius }}
+                        {{ form.overview_card_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_title_size.id_for_label }}">{{ form.overview_card_title_size.label }}</label>
+                        {{ form.overview_card_title_size }}
+                        {{ form.overview_card_title_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_text_size.id_for_label }}">{{ form.overview_card_text_size.label }}</label>
+                        {{ form.overview_card_text_size }}
+                        {{ form.overview_card_text_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_card_padding.id_for_label }}">{{ form.overview_stats_card_padding.label }}</label>
+                        {{ form.overview_stats_card_padding }}
+                        {{ form.overview_stats_card_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_card_radius.id_for_label }}">{{ form.overview_stats_card_radius.label }}</label>
+                        {{ form.overview_stats_card_radius }}
+                        {{ form.overview_stats_card_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_number_size.id_for_label }}">{{ form.overview_stats_number_size.label }}</label>
+                        {{ form.overview_stats_number_size }}
+                        {{ form.overview_stats_number_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_stats_label_size.id_for_label }}">{{ form.overview_stats_label_size.label }}</label>
+                        {{ form.overview_stats_label_size }}
+                        {{ form.overview_stats_label_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_padding.id_for_label }}">{{ form.overview_about_padding.label }}</label>
+                        {{ form.overview_about_padding }}
+                        {{ form.overview_about_padding.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_radius.id_for_label }}">{{ form.overview_about_radius.label }}</label>
+                        {{ form.overview_about_radius }}
+                        {{ form.overview_about_radius.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_title_size.id_for_label }}">{{ form.overview_about_title_size.label }}</label>
+                        {{ form.overview_about_title_size }}
+                        {{ form.overview_about_title_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_about_text_size.id_for_label }}">{{ form.overview_about_text_size.label }}</label>
+                        {{ form.overview_about_text_size }}
+                        {{ form.overview_about_text_size.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.logo.id_for_label }}">Conference logo</label>
+
+                        {% if conference.logo %}
+                            <div class="current-file">
+                                Current file:
+                                <a href="{{ conference.logo.url }}" target="_blank">{{ conference.logo.name }}</a>
+                            </div>
+                        {% endif %}
+
+                        {{ form.logo }}
+                        {{ form.logo.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.hero_image.id_for_label }}">Hero image</label>
+
+                        {% if conference.hero_image %}
+                            <div class="current-file">
+                                Current file:
+                                <a href="{{ conference.hero_image.url }}" target="_blank">{{ conference.hero_image.name }}</a>
+                            </div>
+                        {% endif %}
+
+                        {{ form.hero_image }}
+                        {{ form.hero_image.errors }}
+                    </div>
+
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn-save">Save changes</button>
+
+                    <a class="btn-back" href="{% url 'conference_overview' conference.slug %}">
+                        ← Back to conference page
+                    </a>
+
+                    <a class="btn-back" href="{% url 'conference_settings' conference.slug %}">
+                        ← Back to settings
+                    </a>
+                </div>
+            </form>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function focusEditor(id) {
+        const editor = document.getElementById(id);
+        if (editor) editor.focus();
+    }
+
+    function cmd(command) {
+        document.execCommand(command, false, null);
+        focusEditor("rich-description");
+    }
+
+    function formatBlock(tag) {
+        if (!tag) return;
+        document.execCommand("formatBlock", false, tag);
+        focusEditor("rich-description");
+    }
+
+    function fontSize(size) {
+        if (!size) return;
+        document.execCommand("fontSize", false, size);
+        focusEditor("rich-description");
+    }
+
+    function addLink() {
+        const url = prompt("Enter link URL:");
+        if (url) {
+            document.execCommand("createLink", false, url);
+        }
+        focusEditor("rich-description");
+    }
+
+    function titleCmd(command) {
+        focusEditor("rich-title");
+        document.execCommand(command, false, null);
+    }
+
+    function titleColor(color) {
+        focusEditor("rich-title");
+        document.execCommand("foreColor", false, color);
+    }
+
+    function titleFontSize(size) {
+        if (!size) return;
+
+        focusEditor("rich-title");
+        document.execCommand("fontSize", false, "7");
+
+        const editor = document.getElementById("rich-title");
+        const fonts = editor.querySelectorAll("font[size='7']");
+
+        fonts.forEach(function (font) {
+            const span = document.createElement("span");
+            span.style.fontSize = size;
+            span.innerHTML = font.innerHTML;
+            font.parentNode.replaceChild(span, font);
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", function () {
+        const form = document.getElementById("overview-form");
+
+        const titleInput = document.querySelector('[name="title_en"]');
+        const titleEditor = document.getElementById("rich-title");
+
+        if (titleInput && titleEditor) {
+            titleEditor.innerHTML = titleInput.value || "";
+
+            if (!titleEditor.innerHTML.trim()) {
+                titleEditor.innerHTML = "Green Building<br>International Scientific<br>Conference 2026";
+            }
+        }
+
+        const descriptionTextarea = document.querySelector('textarea[name="description_en"]');
+        const descriptionEditor = document.getElementById("rich-description");
+
+        if (descriptionTextarea && descriptionEditor) {
+            descriptionEditor.innerHTML = descriptionTextarea.value || "";
+        }
+
+        if (form) {
+            form.addEventListener("submit", function () {
+                if (titleInput && titleEditor) {
+                    titleInput.value = titleEditor.innerHTML.trim();
+                }
+
+                if (descriptionTextarea && descriptionEditor) {
+                    descriptionTextarea.value = descriptionEditor.innerHTML;
+                }
+            });
+        }
+    });
+</script>
+
+{% endblock %}

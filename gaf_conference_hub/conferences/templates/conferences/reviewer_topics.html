@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reviewer Topics | {{ conference.title_en }}</title>
+
+    <style>
+        body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #102a43; }
+        .topbar { background: #14532d; color: white; padding: 22px 45px; font-size: 26px; font-weight: bold; }
+        .container { max-width: 960px; margin: 45px auto; background: white; padding: 35px; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.10); border: 1px solid #dcfce7; }
+        h1 { margin-top: 0; color: #14532d; }
+        .subtitle { color: #475569; margin-bottom: 22px; line-height: 1.55; }
+        .notice { background: #ecfdf5; border: 1px solid #bbf7d0; color: #14532d; padding: 14px 16px; border-radius: 14px; margin-bottom: 22px; line-height: 1.5; }
+        .message { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-weight: 700; }
+        .message.success { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .message.error { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+        .topic-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; }
+        .topic-card { border: 1px solid #e5e7eb; border-radius: 14px; padding: 18px; background: #ffffff; display: flex; gap: 14px; align-items: flex-start; transition: .15s ease; }
+        .topic-card:hover { border-color: #86efac; box-shadow: 0 6px 16px rgba(22,163,74,0.10); }
+        .topic-card input { margin-top: 4px; transform: scale(1.2); }
+        .topic-code { display: inline-block; font-weight: bold; color: #14532d; background: #ecfdf5; border: 1px solid #bbf7d0; border-radius: 999px; padding: 4px 9px; margin-bottom: 8px; }
+        .topic-title { font-size: 17px; font-weight: bold; margin-bottom: 6px; color: #0f172a; }
+        .topic-description { color: #555; line-height: 1.5; font-size: 14px; }
+        .actions { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+        .save-btn { background: #16a34a; color: white; border: none; padding: 13px 22px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .back-link { display: inline-block; color: #2563eb; font-weight: bold; text-decoration: none; }
+        .empty { padding: 22px; background: #f9fafb; border-radius: 12px; color: #555; }
+    </style>
+</head>
+
+<body>
+
+<div class="topbar">GAF Conference Hub</div>
+
+<div class="container">
+
+    <h1>Reviewer topic expertise</h1>
+
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message {{ message.tags }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <div class="subtitle">
+        Please select <strong>one or two</strong> conference topics that best match your scientific expertise for
+        <strong>{{ conference.title_en }}</strong>.
+    </div>
+
+    <div class="notice">
+        Your selection will help the Scientific Committee assign manuscripts that align with your field of expertise.
+        You can return to this page and update your selection later if needed.
+    </div>
+
+    {% if topics %}
+        <form method="post" id="topics-form">
+            {% csrf_token %}
+
+            <div class="topic-grid">
+                {% for topic in topics %}
+                    <label class="topic-card">
+                        <input type="checkbox" name="topics" value="{{ topic.id }}" {% if topic.id in selected_topics %}checked{% endif %}>
+                        <div>
+                            <div class="topic-code">{{ topic.code }}</div>
+                            <div class="topic-title">{{ topic.title }}</div>
+                            {% if topic.description %}
+                                <div class="topic-description">{{ topic.description }}</div>
+                            {% endif %}
+                        </div>
+                    </label>
+                {% endfor %}
+            </div>
+
+            <div class="actions">
+                <button class="save-btn" type="submit">Save selected topics</button>
+                <a class="back-link" href="{% url 'conference_overview' conference.slug %}">Back to conference</a>
+            </div>
+        </form>
+    {% else %}
+        <div class="empty">There are no enabled topics for this conference.</div>
+    {% endif %}
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('topics-form');
+        if (!form) return;
+
+        const checkboxes = form.querySelectorAll('input[type="checkbox"][name="topics"]');
+
+        function updateLimit() {
+            const checked = form.querySelectorAll('input[type="checkbox"][name="topics"]:checked');
+            checkboxes.forEach(function (box) {
+                box.disabled = checked.length >= 2 && !box.checked;
+            });
+        }
+
+        checkboxes.forEach(function (box) {
+            box.addEventListener('change', updateLimit);
+        });
+        updateLimit();
+    });
+</script>
+
+</body>
+</html>

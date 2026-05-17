@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete footer partner</title>
+    <style>
+        body{font-family:Arial,sans-serif;background:#f4f6f8;margin:0;color:#111827}
+        .container{max-width:700px;margin:70px auto;background:white;padding:30px;border-radius:18px;box-shadow:0 8px 26px rgba(0,0,0,.08)}
+        h1{color:#991b1b}
+        .btn{display:inline-block;background:#dc2626;color:white;text-decoration:none;border:0;border-radius:10px;padding:11px 16px;font-weight:bold;cursor:pointer}
+        .btn-dark{background:#374151}
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Delete footer partner?</h1>
+    <p>Are you sure you want to delete <strong>{{ partner.name }}</strong>?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button class="btn" type="submit">Delete</button>
+        <a class="btn btn-dark" href="{% url 'footer_settings' conference.slug %}">
+            Cancel
+        </a>
+    </form>
+</div>
+</body>
+</html>

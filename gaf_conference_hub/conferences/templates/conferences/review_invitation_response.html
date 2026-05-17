@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Review invitation | GAF Conference Hub</title>
+    <style>
+        body { margin:0; font-family:Arial, sans-serif; background:#f4f6f8; color:#102a43; }
+        .topbar { background:#14532d; color:white; padding:24px 42px; font-size:26px; font-weight:bold; }
+        .container { max-width:980px; margin:42px auto; background:white; border-radius:18px; padding:34px; box-shadow:0 10px 30px rgba(0,0,0,.10); }
+        h1 { color:#14532d; margin-top:0; }
+        .paper { border:1px solid #dcfce7; background:#f0fdf4; border-radius:14px; padding:20px; margin-bottom:22px; }
+        .meta { line-height:1.7; color:#334155; }
+        .actions { display:grid; grid-template-columns:1fr 1fr; gap:22px; margin-top:26px; }
+        .box { border:1px solid #e5e7eb; border-radius:14px; padding:20px; background:#fff; }
+        label { display:block; margin:12px 0 6px; font-weight:bold; color:#14532d; }
+        input[type="date"], textarea { width:100%; padding:10px; border:1px solid #cbd5e1; border-radius:8px; box-sizing:border-box; }
+        textarea { min-height:100px; }
+        .btn { border:0; color:white; padding:12px 18px; border-radius:9px; font-weight:bold; cursor:pointer; margin-top:14px; }
+        .accept { background:#16a34a; }
+        .decline { background:#dc2626; }
+        .radio-row { margin:10px 0; color:#334155; }
+        .help { color:#64748b; font-size:13px; line-height:1.5; }
+        @media(max-width:800px){ .actions{grid-template-columns:1fr;} }
+    </style>
+</head>
+<body>
+<div class="topbar">GAF Conference Hub</div>
+<div class="container">
+    <h1>Review invitation</h1>
+
+    <div class="paper">
+        <h2>{{ submission.title }}</h2>
+        <div class="meta">
+            <strong>Paper ID:</strong> {{ submission.paper_code }}<br>
+            <strong>Conference:</strong> {{ conference.title_en }}<br>
+            <strong>Article type:</strong> {{ submission.get_article_type_display }}<br>
+            <strong>Proposed deadline:</strong>
+            {% if assignment.proposed_deadline %}{{ assignment.proposed_deadline|date:"d.m.Y." }}{% else %}Not defined{% endif %}<br>
+            <strong>Abstract:</strong><br>
+            {{ submission.abstract }}
+        </div>
+    </div>
+
+    {% if assignment.invitation_status == "accepted" %}
+        <p>You have already accepted this invitation.</p>
+        <a class="btn accept" href="{% url 'review_submission' submission.id %}" style="display:inline-block;text-decoration:none;">Open review form</a>
+    {% elif assignment.invitation_status == "declined" %}
+        <p>You have declined this invitation.</p>
+    {% else %}
+        <div class="actions">
+            <div class="box">
+                <h2>Accept review</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="accept">
+
+                    <div class="radio-row">
+                        <label style="font-weight:normal;color:#334155;">
+                            <input type="radio" name="deadline_choice" value="proposed" checked>
+                            I accept the proposed deadline
+                            {% if assignment.proposed_deadline %}({{ assignment.proposed_deadline|date:"d.m.Y." }}){% endif %}
+                        </label>
+                    </div>
+
+                    <div class="radio-row">
+                        <label style="font-weight:normal;color:#334155;">
+                            <input type="radio" name="deadline_choice" value="custom">
+                            I would like to request a different deadline
+                        </label>
+                    </div>
+
+                    <label>Requested deadline</label>
+                    <input type="date" name="requested_deadline">
+                    <div class="help">Use this only if you need more time than the proposed deadline.</div>
+
+                    <button class="btn accept" type="submit">Accept review</button>
+                </form>
+            </div>
+
+            <div class="box">
+                <h2>Decline review</h2>
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="decline">
+                    <label>Reason, optional</label>
+                    <textarea name="decline_reason" placeholder="You may briefly explain why you cannot review this manuscript."></textarea>
+                    <button class="btn decline" type="submit">Decline review</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+</div>
+</body>
+</html>
