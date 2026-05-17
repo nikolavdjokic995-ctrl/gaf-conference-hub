@@ -275,7 +275,7 @@ def make_decision(request, submission_id):
 def assign_papers(request, slug, submission_id=None):
     conference = get_object_or_404(
         Conference,
-        slug=conference_slug
+        slug=slug
     )
 
     can_assign = ConferenceRole.objects.filter(

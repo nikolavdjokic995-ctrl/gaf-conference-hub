@@ -223,14 +223,17 @@ class Submission(models.Model):
     abstract_file = models.FileField(
         upload_to="abstracts/",
         blank=True,
-        null=True
+        null=True,
+        max_length=500
     )
 
     full_paper_file = models.FileField(
         upload_to="papers/",
         storage=HybridDocumentStorage(),
         blank=True,
-        null=True
+        null=True,
+        max_length=500
+
     )
 
     topic = models.ForeignKey(
@@ -266,14 +269,16 @@ class Submission(models.Model):
         upload_to="revised_papers/",
         storage=HybridDocumentStorage(),
         blank=True,
-        null=True
+        null=True,
+        max_length=500
     )
 
     layout_revised_paper_file = models.FileField(
         upload_to="layout_revised_papers/",
         storage=HybridDocumentStorage(),
         blank=True,
-        null=True
+        null=True,
+        max_length=500
     )
 
     final_publication_file = models.FileField(
@@ -281,14 +286,16 @@ class Submission(models.Model):
         storage=HybridDocumentStorage(),
         blank=True,
         null=True,
-        help_text="Final print-ready paper uploaded by the layout reviewer."
+        help_text="Final print-ready paper uploaded by the layout reviewer.",
+        max_length=500
     )
 
     anonymized_paper_file = models.FileField(
         upload_to="anonymous_papers/",
         storage=HybridDocumentStorage(),
         blank=True,
-        null=True
+        null=True,
+        max_length=500
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -679,7 +686,8 @@ class Review(models.Model):
         storage=HybridDocumentStorage(),
         blank=True,
         null=True,
-        help_text="Optional reviewer-uploaded paper with comments for the author."
+        help_text="Optional reviewer-uploaded paper with comments for the author.",
+        max_length=500
     )
 
     created_at = models.DateTimeField(auto_now_add=True)
@@ -833,7 +841,8 @@ class ConferenceInfoCard(models.Model):
         upload_to="conference_files/",
         storage=HybridDocumentStorage(),
         blank=True,
-        null=True
+        null=True,
+        max_length=500
 
     )
 
