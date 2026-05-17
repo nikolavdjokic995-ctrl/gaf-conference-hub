@@ -156,30 +156,31 @@
         .hero-buttons{
             max-width:1300px;
             margin:30px auto 0;
-            background:rgba(255,255,255,0.96);
-            border:1px solid #e5e7eb;
-            border-radius:18px;
-            padding:22px 28px;
-            display:grid;
-            grid-template-columns:repeat(6,minmax(0,1fr));
-            gap:14px;
-            box-shadow:0 18px 45px rgba(15,23,42,0.12);
+            background:transparent !important;
+            border:none !important;
+            border-radius:0 !important;
+            padding:0 !important;
+            display:flex !important;
+            justify-content:center;
+            flex-wrap:wrap;
+            gap:18px;
+            box-shadow:none !important;
             position:relative;
             z-index:12;
         }
 
         .hero-btn{
             padding:18px 26px;
-            border:2px solid rgba(255,255,255,0.85);
+            border:2px solid #065f46;
             border-radius:14px;
-            color:white;
+            color:#065f46;
             text-decoration:none;
             font-weight:800;
             font-size:16px;
             transition:0.25s;
-            background:transparent;
+            background:rgba(255,255,255,0.15);
             text-align:center;
-            backdrop-filter:blur(4px);
+            min-width:190px;
 
         }
 
@@ -192,6 +193,7 @@
             background:#16a34a;
             border-color:#16a34a;
             color:white;
+            box-shadow:none;
 
         }
 
