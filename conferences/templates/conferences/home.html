@@ -27,17 +27,17 @@
         }
 
         .container {
-            max-width: 1180px;
-            margin: 40px auto;
-            padding: 0 20px;
+            width: min(880px, calc(100% - 80px));
+            margin: 75px 0 0 150px;
+            padding: 0;
         }
 
         .hero-card {
-            background: rgba(255,255,255,0.94);
-            border-radius: 24px;
-            padding: 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.18);
-            backdrop-filter: blur(10px);
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            box-shadow: none;
+            backdrop-filter: none;
         }
 
         .page-title {
@@ -45,14 +45,15 @@
             margin-bottom: 28px;
             font-size: 40px;
             color: #0f3d2e;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.65);
         }
 
         .conference-card {
-            background: #ffffff;
+            background: rgba(255,255,255,0.96);
             padding: 0;
             margin-top: 22px;
             border-radius: 18px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.08);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
             border: 1px solid #e5e7eb;
             overflow: hidden;
         }
@@ -139,13 +140,16 @@
             background: #2d5c88;
         }
 
+        @media (max-width: 1000px) {
+            .container {
+                width: calc(100% - 40px);
+                margin: 50px 20px 0;
+            }
+        }
+
         @media (max-width: 700px) {
             .header {
                 padding: 20px;
-            }
-
-            .hero-card {
-                padding: 24px;
             }
 
             .page-title {
