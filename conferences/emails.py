@@ -1,10 +1,12 @@
 import re
+from html import escape
 
 from django.conf import settings
 from django.core.mail import send_mail, EmailMultiAlternatives
 from django.template import Context, Template
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import strip_tags
 
 from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment
 
@@ -114,7 +116,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         main_review_link = review_form_link
 
     context = {
-        "conference_name": conference.title_en if conference else "",
+        "conference_name": conference.plain_title if conference else "",
         "conference_location": conference.location if conference else "",
         "conference_dates": f"{conference.start_date} — {conference.end_date}" if conference else "",
         "conference_contact_email": conference.contact_email if conference else "",
@@ -170,6 +172,24 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
 
 def render_template_text(text, context):
     return Template(text or "").render(Context(context))
+
+
+def build_email_bodies(body):
+    """Return plain-text and HTML versions of one rendered email body.
+
+    If the template body already contains HTML tags, it is sent as HTML.
+    If it is normal text, new lines are converted to <br> so Gmail keeps spacing.
+    """
+    body = body or ""
+
+    if re.search(r"<[a-zA-Z][\s\S]*?>", body):
+        html_body = body
+        plain_body = strip_tags(body)
+    else:
+        plain_body = body
+        html_body = "<br>".join(escape(line) for line in body.splitlines())
+
+    return plain_body, html_body
 
 
 def recipients_for_template(template, submission=None, reviewer=None):
@@ -263,15 +283,17 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
 
     sent = []
     from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+    plain_body, html_body = build_email_bodies(body)
+
     for recipient in recipients:
         try:
             email_message = EmailMultiAlternatives(
                 subject,
-                body,
+                plain_body,
                 from_email,
                 [recipient],
             )
-            email_message.attach_alternative(body, "text/html")
+            email_message.attach_alternative(html_body, "text/html")
             email_message.send()
             EmailLog.objects.create(
                 conference=submission.conference,
@@ -301,7 +323,7 @@ def preview_template(template, submission=None, reviewer=None, request=None):
     context = build_email_context(submission=submission, reviewer=reviewer, request=request)
     if not submission:
         context.update({
-            "conference_name": template.conference.title_en,
+            "conference_name": template.conference.plain_title,
             "conference_location": template.conference.location,
             "conference_dates": f"{template.conference.start_date} — {template.conference.end_date}",
             "paper_title": "Example paper title",
@@ -385,14 +407,16 @@ def send_test_template_email(template, recipient, request=None):
         f"{preview['body']}"
     )
 
+    plain_body, html_body = build_email_bodies(body)
+
     try:
         email_message = EmailMultiAlternatives(
             subject,
-            body,
+            plain_body,
             getattr(settings, "DEFAULT_FROM_EMAIL", None),
             [recipient],
         )
-        email_message.attach_alternative(body, "text/html")
+        email_message.attach_alternative(html_body, "text/html")
         email_message.send()
         EmailLog.objects.create(
             conference=template.conference,
@@ -458,7 +482,7 @@ def send_conference_role_email(event, conference, user, request=None, extra=None
         extra=extra,
     )
     context.update({
-        "conference_name": conference.title_en,
+        "conference_name": conference.plain_title,
         "conference_contact_email": conference.contact_email,
         "reviewer_name": user_full_name(user),
         "reviewer_email": user.email,
@@ -482,14 +506,16 @@ def send_conference_role_email(event, conference, user, request=None, extra=None
         )
         return []
 
+    plain_body, html_body = build_email_bodies(body)
+
     try:
         email_message = EmailMultiAlternatives(
             subject,
-            body,
+            plain_body,
             getattr(settings, "DEFAULT_FROM_EMAIL", None),
             [recipient],
         )
-        email_message.attach_alternative(body, "text/html")
+        email_message.attach_alternative(html_body, "text/html")
         email_message.send()
         EmailLog.objects.create(
             conference=conference,
