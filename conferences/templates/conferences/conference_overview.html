@@ -23,9 +23,9 @@
 
         .hero{
             position:relative;
-            min-height:610px;
+            min-height:620px;
             background-size:cover;
-            background-position:center top;
+            background-position:center center;
             display:flex;
             flex-direction:column;
             overflow:visible;
@@ -599,12 +599,12 @@
 {% if conference.hero_image %}
 <section class="hero"
     style="background-image:
-        linear-gradient(rgba(244,248,241,0.06), rgba(244,248,241,0.06)),
+        linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)),
         url('{{ conference.hero_image.url }}');">
 {% else %}
 <section class="hero"
     style="background-image:
-        linear-gradient(rgba(244,248,241,0.06), rgba(244,248,241,0.06)),
+        linear-gradient(rgba(255,255,255,0.02), rgba(255,255,255,0.02)),
         url('{% static "conferences/images/hero.jpg" %}');">
 {% endif %}
 
