@@ -207,7 +207,7 @@
             <details class="conference-card">
                 <summary class="conference-summary">
                     <div>
-                        <h3>{{ conference.title_en|striptags|linebreaksbr }}</h3>
+                        <h3>{{ conference.title_en|safe }}</h3>
                         <div class="summary-hint">Click to view conference details</div>
                     </div>
                     <div class="toggle-icon">+</div>
