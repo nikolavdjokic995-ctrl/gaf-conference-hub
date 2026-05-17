@@ -59,19 +59,19 @@
         }
 
         .paper-col {
-            width: 34%;
+            width: 30%;
         }
 
         .authors-col {
-            width: 16%;
+            width: 14%;
         }
 
         .topic-col {
-            width: 18%;
+            width: 16%;
         }
 
         .status-col {
-            width: 10%;
+            width: 9%;
         }
 
         .submitted-col {
@@ -83,7 +83,7 @@
         }
 
         .actions-col {
-            width: 16%;
+            width: 14%;
         }
 
         .paper-title {
@@ -295,6 +295,53 @@
 
                     </td>
 
+                    <td>
+
+                        {% with assignments=submission.review_assignments.all %}
+                            {% if assignments %}
+                                {% for assignment in assignments %}
+                                    <div style="margin-bottom:10px;">
+                                        <span style="
+                                            display:inline-block;
+                                            background:#dcfce7;
+                                            color:#166534;
+                                            padding:6px 10px;
+                                            border-radius:999px;
+                                            font-weight:bold;
+                                            font-size:13px;
+                                        ">
+                                            {{ assignment.reviewer.username }}
+                                        </span>
+
+                                        {% if assignment.final_deadline %}
+                                            <div style="
+                                                margin-top:6px;
+                                                font-size:12px;
+                                                color:#555;
+                                            ">
+                                                Deadline:
+                                                {{ assignment.final_deadline|date:"d.m.Y." }}
+                                            </div>
+                                        {% endif %}
+
+                                        <div style="
+                                            margin-top:4px;
+                                            font-size:12px;
+                                            color:#64748b;
+                                        ">
+                                            {{ assignment.get_invitation_status_display }}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            {% else %}
+                                <span style="color:#777;">
+                                    No reviewer assigned.
+                                </span>
+                            {% endif %}
+                        {% endwith %}
+
+                    </td>
+
                     <td class="status-col">
 
                         <span class="status status-{{ submission.status }}">
@@ -315,45 +362,6 @@
                         <span class="days-badge">
                             {{ submission.created_at|timesince }}
                         </span>
-
-                    </td>
-
-                    <td>
-
-                        {% with assignments=submission.review_assignments.all %}
-                            {% if assignments %}
-                                {% for assignment in assignments %}
-                                    <div style="margin-bottom:10px;">
-                                        <span style="
-                                            display:inline-block;
-                                            background:#dcfce7;
-                                            color:#166534;
-                                            padding:6px 10px;
-                                            border-radius:999px;
-                                            font-weight:bold;
-                                            font-size:13px;
-                                        ">
-                                            {{ assignment.reviewer.username }}
-                                        </span>
-
-                                        {% if assignment.deadline %}
-                                            <div style="
-                                                margin-top:6px;
-                                                font-size:12px;
-                                                color:#555;
-                                            ">
-                                                Deadline:
-                                                {{ assignment.final_deadline|date:"d.m.Y." }}
-                                            </div>
-                                        {% endif %}
-                                    </div>
-                                {% endfor %}
-                            {% else %}
-                                <span style="color:#777;">
-                                    No reviewer assigned.
-                                </span>
-                            {% endif %}
-                        {% endwith %}
 
                     </td>
 
