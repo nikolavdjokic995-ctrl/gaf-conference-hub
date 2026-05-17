@@ -1,5 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils.html import strip_tags
+from html import unescape
 from cloudinary_storage.storage import RawMediaCloudinaryStorage
 from .storage_backends import HybridDocumentStorage
 
@@ -25,8 +27,8 @@ class Conference(models.Model):
         ("abstract", "Abstract first, then full paper"),
     ]
 
-    title_en = models.TextField()
-    title_sr = models.TextField()
+    title_en = models.CharField(max_length=255)
+    title_sr = models.CharField(max_length=255)
     slug = models.SlugField(unique=True)
 
     description_en = models.TextField(blank=True)
@@ -107,8 +109,16 @@ class Conference(models.Model):
     overview_about_title_size = models.PositiveIntegerField(default=42)
     overview_about_text_size = models.PositiveIntegerField(default=18)
 
+
+    @property
+    def plain_title(self):
+        title = strip_tags(self.title_en or "")
+        title = unescape(title)
+        title = title.replace("\xa0", " ")
+        return " ".join(title.split())
+
     def __str__(self):
-        return self.title_en
+        return self.plain_title or self.title_en
 
 
 class ConferenceTopic(models.Model):

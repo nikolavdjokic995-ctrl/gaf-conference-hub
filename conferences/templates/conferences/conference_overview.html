@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ conference.title_en|striptags }}</title>
+    <title>{{ conference.plain_title }}</title>
 
     <style>
 
@@ -96,19 +96,6 @@
             font-weight:800;
             margin-bottom:18px;
         }
-
-        .conference-title{
-            line-height:1.15;
-        }
-
-        .conference-title div{
-            margin-bottom:10px;
-        }
-
-        .conference-title *{
-            max-width:100%;
-        }
-
 
         .hero-content p{
             font-size:22px;
@@ -593,13 +580,7 @@
             <img
                 src="{{ conference.logo.url }}"
                 class="conference-logo"
-                alt="{{ conference.title_en }}"
-            >
-        {% else %}
-            <img
-                src="{% static 'conferences/images/logo.png' %}"
-                class="conference-logo"
-                alt="Green Building Conference 2026"
+                alt="{{ conference.plain_title }}"
             >
         {% endif %}
                
@@ -758,7 +739,7 @@
         </div>
 
         <h2>
-            About {{ conference.title_en|safe }}
+            About {{ conference.plain_title }}
         </h2>
 
         {% if conference.description_en %}
@@ -834,7 +815,7 @@
     <div class="footer-main">
 
         <div>
-            <h3>{{ conference.title_en|safe }}</h3>
+            <h3>{{ conference.plain_title }}</h3>
 
             {% if conference.footer_description %}
                 <p>{{ conference.footer_description|linebreaksbr }}</p>
@@ -880,7 +861,7 @@
         {% if conference.footer_copyright %}
             {{ conference.footer_copyright }}
         {% else %}
-            © {{ conference.start_date|date:"Y" }} {{ conference.title_en }}. All rights reserved.
+            © {{ conference.start_date|date:"Y" }} {{ conference.plain_title }}. All rights reserved.
         {% endif %}
     </div>
 
