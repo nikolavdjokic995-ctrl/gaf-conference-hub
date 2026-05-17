@@ -387,6 +387,13 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_about_text_size",
         ]
 
+        widgets = {
+            "title_en": forms.Textarea(attrs={
+                "rows": 3,
+                "placeholder": "Green Building\nInternational Scientific Conference\n2026",
+            }),
+        }
+
 
 class SubmissionSettingsForm(forms.ModelForm):
 

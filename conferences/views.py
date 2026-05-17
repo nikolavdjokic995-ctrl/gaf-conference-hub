@@ -122,6 +122,7 @@ def home(request):
 
 def conference_overview(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
+
     submission_closed = (
         conference.submission_deadline
         and timezone.now().date() > conference.submission_deadline
@@ -163,16 +164,37 @@ def conference_overview(request, slug):
         enabled=True
     ).order_by("order", "name")
 
-    participating_countries = (
-        Submission.objects.filter(
-            conference=conference,
-            author__profile__country__isnull=False
-        )
-        .exclude(author__profile__country="")
-        .values("author__profile__country")
+    country_set = set()
+
+    registered_countries = (
+        UserProfile.objects
+        .exclude(country__isnull=True)
+        .exclude(country="")
+        .values_list("country", flat=True)
         .distinct()
-        .count()
     )
+
+    country_set.update(
+        str(country).strip()
+        for country in registered_countries
+        if str(country).strip()
+    )
+
+    submission_country_rows = Submission.objects.filter(
+        conference=conference
+    ).values_list("first_author_country", "coauthor_countries")
+
+    for first_author_country, coauthor_countries in submission_country_rows:
+        if first_author_country and str(first_author_country).strip():
+            country_set.add(str(first_author_country).strip())
+
+        if coauthor_countries:
+            for country in str(coauthor_countries).replace(";", "\n").replace(",", "\n").splitlines():
+                country = country.strip()
+                if country:
+                    country_set.add(country)
+
+    participating_countries = len(country_set)
 
     stats = {
         "submitted_papers": Submission.objects.filter(conference=conference).count(),
