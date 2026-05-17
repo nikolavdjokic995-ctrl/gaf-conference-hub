@@ -798,6 +798,15 @@
     const coauthorsContainer = document.getElementById("coauthorsContainer");
     const coauthorsJsonInput = document.getElementById("id_coauthors_json");
 
+    function escapeHtml(value) {
+        return String(value || "")
+            .replaceAll("&", "&amp;")
+            .replaceAll("<", "&lt;")
+            .replaceAll(">", "&gt;")
+            .replaceAll('"', "&quot;")
+            .replaceAll("'", "&#039;");
+    }
+
     function createCoauthorRow(data = {}) {
         const wrapper = document.createElement("div");
         wrapper.className = "review-box";
@@ -806,18 +815,18 @@
         wrapper.innerHTML = `
             <div class="field">
                 <label>Co-author full name</label>
-                <input type="text" class="coauthor-name" value="${data.name || ''}">
+                <input type="text" class="coauthor-name" value="${escapeHtml(data.name)}">
             </div>
 
             <div class="field-grid">
                 <div class="field">
                     <label>Email</label>
-                    <input type="email" class="coauthor-email" value="${data.email || ''}">
+                    <input type="email" class="coauthor-email" value="${escapeHtml(data.email)}">
                 </div>
 
                 <div class="field">
                     <label>Country</label>
-                    <input type="text" class="coauthor-country" value="${data.country || ''}">
+                    <input type="text" class="coauthor-country" value="${escapeHtml(data.country)}">
                 </div>
             </div>
 
@@ -841,11 +850,13 @@
     function syncCoauthors() {
         const rows = document.querySelectorAll("#coauthorsContainer .review-box");
 
-        const data = Array.from(rows).map(row => ({
-            name: row.querySelector(".coauthor-name").value,
-            email: row.querySelector(".coauthor-email").value,
-            country: row.querySelector(".coauthor-country").value,
-        }));
+        const data = Array.from(rows)
+            .map(row => ({
+                name: row.querySelector(".coauthor-name").value.trim(),
+                email: row.querySelector(".coauthor-email").value.trim(),
+                country: row.querySelector(".coauthor-country").value.trim(),
+            }))
+            .filter(item => item.name || item.email || item.country);
 
         coauthorsJsonInput.value = JSON.stringify(data);
     }

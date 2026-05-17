@@ -28,6 +28,45 @@ def split_emails(value):
     return clean
 
 
+def structured_coauthors(submission):
+    """Return co-author dictionaries from JSONField, with legacy fallback."""
+    if not submission:
+        return []
+
+    data = getattr(submission, "coauthors_data", None) or []
+    if isinstance(data, list) and data:
+        result = []
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            name = str(item.get("name", "")).strip()
+            email = str(item.get("email", "")).strip()
+            country = str(item.get("country", "")).strip()
+            if name or email or country:
+                result.append({
+                    "name": name,
+                    "email": email,
+                    "country": country,
+                })
+        return result
+
+    names = split_people(getattr(submission, "coauthors", ""))
+    emails = split_emails(getattr(submission, "coauthor_emails", ""))
+    countries = split_people(getattr(submission, "coauthor_countries", ""))
+
+    result = []
+    max_len = max(len(names), len(emails), len(countries), 0)
+
+    for index in range(max_len):
+        result.append({
+            "name": names[index] if index < len(names) else "",
+            "email": emails[index] if index < len(emails) else "",
+            "country": countries[index] if index < len(countries) else "",
+        })
+
+    return result
+
+
 def user_full_name(user):
     if not user:
         return ""
@@ -76,8 +115,9 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
     conference = conference or (submission.conference if submission else None)
     first_author = submission.first_author if submission else ""
     first_author_email = submission.first_author_email if submission else ""
-    coauthors = split_people(submission.coauthors) if submission else []
-    coauthor_emails = split_emails(submission.coauthor_emails) if submission else []
+    coauthor_items = structured_coauthors(submission) if submission else []
+    coauthors = [item.get("name", "") for item in coauthor_items if item.get("name", "")]
+    coauthor_emails = [item.get("email", "") for item in coauthor_items if item.get("email", "")]
 
     submitting_author_name = user_full_name(submission.author) if submission else ""
     submitting_author_email = submission.author.email if submission and submission.author else ""
@@ -201,7 +241,17 @@ def recipients_for_template(template, submission=None, reviewer=None):
             elif submission.author and submission.author.email:
                 recipients.append(submission.author.email)
         if template.send_to_coauthors:
-            recipients.extend(split_emails(submission.coauthor_emails))
+            coauthor_items = structured_coauthors(submission)
+            coauthor_emails = [
+                item.get("email", "").strip()
+                for item in coauthor_items
+                if item.get("email", "").strip()
+            ]
+
+            if coauthor_emails:
+                recipients.extend(coauthor_emails)
+            else:
+                recipients.extend(split_emails(submission.coauthor_emails))
 
         conference = submission.conference
         if template.send_to_managers:

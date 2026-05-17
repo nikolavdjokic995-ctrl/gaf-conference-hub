@@ -149,7 +149,7 @@ class SubmissionForm(forms.ModelForm):
     def clean_coauthors_json(self):
         import json
 
-        raw = self.cleaned_data.get("coauthors_json", "[]")
+        raw = self.cleaned_data.get("coauthors_json", "[]") or "[]"
 
         try:
             data = json.loads(raw)
@@ -159,11 +159,14 @@ class SubmissionForm(forms.ModelForm):
         valid = []
 
         for item in data:
+            if not isinstance(item, dict):
+                continue
+
             name = str(item.get("name", "")).strip()
             email = str(item.get("email", "")).strip()
             country = str(item.get("country", "")).strip()
 
-            if name:
+            if name or email or country:
                 valid.append({
                     "name": name,
                     "email": email,
@@ -225,6 +228,11 @@ class SubmissionForm(forms.ModelForm):
         self.fields["first_author"].required = True
         self.fields["first_author_email"].required = True
         self.fields["first_author_country"].required = True
+
+        self.fields["coauthors"].required = False
+        self.fields["coauthor_emails"].required = False
+        self.fields["coauthor_countries"].required = False
+        self.fields["coauthors_json"].required = False
 
         self.fields["full_paper_file"].widget.attrs.update({
             "accept": ".doc,.docx",

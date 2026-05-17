@@ -861,6 +861,32 @@ def submit_paper(request, slug):
 
                 submission.paper_code = generated_code
 
+                # Save dynamic co-author data from the submit form.
+                # The UI stores co-authors in coauthors_json; here we also populate
+                # the legacy text fields so dashboards and email recipients keep working.
+                parsed_coauthors = form.cleaned_data.get("parsed_coauthors", [])
+
+                if hasattr(submission, "coauthors_data"):
+                    submission.coauthors_data = parsed_coauthors
+
+                submission.coauthors = "\n".join(
+                    item.get("name", "").strip()
+                    for item in parsed_coauthors
+                    if item.get("name", "").strip()
+                )
+
+                submission.coauthor_emails = "\n".join(
+                    item.get("email", "").strip()
+                    for item in parsed_coauthors
+                    if item.get("email", "").strip()
+                )
+
+                submission.coauthor_countries = "\n".join(
+                    item.get("country", "").strip()
+                    for item in parsed_coauthors
+                    if item.get("country", "").strip()
+                )
+
                 submission.save()
 
                 uploaded_file = request.FILES.get("full_paper_file")
@@ -1509,7 +1535,9 @@ def upload_revision(request, submission_id):
                     )
 
                     submission.revised_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
-                    submission.full_paper_file.name = f"revised_papers/{submission.paper_code}-r{next_round}{extension}"
+
+                    # Do not overwrite original/current author file during content revision.
+                    # The anonymized reviewer file is updated below.
 
                     if extension == ".docx":
                         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
