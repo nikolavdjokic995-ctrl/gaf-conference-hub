@@ -397,7 +397,7 @@ def assign_papers(request, slug, submission_id=None):
 
         if not reviewer_role_id:
             messages.error(request, "Please select a reviewer before assigning.")
-            return redirect("assign_papers", slug=conference.slug, submission_id=posted_submission_id)
+            return redirect(f"/conference/{conference.slug}/assign/{posted_submission_id}/")
 
         submission = get_object_or_404(
             Submission,
@@ -453,7 +453,7 @@ def assign_papers(request, slug, submission_id=None):
         submission.status = "under_review"
         submission.save(update_fields=["status", "updated_at"])
 
-        return redirect("assign_papers", slug=conference.slug, submission_id=submission.id)
+        return redirect(f"/conference/{conference.slug}/assign/{submission.id}/")
 
     submissions = Submission.objects.filter(
         conference=conference
