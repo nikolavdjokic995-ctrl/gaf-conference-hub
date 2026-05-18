@@ -137,6 +137,14 @@ def review_invitation_response(request, assignment_id):
 
             assignment.save()
 
+            send_event_email(
+                "review_request_accepted",
+                submission,
+                request=request,
+                reviewer=assignment.reviewer,
+                assignment=assignment,
+            )
+
             messages.success(
                 request,
                 "Review invitation accepted successfully."
