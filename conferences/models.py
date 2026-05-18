@@ -320,6 +320,11 @@ class Submission(models.Model):
 
         return topics
 
+
+    def original_author_file(self):
+        """Return the preserved initial author submission if available."""
+        return self.original_submission_file or self.full_paper_file
+
     def __str__(self):
         return self.title
 

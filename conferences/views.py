@@ -906,6 +906,14 @@ def submit_paper(request, slug):
                             f"{original_public_id}{extension}"
                         )
 
+                        # Preserve the very first author-submitted version forever.
+                        # Layout reviewers use this file to recover author metadata
+                        # and original formatting during final publication preparation.
+                        if not submission.original_submission_file:
+                            submission.original_submission_file.name = (
+                                f"{original_public_id}{extension}"
+                            )
+
                         # =========================
                         # SAVE ANONYMIZED VERSION
                         # =========================
