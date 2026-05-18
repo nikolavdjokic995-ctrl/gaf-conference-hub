@@ -326,15 +326,12 @@
 
                     {% for reviewer_role in suggested_reviewers %}
                         <option value="{{ reviewer_role.id }}">
-                            {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — {{ reviewer_role.get_role_display }}
-                            {% if reviewer_role.topics.all %}
-                                — Topics:
-                                {% for topic in reviewer_role.topics.all %}
-                                    {{ topic.code }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                — Topics: not selected
-                            {% endif %}
+                            {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — {{ reviewer_role.get_role_display }} — Topics:
+                            {% for topic in reviewer_role.topics.all %}
+                                {{ topic.code }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                not selected
+                            {% endfor %}
                         </option>
                     {% endfor %}
                 </select>
@@ -360,15 +357,12 @@
 
                     {% for reviewer_role in all_reviewers %}
                         <option value="{{ reviewer_role.id }}">
-                            {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — {{ reviewer_role.get_role_display }}
-                            {% if reviewer_role.topics.all %}
-                                — Topics:
-                                {% for topic in reviewer_role.topics.all %}
-                                    {{ topic.code }}{% if not forloop.last %}, {% endif %}
-                                {% endfor %}
-                            {% else %}
-                                — Topics: not selected
-                            {% endif %}
+                            {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — {{ reviewer_role.get_role_display }} — Topics:
+                            {% for topic in reviewer_role.topics.all %}
+                                {{ topic.code }}{% if not forloop.last %}, {% endif %}
+                            {% empty %}
+                                not selected
+                            {% endfor %}
                         </option>
                     {% endfor %}
                 </select>
