@@ -548,6 +548,23 @@ def review_submission(request, submission_id):
             review.review_round = current_round
             review.save()
 
+            assigned_reviewers_count = ReviewAssignment.objects.filter(
+                submission=submission,
+                role="content_reviewer"
+            ).count()
+
+            completed_reviews_count = Review.objects.filter(
+                submission=submission,
+                review_round=current_round
+            ).values("reviewer").distinct().count()
+
+            if (
+                assigned_reviewers_count > 0
+                and completed_reviews_count >= assigned_reviewers_count
+            ):
+                submission.status = "reviews_completed"
+                submission.save(update_fields=["status", "updated_at"])
+
             messages.success(request, f"Review for round {current_round} saved successfully.")
             return redirect("/my-reviews/")
     else:

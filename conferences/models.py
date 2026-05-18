@@ -153,6 +153,7 @@ class Submission(models.Model):
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("under_review", "Under content review"),
+        ("reviews_completed", "Content review completed"),
         ("revision_required", "Revision requested"),
         ("revised_submitted", "Revised paper submitted"),
         ("accepted_for_layout", "Accepted for layout review"),
