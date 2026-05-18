@@ -2,287 +2,236 @@
 <html>
 <head>
     <title>Assign Reviewers | {{ conference.plain_title }}</title>
-
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f4f6f8;
+        body { margin: 0; font-family: Arial, sans-serif; background: #f4f6f8; color: #111827; }
+        .topbar { background: #14532d; color: white; padding: 22px 45px; font-size: 26px; font-weight: bold; }
+        .container { max-width: 1050px; margin: 40px auto; padding: 0 20px; }
+        .header-card, .paper-card, .assign-card { background: white; border-radius: 18px; box-shadow: 0 10px 28px rgba(15,23,42,0.08); border: 1px solid #e5e7eb; }
+        .header-card { padding: 28px 32px; margin-bottom: 22px; }
+        h1 { margin: 0 0 12px; color: #14532d; font-size: 34px; }
+        .subtitle { color: #6b7280; margin: 0; line-height: 1.5; }
+        .paper-card { padding: 30px; margin-bottom: 22px; }
+        .paper-code { display: inline-block; background: #dcfce7; color: #166534; padding: 7px 12px; border-radius: 999px; font-size: 14px; font-weight: 800; margin-bottom: 14px; }
+        .paper-title { font-size: 28px; font-weight: 900; color: #14532d; line-height: 1.25; margin-bottom: 22px; }
+        .meta-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+        .meta-box { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 14px; padding: 16px; }
+        .meta-label { font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: #6b7280; font-weight: 900; margin-bottom: 7px; }
+        .meta-value { color: #111827; font-size: 16px; line-height: 1.55; font-weight: 600; white-space: pre-line; }
+        .section-title { color: #14532d; font-size: 22px; font-weight: 900; margin: 0 0 16px; }
+        .assign-card { padding: 24px; margin-bottom: 22px; }
+        .badge { display: inline-block; background: #dcfce7; color: #166534; padding: 7px 12px; border-radius: 999px; font-size: 14px; font-weight: bold; margin: 4px; }
+        .empty { color: #6b7280; background: #f9fafb; border: 1px dashed #d1d5db; border-radius: 12px; padding: 14px; }
+        form { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+        select, input[type="date"] { flex: 1; min-width: 240px; padding: 13px 14px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 15px; background: white; }
+        button { background: #16a34a; color: white; border: none; padding: 13px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; }
+        button:hover { background: #15803d; }
+        .back-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+        .back-link { display: inline-block; color: #2563eb; font-weight: bold; text-decoration: none; }
+        .message { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-weight: 700; background: #ecfdf5; color: #14532d; border: 1px solid #bbf7d0; }
+        @media(max-width: 760px) {
+            .meta-grid { grid-template-columns: 1fr; }
+            .paper-title { font-size: 24px; }
+            form { display: block; }
+            select, input[type="date"] { width: 100%; min-width: 0; margin-bottom: 12px; box-sizing: border-box; }
         }
-
-        .topbar {
-            background: #14532d;
-            color: white;
-            padding: 22px 45px;
-            font-size: 26px;
-            font-weight: bold;
-        }
-
-        .container {
-            max-width: 1150px;
-            margin: 45px auto;
-            background: white;
-            padding: 35px;
-            border-radius: 18px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.10);
-        }
-
-        h1 {
-            margin-top: 0;
-            color: #14532d;
-        }
-
-        .paper-card {
-            border: 1px solid #e5e7eb;
-            border-radius: 14px;
-            padding: 22px;
-            margin-bottom: 22px;
-            background: #fff;
-        }
-
-        .paper-title {
-            font-size: 21px;
-            font-weight: bold;
-            color: #14532d;
-            margin-bottom: 8px;
-        }
-
-        .meta {
-            line-height: 1.7;
-            color: #444;
-            margin-bottom: 16px;
-        }
-
-        .section-title {
-            font-weight: bold;
-            margin-top: 15px;
-            margin-bottom: 8px;
-            color: #14532d;
-        }
-
-        select, input[type="date"], input[type="number"] {
-            padding: 10px;
-            min-width: 220px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            margin-right: 8px;
-            margin-bottom: 8px;
-        }
-
-        .deadline-row {
-            margin-top: 10px;
-        }
-
-        .help {
-            color: #64748b;
-            font-size: 13px;
-            margin: 6px 0 10px;
-        }
-
-        button {
-            background: #16a34a;
-            color: white;
-            border: none;
-            padding: 11px 18px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-weight: bold;
-            margin-left: 8px;
-        }
-
-        .badge {
-            display: inline-block;
-            background: #dcfce7;
-            color: #166534;
-            padding: 5px 10px;
-            border-radius: 999px;
-            font-size: 13px;
-            font-weight: bold;
-            margin: 3px;
-        }
-
-        .empty {
-            color: #777;
-        }
-
-        a {
-            color: #2563eb;
-            font-weight: bold;
-            text-decoration: none;
-        }
-
-        .match-note {
-            display: inline-block;
-            margin-left: 6px;
-            padding: 3px 8px;
-            border-radius: 999px;
-            background: #dcfce7;
-            color: #166534;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
-        .no-topics-note {
-            display: inline-block;
-            margin-left: 6px;
-            padding: 3px 8px;
-            border-radius: 999px;
-            background: #fff7ed;
-            color: #9a3412;
-            font-size: 12px;
-            font-weight: bold;
-        }
-
     </style>
 </head>
-
 <body>
-
-<div class="topbar">
-    GAF Conference Hub
-</div>
+<div class="topbar">GAF Conference Hub</div>
 
 <div class="container">
+    <div class="header-card">
+        <h1>Assign reviewers</h1>
+        <p class="subtitle">Assign content reviewers to this paper.</p>
+    </div>
 
-    <h1>Assign reviewers{% if selected_submission %}: {{ selected_submission.title }}{% endif %}</h1>
-
-    {% if selected_submission %}
-        <p class="empty">You are assigning reviewers only for the selected paper.</p>
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message">{{ message }}</div>
+        {% endfor %}
     {% endif %}
 
-    {% for item in submission_data %}
+    {% if submission %}
         <div class="paper-card">
+            <div class="paper-code">Paper ID: {{ submission.paper_code }}</div>
+            <div class="paper-title">{{ submission.title }}</div>
 
-            <div class="paper-title">
-                {{ item.submission.title }}
+            <div class="meta-grid">
+                <div class="meta-box">
+                    <div class="meta-label">Database ID</div>
+                    <div class="meta-value">{{ submission.id }}</div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">Status</div>
+                    <div class="meta-value">{{ submission.get_status_display }}</div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">First author</div>
+                    <div class="meta-value">{{ submission.first_author }}</div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">Submitted by</div>
+                    <div class="meta-value">{{ submission.author.username }}</div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">Primary topic</div>
+                    <div class="meta-value">
+                        {% if submission.topic %}
+                            {{ submission.topic.code }} — {{ submission.topic.title }}
+                        {% else %}
+                            No topic selected
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="meta-box">
+                    <div class="meta-label">Secondary topic</div>
+                    <div class="meta-value">
+                        {% if submission.secondary_topic %}
+                            {{ submission.secondary_topic.code }} — {{ submission.secondary_topic.title }}
+                        {% else %}
+                            No secondary topic
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="meta-box" style="grid-column:1/-1;">
+                    <div class="meta-label">Co-authors</div>
+                    <div class="meta-value">
+                        {% if submission.coauthors %}{{ submission.coauthors }}{% else %}No co-authors{% endif %}
+                    </div>
+                </div>
+                <div class="meta-box" style="grid-column:1/-1;">
+                    <div class="meta-label">Keywords</div>
+                    <div class="meta-value">
+                        {% if submission.keywords %}{{ submission.keywords }}{% else %}No keywords{% endif %}
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div class="meta">
-                <strong>Author:</strong>
-                {{ item.submission.author.username }}
-                <br>
-
-                <strong>Topics:</strong>
-                {% for topic in item.submission.topic_list %}
-                    {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
-                {% empty %}
-                    No topic selected
-                {% endfor %}
-                <br>
-
-                {% if item.submission.keywords %}
-                    <strong>Keywords:</strong>
-                    {{ item.submission.keywords }}
-                    <br>
-                {% endif %}
-
-                <strong>Status:</strong>
-                {{ item.submission.get_status_display }}
-            </div>
-
-            <div class="section-title">
-                Current assignments
-            </div>
-
-            {% if item.assignments %}
-                {% for assignment in item.assignments %}
+        <div class="assign-card">
+            <div class="section-title">Current assignments</div>
+            {% if assignments %}
+                {% for assignment in assignments %}
                     <span class="badge">
-                        {{ assignment.reviewer.username }} — {{ assignment.get_role_display }} — {{ assignment.get_invitation_status_display }}
-                        {% if assignment.accepted_deadline %} — deadline {{ assignment.accepted_deadline|date:"d.m.Y." }}{% elif assignment.proposed_deadline %} — proposed {{ assignment.proposed_deadline|date:"d.m.Y." }}{% endif %}
+                        {{ assignment.reviewer.username }} — {{ assignment.get_role_display }}
+                        {% if assignment.invitation_status %} — {{ assignment.invitation_status|capfirst }}{% endif %}
                     </span>
                 {% endfor %}
             {% else %}
-                <div class="empty">
-                    No reviewers assigned yet.
-                </div>
+                <div class="empty">No reviewers assigned yet.</div>
             {% endif %}
+        </div>
 
-            <div class="section-title">
-                Suggested reviewers for this topic
-            </div>
-
-            {% if item.suggested_reviewers %}
+        <div class="assign-card">
+            <div class="section-title">Suggested reviewers for this topic</div>
+            {% if suggested_reviewers %}
                 <form method="post">
                     {% csrf_token %}
-
-                    <input type="hidden"
-                           name="submission_id"
-                           value="{{ item.submission.id }}">
-
+                    <input type="hidden" name="submission_id" value="{{ submission.id }}">
                     <select name="reviewer_role_id" required>
                         <option value="">Select reviewer</option>
-
-                        {% for reviewer_role in item.suggested_reviewers %}
+                        {% for reviewer_role in suggested_reviewers %}
                             <option value="{{ reviewer_role.id }}">
-                                {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }}
-                                — match: {{ reviewer_role.match_count }} topic(s)
-                                — expertise: {{ reviewer_role.expertise_labels }}
+                                {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — Topics:
+                                {% for topic in reviewer_role.topics.all %}
+                                    {{ topic.code }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    not selected
+                                {% endfor %}
                             </option>
                         {% endfor %}
                     </select>
-
-                    <div class="deadline-row">
-                        <input type="date" name="proposed_deadline">
-                        <input type="number" name="review_days" min="1" value="10" style="min-width:120px;">
-                        <span class="help">Choose a proposed deadline date, or leave date empty and use number of days.</span>
-                    </div>
-
-                    <button type="submit">
-                        Send invitation
-                    </button>
+                    <input type="date" name="proposed_deadline">
+                    <button type="submit">Send invitation</button>
                 </form>
             {% else %}
-                <div class="empty">
-                    No reviewer has selected a matching expertise topic yet.
-                </div>
+                <div class="empty">No suggested reviewers for this topic.</div>
             {% endif %}
+        </div>
 
-            <div class="section-title">
-                Or assign any reviewer
+        <div class="assign-card">
+            <div class="section-title">Or assign any reviewer</div>
+            {% if all_reviewers %}
+                <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="submission_id" value="{{ submission.id }}">
+                    <select name="reviewer_role_id" required>
+                        <option value="">Select reviewer</option>
+                        {% for reviewer_role in all_reviewers %}
+                            <option value="{{ reviewer_role.id }}">
+                                {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — Topics:
+                                {% for topic in reviewer_role.topics.all %}
+                                    {{ topic.code }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    not selected
+                                {% endfor %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    <input type="date" name="proposed_deadline">
+                    <button type="submit">Assign</button>
+                </form>
+            {% else %}
+                <div class="empty">There are no content reviewers for this conference.</div>
+            {% endif %}
+        </div>
+    {% elif submission_data %}
+        {% for item in submission_data %}
+            <div class="paper-card">
+                <div class="paper-code">Paper ID: {{ item.submission.paper_code }}</div>
+                <div class="paper-title">{{ item.submission.title }}</div>
+                <p><strong>Status:</strong> {{ item.submission.get_status_display }}</p>
+                <p>
+                    <strong>Topics:</strong>
+                    {% if item.submission.topic %}{{ item.submission.topic.code }}{% endif %}
+                    {% if item.submission.secondary_topic %}, {{ item.submission.secondary_topic.code }}{% endif %}
+                </p>
+
+                <div class="assign-card">
+                    <div class="section-title">Current assignments</div>
+                    {% if item.assignments %}
+                        {% for assignment in item.assignments %}
+                            <span class="badge">{{ assignment.reviewer.username }} — {{ assignment.get_role_display }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <div class="empty">No reviewers assigned yet.</div>
+                    {% endif %}
+                </div>
+
+                <div class="assign-card">
+                    <div class="section-title">Assign reviewer</div>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="submission_id" value="{{ item.submission.id }}">
+                        <select name="reviewer_role_id" required>
+                            <option value="">Select reviewer</option>
+                            {% for reviewer_role in item.all_reviewers %}
+                                <option value="{{ reviewer_role.id }}">
+                                    {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — Topics:
+                                    {% for topic in reviewer_role.topics.all %}
+                                        {{ topic.code }}{% if not forloop.last %}, {% endif %}
+                                    {% empty %}
+                                        not selected
+                                    {% endfor %}
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <input type="date" name="proposed_deadline">
+                        <button type="submit">Assign</button>
+                    </form>
+                </div>
             </div>
-
-            <form method="post">
-                {% csrf_token %}
-
-                <input type="hidden"
-                       name="submission_id"
-                       value="{{ item.submission.id }}">
-
-                <select name="reviewer_role_id" required>
-                    <option value="">Select reviewer</option>
-
-                    {% for reviewer_role in item.all_reviewers %}
-                        <option value="{{ reviewer_role.id }}">
-                            {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }}
-                            {% if reviewer_role.match_count %}
-                                — match: {{ reviewer_role.match_count }} topic(s)
-                            {% elif not reviewer_role.has_topics_selected %}
-                                — topics not selected yet
-                            {% else %}
-                                — no topic match
-                            {% endif %}
-                            — expertise: {{ reviewer_role.expertise_labels }}
-                        </option>
-                    {% endfor %}
-                </select>
-
-                <button type="submit">
-                    Assign
-                </button>
-            </form>
-
+        {% endfor %}
+    {% else %}
+        <div class="paper-card">
+            <p class="empty">There are no submissions available for reviewer assignment.</p>
         </div>
-    {% empty %}
-        <div class="empty">
-            There are no submissions yet.
-        </div>
-    {% endfor %}
+    {% endif %}
 
-    <a href="{% url 'conference_submissions' conference.slug %}">
-        ← Back to submissions
-    </a>
-
+    <div class="back-row">
+        <a class="back-link" href="{% url 'conference_submissions' conference.slug %}">← Back to submissions</a>
+        <a class="back-link" href="{% url 'conference_overview' conference.slug %}">Back to conference</a>
+    </div>
 </div>
-
 </body>
 </html>

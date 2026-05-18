@@ -1952,11 +1952,9 @@ def download_review_paper(request, submission_id):
     extension = Path(submission.full_paper_file.name).suffix.lower()
 
     if extension != ".docx":
-        messages.error(
-            request,
-            "An anonymized reviewer file is not available for this submission. Please contact the conference manager."
-        )
-        return redirect("my_reviews")
+        # Non-DOCX files cannot be anonymized automatically.
+        # Still allow the assigned reviewer to download the available manuscript file.
+        return redirect(submission.full_paper_file.url)
 
     source_path = None
     anonymized_path = None
