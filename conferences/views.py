@@ -386,7 +386,7 @@ def make_decision(request, submission_id):
 
 
 @login_required
-def assign_papers(request, slug):
+def assign_papers(request, slug, submission_id=None):
     conference = get_object_or_404(Conference, slug=slug)
 
     can_assign = ConferenceRole.objects.filter(
@@ -407,6 +407,9 @@ def assign_papers(request, slug):
     ).prefetch_related(
         "review_assignments__reviewer"
     )
+
+    if submission_id is not None:
+        submissions = submissions.filter(id=submission_id)
 
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
@@ -466,6 +469,9 @@ def assign_papers(request, slug):
         submission.status = "under_review"
         submission.save()
 
+        if submission_id is not None:
+            return redirect("assign_papers", slug=conference.slug, submission_id=submission.id)
+
         return redirect("assign_papers", slug=conference.slug)
 
     submission_data = []
@@ -486,6 +492,22 @@ def assign_papers(request, slug):
             "suggested_reviewers": suggested_reviewers,
             "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
+        })
+
+    if submission_id is not None:
+        if not submission_data:
+            messages.error(request, "Submission not found for this conference.")
+            return redirect("conference_submissions", slug=conference.slug)
+
+        selected = submission_data[0]
+
+        return render(request, "conferences/assign_papers.html", {
+            "conference": conference,
+            "submission": selected["submission"],
+            "assignments": selected["assignments"],
+            "suggested_reviewers": selected["suggested_reviewers"],
+            "all_reviewers": selected["all_reviewers"],
+            "submission_data": submission_data,
         })
 
     return render(request, "conferences/assign_papers.html", {
@@ -2057,26 +2079,19 @@ def conference_people(request, slug):
 
         if role in dict(role_options):
             if action == "add":
-                conference_role, created = ConferenceRole.objects.get_or_create(
-                    conference=conference,
-                    user=selected_user,
-                    role=role
-                )
+                role_obj, created = ConferenceRole.objects.get_or_create(
+                conference=conference,
+                user=selected_user,
+                role=role
+        )
 
-                # Send reviewer onboarding/topics selection email
-                # after assigning reviewer role.
-                if created and role == "content_reviewer":
-                    send_conference_role_email(
-                        "reviewer_topics_request",
-                        conference,
-                        selected_user,
-                        request=request,
-                    )
-
-                messages.success(
-                    request,
-                    f"Role '{dict(role_options).get(role, role)}' assigned successfully."
-                )
+            if created and role in ["content_reviewer", "layout_reviewer"]:
+                send_conference_role_email(
+                    "committee_login_info",
+                    conference,
+                    selected_user,
+                    request=request,
+        )
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
