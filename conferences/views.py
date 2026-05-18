@@ -386,7 +386,7 @@ def make_decision(request, submission_id):
 
 
 @login_required
-def assign_papers(request, slug, submission_id=None):
+def assign_papers(request, slug):
     conference = get_object_or_404(Conference, slug=slug)
 
     can_assign = ConferenceRole.objects.filter(
@@ -407,9 +407,6 @@ def assign_papers(request, slug, submission_id=None):
     ).prefetch_related(
         "review_assignments__reviewer"
     )
-
-    if submission_id is not None:
-        submissions = submissions.filter(id=submission_id)
 
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
@@ -469,9 +466,6 @@ def assign_papers(request, slug, submission_id=None):
         submission.status = "under_review"
         submission.save()
 
-        if submission_id is not None:
-            return redirect("assign_papers", slug=conference.slug, submission_id=submission.id)
-
         return redirect("assign_papers", slug=conference.slug)
 
     submission_data = []
@@ -492,22 +486,6 @@ def assign_papers(request, slug, submission_id=None):
             "suggested_reviewers": suggested_reviewers,
             "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
-        })
-
-    if submission_id is not None:
-        if not submission_data:
-            messages.error(request, "Submission not found for this conference.")
-            return redirect("conference_submissions", slug=conference.slug)
-
-        selected = submission_data[0]
-
-        return render(request, "conferences/assign_papers.html", {
-            "conference": conference,
-            "submission": selected["submission"],
-            "assignments": selected["assignments"],
-            "suggested_reviewers": selected["suggested_reviewers"],
-            "all_reviewers": selected["all_reviewers"],
-            "submission_data": submission_data,
         })
 
     return render(request, "conferences/assign_papers.html", {
@@ -914,30 +892,6 @@ def submit_paper(request, slug):
 
                 submission.paper_code = generated_code
 
-                # Save dynamic co-author rows from submit.html.
-                # This fills both legacy text fields and optional JSONField
-                # so dashboards and all email templates can find co-authors reliably.
-                parsed_coauthors = form.cleaned_data.get("parsed_coauthors", [])
-
-                submission.coauthors = "\n".join(
-                    item.get("name", "").strip()
-                    for item in parsed_coauthors
-                    if item.get("name", "").strip()
-                )
-                submission.coauthor_emails = "\n".join(
-                    item.get("email", "").strip()
-                    for item in parsed_coauthors
-                    if item.get("email", "").strip()
-                )
-                submission.coauthor_countries = "\n".join(
-                    item.get("country", "").strip()
-                    for item in parsed_coauthors
-                    if item.get("country", "").strip()
-                )
-
-                if hasattr(submission, "coauthors_data"):
-                    submission.coauthors_data = parsed_coauthors
-
                 submission.save()
 
                 uploaded_file = request.FILES.get("full_paper_file")
@@ -1044,6 +998,7 @@ def submit_paper(request, slug):
                             os.remove(anonymized_path)
 
                 send_event_email("paper_submitted", submission, request=request)
+                send_event_email("coauthor_submission_confirmation", submission, request=request)
 
                 messages.success(request, "Paper submitted successfully.")
                 return redirect("my_submissions")
@@ -2080,18 +2035,23 @@ def conference_people(request, slug):
         if role in dict(role_options):
             if action == "add":
                 role_obj, created = ConferenceRole.objects.get_or_create(
-                conference=conference,
-                user=selected_user,
-                role=role
-        )
+                    conference=conference,
+                    user=selected_user,
+                    role=role
+                )
 
-            if created and role in ["content_reviewer", "layout_reviewer"]:
-                send_conference_role_email(
-                    "committee_login_info",
-                    conference,
-                    selected_user,
-                    request=request,
-        )
+                if created and role in ["content_reviewer", "layout_reviewer"]:
+                    send_conference_role_email(
+                        "committee_login_info",
+                        conference,
+                        selected_user,
+                        request=request,
+                    )
+
+                if created:
+                    messages.success(request, "Conference role assigned successfully.")
+                else:
+                    messages.info(request, "This user already has that conference role.")
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
