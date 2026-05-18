@@ -321,6 +321,7 @@
             <form method="post">
                 {% csrf_token %}
 
+                <input type="hidden" name="submission_id" value="{{ submission.id }}">
                 <select name="reviewer_role_id" required>
                     <option value="">Select reviewer</option>
 
@@ -336,6 +337,7 @@
                     {% endfor %}
                 </select>
 
+                <input type="date" name="proposed_deadline" style="padding:13px 14px;border-radius:10px;border:1px solid #d1d5db;font-size:15px;">
                 <button type="submit">Assign reviewer</button>
             </form>
         {% else %}
@@ -352,6 +354,7 @@
             <form method="post">
                 {% csrf_token %}
 
+                <input type="hidden" name="submission_id" value="{{ submission.id }}">
                 <select name="reviewer_role_id" required>
                     <option value="">Select reviewer</option>
 
@@ -367,6 +370,7 @@
                     {% endfor %}
                 </select>
 
+                <input type="date" name="proposed_deadline" style="padding:13px 14px;border-radius:10px;border:1px solid #d1d5db;font-size:15px;">
                 <button type="submit">Assign reviewer</button>
             </form>
         {% else %}

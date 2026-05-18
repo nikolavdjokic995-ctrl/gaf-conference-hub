@@ -373,36 +373,43 @@ def assign_papers(request, slug, submission_id=None):
     if not can_assign:
         return redirect("/")
 
-    submissions = Submission.objects.filter(
-        conference=conference
-    ).select_related(
-        "author",
-        "topic",
-        "secondary_topic"
-    ).prefetch_related(
-        "review_assignments__reviewer"
-    )
-
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
         role="content_reviewer"
-    ).select_related("user").prefetch_related("topics")
+    ).select_related(
+        "user"
+    ).prefetch_related(
+        "topics"
+    ).order_by(
+        "user__first_name",
+        "user__last_name",
+        "user__username"
+    )
 
     if request.method == "POST":
-        submission_id = request.POST.get("submission_id")
+        posted_submission_id = request.POST.get("submission_id") or submission_id
         reviewer_role_id = request.POST.get("reviewer_role_id")
         proposed_deadline = request.POST.get("proposed_deadline")
 
+        if not posted_submission_id:
+            messages.error(request, "No paper was selected for reviewer assignment.")
+            return redirect("conference_submissions", slug=conference.slug)
+
+        if not reviewer_role_id:
+            messages.error(request, "Please select a reviewer before assigning.")
+            return redirect("assign_papers", slug=conference.slug, submission_id=posted_submission_id)
+
         submission = get_object_or_404(
             Submission,
-            id=submission_id,
+            id=posted_submission_id,
             conference=conference
         )
 
         reviewer_role = get_object_or_404(
             ConferenceRole,
             id=reviewer_role_id,
-            conference=conference
+            conference=conference,
+            role="content_reviewer"
         )
 
         assignment, created = ReviewAssignment.objects.get_or_create(
@@ -414,8 +421,9 @@ def assign_papers(request, slug, submission_id=None):
             }
         )
 
-        if not created and proposed_deadline:
-            assignment.proposed_deadline = proposed_deadline
+        if not created:
+            if proposed_deadline:
+                assignment.proposed_deadline = proposed_deadline
             assignment.invitation_status = "pending"
             assignment.accepted_deadline = None
             assignment.deadline_extension_requested = False
@@ -438,10 +446,48 @@ def assign_papers(request, slug, submission_id=None):
                 request=request,
             )
 
-        submission.status = "under_review"
-        submission.save()
+            messages.success(request, "Reviewer assigned successfully.")
+        else:
+            messages.info(request, "This reviewer was already assigned. The invitation status was reset to pending.")
 
-        return redirect("assign_papers", slug=conference.slug)
+        submission.status = "under_review"
+        submission.save(update_fields=["status", "updated_at"])
+
+        return redirect("assign_papers", slug=conference.slug, submission_id=submission.id)
+
+    submissions = Submission.objects.filter(
+        conference=conference
+    ).select_related(
+        "author",
+        "topic",
+        "secondary_topic"
+    ).prefetch_related(
+        "review_assignments__reviewer"
+    )
+
+    if submission_id is not None:
+        submission = get_object_or_404(
+            submissions,
+            id=submission_id
+        )
+
+        topic_ids = [
+            topic.id
+            for topic in [submission.topic, submission.secondary_topic]
+            if topic
+        ]
+
+        suggested_reviewers = reviewers.filter(
+            topics__id__in=topic_ids
+        ).distinct() if topic_ids else reviewers.none()
+
+        return render(request, "conferences/assign_papers.html", {
+            "conference": conference,
+            "submission": submission,
+            "suggested_reviewers": suggested_reviewers,
+            "all_reviewers": reviewers,
+            "assignments": submission.review_assignments.all(),
+        })
 
     submission_data = []
 
@@ -456,32 +502,11 @@ def assign_papers(request, slug, submission_id=None):
             topics__id__in=topic_ids
         ).distinct() if topic_ids else reviewers.none()
 
-        reviewer_labels = {}
-
-        for reviewer in reviewers:
-            selected_topics = reviewer.topics.all()
-
-            if selected_topics.exists():
-                topics_text = ", ".join(
-                    [
-                        topic.code
-                        for topic in selected_topics
-                    ]
-                )
-            else:
-                topics_text = "no topics selected"
-
-            reviewer_labels[reviewer.id] = (
-                f"{reviewer.user.get_full_name() or reviewer.user.username} "
-                f"— Topics: {topics_text}"
-            )
-
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
             "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
-            "reviewer_labels": reviewer_labels,
         })
 
     return render(request, "conferences/assign_papers.html", {
