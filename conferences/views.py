@@ -2030,11 +2030,26 @@ def conference_people(request, slug):
 
         if role in dict(role_options):
             if action == "add":
-                ConferenceRole.objects.get_or_create(
+                role_obj, created = ConferenceRole.objects.get_or_create(
                     conference=conference,
                     user=selected_user,
                     role=role
                 )
+
+                # Send email 1 every time reviewer/layout reviewer role is assigned.
+                # This gives committee members login instructions and reviewer topics link.
+                if role in ["content_reviewer", "layout_reviewer"]:
+                    send_conference_role_email(
+                        "committee_login_info",
+                        conference,
+                        selected_user,
+                        request=request,
+                    )
+
+                if created:
+                    messages.success(request, "Conference role assigned successfully.")
+                else:
+                    messages.info(request, "This user already has that conference role. Login/topics email was sent again.")
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
