@@ -1598,6 +1598,21 @@ def upload_revision(request, submission_id):
 
             if submission.status == "revised_submitted":
                 send_event_email("revision_uploaded", submission, request=request)
+
+                assignments = ReviewAssignment.objects.filter(
+                    submission=submission,
+                    role="content_reviewer"
+                ).select_related("reviewer")
+
+                for assignment in assignments:
+                    send_event_email(
+                        "rereview_invitation",
+                        submission,
+                        request=request,
+                        reviewer=assignment.reviewer,
+                        assignment=assignment,
+                    )
+
             elif submission.status == "layout_revision_submitted":
                 send_event_email("layout_correction_submitted", submission, request=request)
 
