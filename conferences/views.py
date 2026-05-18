@@ -1451,7 +1451,11 @@ def conference_submissions(request, slug):
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
         role="content_reviewer"
-    ).select_related("user").order_by(
+    ).select_related(
+        "user"
+    ).prefetch_related(
+        "topics"
+    ).order_by(
         "user__first_name",
         "user__last_name",
         "user__username"
