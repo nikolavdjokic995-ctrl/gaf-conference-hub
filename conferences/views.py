@@ -354,6 +354,23 @@ def make_decision(request, submission_id):
             elif status == "rejected":
                 send_event_email("rejected", submission, request=request)
 
+            # Notify accepted reviewers that the final/editor decision has been made.
+            # Template 11: Reviewer notification of editor decision.
+            accepted_assignments = ReviewAssignment.objects.filter(
+                submission=submission,
+                role="content_reviewer",
+                invitation_status="accepted",
+            ).select_related("reviewer")
+
+            for assignment in accepted_assignments:
+                send_event_email(
+                    "reviewer_notification_of_editor_decision",
+                    submission,
+                    request=request,
+                    reviewer=assignment.reviewer,
+                    assignment=assignment,
+                )
+
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
     else:
