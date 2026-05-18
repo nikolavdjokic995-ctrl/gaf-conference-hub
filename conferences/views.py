@@ -137,14 +137,6 @@ def review_invitation_response(request, assignment_id):
 
             assignment.save()
 
-            send_event_email(
-                "review_request_accepted",
-                submission,
-                request=request,
-                reviewer=assignment.reviewer,
-                assignment=assignment,
-            )
-
             messages.success(
                 request,
                 "Review invitation accepted successfully."
@@ -354,23 +346,6 @@ def make_decision(request, submission_id):
             elif status == "rejected":
                 send_event_email("rejected", submission, request=request)
 
-            # Notify accepted reviewers that the final/editor decision has been made.
-            # Template 11: Reviewer notification of editor decision.
-            accepted_assignments = ReviewAssignment.objects.filter(
-                submission=submission,
-                role="content_reviewer",
-                invitation_status="accepted",
-            ).select_related("reviewer")
-
-            for assignment in accepted_assignments:
-                send_event_email(
-                    "reviewer_notification_of_editor_decision",
-                    submission,
-                    request=request,
-                    reviewer=assignment.reviewer,
-                    assignment=assignment,
-                )
-
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
     else:
@@ -481,11 +456,32 @@ def assign_papers(request, slug):
             topics__id__in=topic_ids
         ).distinct() if topic_ids else reviewers.none()
 
+        reviewer_labels = {}
+
+        for reviewer in reviewers:
+            selected_topics = reviewer.topics.all()
+
+            if selected_topics.exists():
+                topics_text = ", ".join(
+                    [
+                        topic.code
+                        for topic in selected_topics
+                    ]
+                )
+            else:
+                topics_text = "no topics selected"
+
+            reviewer_labels[reviewer.id] = (
+                f"{reviewer.user.get_full_name() or reviewer.user.username} "
+                f"— Topics: {topics_text}"
+            )
+
         submission_data.append({
             "submission": submission,
             "suggested_reviewers": suggested_reviewers,
             "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
+            "reviewer_labels": reviewer_labels,
         })
 
     return render(request, "conferences/assign_papers.html", {
@@ -2034,24 +2030,11 @@ def conference_people(request, slug):
 
         if role in dict(role_options):
             if action == "add":
-                role_obj, created = ConferenceRole.objects.get_or_create(
+                ConferenceRole.objects.get_or_create(
                     conference=conference,
                     user=selected_user,
                     role=role
                 )
-
-                if created and role in ["content_reviewer", "layout_reviewer"]:
-                    send_conference_role_email(
-                        "committee_login_info",
-                        conference,
-                        selected_user,
-                        request=request,
-                    )
-
-                if created:
-                    messages.success(request, "Conference role assigned successfully.")
-                else:
-                    messages.info(request, "This user already has that conference role.")
 
             elif action == "remove":
                 ConferenceRole.objects.filter(
