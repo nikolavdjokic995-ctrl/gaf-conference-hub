@@ -28,6 +28,55 @@ def split_emails(value):
     return clean
 
 
+def normalize_email(email):
+    """Normalize an email address for safe deduplication."""
+    return (email or "").strip().lower()
+
+
+def add_unique_email(target, email):
+    """Append one email only if it is valid and not already present."""
+    email = (email or "").strip()
+    if "@" not in email:
+        return
+
+    existing = {normalize_email(item) for item in target}
+    if normalize_email(email) not in existing:
+        target.append(email)
+
+
+def get_author_emails(submission, include_first_author=True, include_coauthors=True):
+    """Return stable author recipient list from all available submission fields.
+
+    This is the single source of truth for author/co-author recipients.
+    It supports:
+    - first_author_email
+    - submitting user email
+    - coauthors_data JSON/list
+    - legacy coauthor_emails textarea
+    """
+    recipients = []
+
+    if not submission:
+        return recipients
+
+    if include_first_author:
+        add_unique_email(recipients, getattr(submission, "first_author_email", ""))
+        if getattr(submission, "author", None):
+            add_unique_email(recipients, getattr(submission.author, "email", ""))
+
+    if include_coauthors:
+        for item in structured_coauthors(submission):
+            if isinstance(item, dict):
+                add_unique_email(recipients, item.get("email", ""))
+
+        # Always also read the legacy textarea field as fallback/additional source.
+        # This fixes cases where coauthors_data is empty or incomplete.
+        for email in split_emails(getattr(submission, "coauthor_emails", "")):
+            add_unique_email(recipients, email)
+
+    return recipients
+
+
 def structured_coauthors(submission):
     """Return co-author dictionaries from JSONField, with legacy fallback."""
     if not submission:
@@ -123,8 +172,11 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
     submitting_author_email = submission.author.email if submission and submission.author else ""
     all_authors = [first_author or submitting_author_name] + coauthors
     all_authors = [name for name in all_authors if name]
-    all_author_emails = [first_author_email or submitting_author_email] + coauthor_emails
-    all_author_emails = [email for email in all_author_emails if email]
+    all_author_emails = get_author_emails(
+        submission,
+        include_first_author=True,
+        include_coauthors=True,
+    ) if submission else []
 
     article_type = getattr(submission, "article_type", "") if submission else ""
     if article_type == "research_paper":
@@ -234,51 +286,41 @@ def build_email_bodies(body):
 
 def recipients_for_template(template, submission=None, reviewer=None):
     recipients = []
-    if submission:
-        if template.send_to_author:
-            if getattr(submission, "first_author_email", ""):
-                recipients.append(submission.first_author_email)
-            elif submission.author and submission.author.email:
-                recipients.append(submission.author.email)
-        if template.send_to_coauthors:
-            coauthor_items = structured_coauthors(submission)
-            coauthor_emails = [
-                item.get("email", "").strip()
-                for item in coauthor_items
-                if item.get("email", "").strip()
-            ]
 
-            if coauthor_emails:
-                recipients.extend(coauthor_emails)
-            else:
-                recipients.extend(split_emails(submission.coauthor_emails))
+    if submission:
+        # Centralized author/co-author recipient logic.
+        # Every template checkbox now uses the same source of truth,
+        # so co-authors are handled consistently across all workflow emails.
+        author_recipients = get_author_emails(
+            submission,
+            include_first_author=template.send_to_author,
+            include_coauthors=template.send_to_coauthors,
+        )
+        for email in author_recipients:
+            add_unique_email(recipients, email)
 
         conference = submission.conference
+
         if template.send_to_managers:
-            recipients.extend(
-                ConferenceRole.objects.filter(
-                    conference=conference,
-                    role="manager",
-                    user__email__gt=""
-                ).values_list("user__email", flat=True)
-            )
+            for email in ConferenceRole.objects.filter(
+                conference=conference,
+                role="manager",
+                user__email__gt=""
+            ).values_list("user__email", flat=True):
+                add_unique_email(recipients, email)
+
         if template.send_to_layout_reviewers:
-            recipients.extend(
-                ConferenceRole.objects.filter(
-                    conference=conference,
-                    role="layout_reviewer",
-                    user__email__gt=""
-                ).values_list("user__email", flat=True)
-            )
-    if reviewer and template.send_to_reviewer and reviewer.email:
-        recipients.append(reviewer.email)
+            for email in ConferenceRole.objects.filter(
+                conference=conference,
+                role="layout_reviewer",
+                user__email__gt=""
+            ).values_list("user__email", flat=True):
+                add_unique_email(recipients, email)
 
-    clean = []
-    for email in recipients:
-        if email and email not in clean:
-            clean.append(email)
-    return clean
+    if reviewer and template.send_to_reviewer:
+        add_unique_email(recipients, getattr(reviewer, "email", ""))
 
+    return recipients
 
 def send_event_email(event, submission, request=None, reviewer=None, extra=None, assignment=None):
     template = EmailTemplate.objects.filter(
