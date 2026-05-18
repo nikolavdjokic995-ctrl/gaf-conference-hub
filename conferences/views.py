@@ -2079,7 +2079,12 @@ def conference_people(request, slug):
 
     roles = ConferenceRole.objects.filter(
         conference=conference
-    ).select_related("user", "user__profile")
+    ).select_related(
+        "user",
+        "user__profile"
+    ).prefetch_related(
+        "topics"
+    )
 
     role_map = {}
     for conference_role in roles:
