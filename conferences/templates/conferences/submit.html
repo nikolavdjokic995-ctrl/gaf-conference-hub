@@ -563,6 +563,12 @@
 
                     {{ form.coauthors_json }}
 
+                    <div id="legacyCoauthorsFields" style="display:none;">
+                        {{ form.coauthors }}
+                        {{ form.coauthor_emails }}
+                        {{ form.coauthor_countries }}
+                    </div>
+
                     <div class="info-box">
                         ℹ️ Each co-author now has separate fields for name, email and country. All authors will receive conference emails correctly.
                     </div>
@@ -859,6 +865,20 @@
             .filter(item => item.name || item.email || item.country);
 
         coauthorsJsonInput.value = JSON.stringify(data);
+
+        const legacyNames = document.getElementById("id_coauthors");
+        const legacyEmails = document.getElementById("id_coauthor_emails");
+        const legacyCountries = document.getElementById("id_coauthor_countries");
+
+        if (legacyNames) {
+            legacyNames.value = data.map(item => item.name).filter(Boolean).join("\n");
+        }
+        if (legacyEmails) {
+            legacyEmails.value = data.map(item => item.email).filter(Boolean).join("\n");
+        }
+        if (legacyCountries) {
+            legacyCountries.value = data.map(item => item.country).filter(Boolean).join("\n");
+        }
     }
 
     if (addCoauthorBtn) {

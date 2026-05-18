@@ -892,6 +892,30 @@ def submit_paper(request, slug):
 
                 submission.paper_code = generated_code
 
+                # Save dynamic co-author rows from submit.html.
+                # This fills both legacy text fields and optional JSONField
+                # so dashboards and all email templates can find co-authors reliably.
+                parsed_coauthors = form.cleaned_data.get("parsed_coauthors", [])
+
+                submission.coauthors = "\n".join(
+                    item.get("name", "").strip()
+                    for item in parsed_coauthors
+                    if item.get("name", "").strip()
+                )
+                submission.coauthor_emails = "\n".join(
+                    item.get("email", "").strip()
+                    for item in parsed_coauthors
+                    if item.get("email", "").strip()
+                )
+                submission.coauthor_countries = "\n".join(
+                    item.get("country", "").strip()
+                    for item in parsed_coauthors
+                    if item.get("country", "").strip()
+                )
+
+                if hasattr(submission, "coauthors_data"):
+                    submission.coauthors_data = parsed_coauthors
+
                 submission.save()
 
                 uploaded_file = request.FILES.get("full_paper_file")
@@ -998,7 +1022,6 @@ def submit_paper(request, slug):
                             os.remove(anonymized_path)
 
                 send_event_email("paper_submitted", submission, request=request)
-                send_event_email("coauthor_submission_confirmation", submission, request=request)
 
                 messages.success(request, "Paper submitted successfully.")
                 return redirect("my_submissions")

@@ -177,6 +177,60 @@ class SubmissionForm(forms.ModelForm):
         return raw
 
 
+    def clean(self):
+        cleaned_data = super().clean()
+        raw_coauthors = cleaned_data.get("coauthors_json", "[]") or "[]"
+
+        parsed = cleaned_data.get("parsed_coauthors")
+
+        if parsed is None:
+            import json
+
+            try:
+                data = json.loads(raw_coauthors)
+            except Exception:
+                data = []
+
+            parsed = []
+
+            for item in data:
+                if not isinstance(item, dict):
+                    continue
+
+                name = str(item.get("name", "")).strip()
+                email = str(item.get("email", "")).strip()
+                country = str(item.get("country", "")).strip()
+
+                if name or email or country:
+                    parsed.append({
+                        "name": name,
+                        "email": email,
+                        "country": country,
+                    })
+
+        cleaned_data["parsed_coauthors"] = parsed
+
+        # Populate legacy fields too. The Submission model and older templates
+        # still read these text fields in dashboards and email workflows.
+        cleaned_data["coauthors"] = "\n".join(
+            item.get("name", "").strip()
+            for item in parsed
+            if item.get("name", "").strip()
+        )
+        cleaned_data["coauthor_emails"] = "\n".join(
+            item.get("email", "").strip()
+            for item in parsed
+            if item.get("email", "").strip()
+        )
+        cleaned_data["coauthor_countries"] = "\n".join(
+            item.get("country", "").strip()
+            for item in parsed
+            if item.get("country", "").strip()
+        )
+
+        return cleaned_data
+
+
     def clean_abstract(self):
         abstract = self.cleaned_data.get("abstract", "")
         words = [word for word in abstract.split() if word.strip()]
