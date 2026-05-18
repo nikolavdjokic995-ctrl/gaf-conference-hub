@@ -432,6 +432,12 @@ def assign_papers(request, slug):
                 reviewer=reviewer_role.user,
             )
 
+            send_event_email(
+                "review_initiated",
+                submission,
+                request=request,
+            )
+
         submission.status = "under_review"
         submission.save()
 
@@ -1392,6 +1398,12 @@ def conference_submissions(request, slug):
                 submission,
                 request=request,
                 reviewer=reviewer_role.user,
+            )
+
+            send_event_email(
+                "review_initiated",
+                submission,
+                request=request,
             )
             messages.success(request, "Reviewer assigned successfully.")
         else:
