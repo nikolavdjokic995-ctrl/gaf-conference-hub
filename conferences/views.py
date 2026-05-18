@@ -2057,10 +2057,25 @@ def conference_people(request, slug):
 
         if role in dict(role_options):
             if action == "add":
-                ConferenceRole.objects.get_or_create(
+                conference_role, created = ConferenceRole.objects.get_or_create(
                     conference=conference,
                     user=selected_user,
                     role=role
+                )
+
+                # Send reviewer onboarding/topics selection email
+                # after assigning reviewer role.
+                if created and role == "content_reviewer":
+                    send_conference_role_email(
+                        "reviewer_topics_request",
+                        conference,
+                        selected_user,
+                        request=request,
+                    )
+
+                messages.success(
+                    request,
+                    f"Role '{dict(role_options).get(role, role)}' assigned successfully."
                 )
 
             elif action == "remove":
