@@ -59,19 +59,19 @@
         }
 
         .paper-col {
-            width: 30%;
+            width: 34%;
         }
 
         .authors-col {
-            width: 14%;
-        }
-
-        .topic-col {
             width: 16%;
         }
 
+        .topic-col {
+            width: 18%;
+        }
+
         .status-col {
-            width: 9%;
+            width: 10%;
         }
 
         .submitted-col {
@@ -83,7 +83,7 @@
         }
 
         .actions-col {
-            width: 14%;
+            width: 16%;
         }
 
         .paper-title {
@@ -236,7 +236,6 @@
                 <th class="paper-col">Paper</th>
                 <th class="authors-col">Authors</th>
                 <th class="topic-col">Topic</th>
-                <th>Assigned reviewers</th>
                 <th class="status-col">Status</th>
                 <th class="submitted-col">Submitted</th>
                 <th class="days-col">Days since submit</th>
@@ -295,53 +294,6 @@
 
                     </td>
 
-                    <td>
-
-                        {% with assignments=submission.review_assignments.all %}
-                            {% if assignments %}
-                                {% for assignment in assignments %}
-                                    <div style="margin-bottom:10px;">
-                                        <span style="
-                                            display:inline-block;
-                                            background:#dcfce7;
-                                            color:#166534;
-                                            padding:6px 10px;
-                                            border-radius:999px;
-                                            font-weight:bold;
-                                            font-size:13px;
-                                        ">
-                                            {{ assignment.reviewer.username }}
-                                        </span>
-
-                                        {% if assignment.final_deadline %}
-                                            <div style="
-                                                margin-top:6px;
-                                                font-size:12px;
-                                                color:#555;
-                                            ">
-                                                Deadline:
-                                                {{ assignment.final_deadline|date:"d.m.Y." }}
-                                            </div>
-                                        {% endif %}
-
-                                        <div style="
-                                            margin-top:4px;
-                                            font-size:12px;
-                                            color:#64748b;
-                                        ">
-                                            {{ assignment.get_invitation_status_display }}
-                                        </div>
-                                    </div>
-                                {% endfor %}
-                            {% else %}
-                                <span style="color:#777;">
-                                    No reviewer assigned.
-                                </span>
-                            {% endif %}
-                        {% endwith %}
-
-                    </td>
-
                     <td class="status-col">
 
                         <span class="status status-{{ submission.status }}">
@@ -376,45 +328,10 @@
                                 </a>
                             {% endif %}
 
-                            <form method="post"
-                                style="display:flex; flex-direction:column; gap:8px; width:100%;">
-
-                                {% csrf_token %}
-                                
-                                <input type="hidden" name="submission_id" value="{{ submission.id }}">
-
-                                <select name="reviewer_role_id"
-                                        required
-                                        style="
-                                            padding:10px;
-                                            border:1px solid #d1d5db;
-                                            border-radius:8px;
-                                        ">
-                                    <option value="">Select reviewer</option>
-
-                                    {% for reviewer in reviewers %}
-                                        <option value="{{ reviewer.id }}">
-                                            {{ reviewer.user.get_full_name|default:reviewer.user.username }}
-                                        </option>
-                                    {% endfor %}
-                                </select>
-
-                                <input type="date"
-                                       name="proposed_deadline"
-                                       required
-                                       style="
-                                            padding:10px;
-                                            border:1px solid #d1d5db;
-                                            border-radius:8px;
-                                       ">
-
-                                <button type="submit"
-                                        class="assign-btn"
-                                        style="border:none; cursor:pointer;">
-                                    Assign
-                                </button>
-
-                            </form>
+                            <a class="assign-btn"
+                               href="{% url 'assign_paper_single' conference.slug submission.id %}">
+                                Assign reviewers
+                            </a>
 
                             <a class="delete-btn"
                                href="/submission/{{ submission.id }}/delete/">
