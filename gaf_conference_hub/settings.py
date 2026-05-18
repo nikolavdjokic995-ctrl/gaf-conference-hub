@@ -187,3 +187,11 @@ EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", 10))
+
+# =========================
+# Upload size limits
+# =========================
+# 50 MB upload limit for manuscript files.
+FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
+DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
+MAX_UPLOAD_SIZE = 50 * 1024 * 1024
