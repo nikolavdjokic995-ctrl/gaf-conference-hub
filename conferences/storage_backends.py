@@ -1,15 +1,20 @@
 import os
-from storages.backends.s3boto3 import S3Boto3Storage
+
+from storages.backends.s3 import S3Storage
 
 
-class HybridDocumentStorage(S3Boto3Storage):
-    bucket_name = os.environ.get("R2_BUCKET_NAME", "gaf-conference-papers")
+class HybridDocumentStorage(S3Storage):
     access_key = os.environ.get("R2_ACCESS_KEY_ID")
     secret_key = os.environ.get("R2_SECRET_ACCESS_KEY")
+    bucket_name = os.environ.get("R2_BUCKET_NAME")
+
     endpoint_url = os.environ.get("R2_ENDPOINT_URL")
+
     region_name = "auto"
 
-    file_overwrite = False
     default_acl = None
-    querystring_auth = True
-    custom_domain = False
+    file_overwrite = False
+
+    querystring_auth = False
+
+    addressing_style = "virtual"
