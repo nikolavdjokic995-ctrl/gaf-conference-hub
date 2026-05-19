@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("conferences", "0024_submission_revision_workflow"),
+        ('conferences', '0024_submission_revision_workflow_fixed'),
     ]
 
     operations = [
