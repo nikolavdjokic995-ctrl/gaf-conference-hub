@@ -128,10 +128,11 @@ LOGIN_URL = "/login/"
 
 LOGIN_REDIRECT_URL = "/"
 
+# Keep the default Django file storage local.
+# Paper uploads are handled directly in conferences/views.py using boto3 -> Cloudflare R2.
+# Do not set the default storage to the R2 backend here, because that re-triggers
+# django-storages SSL handshake errors during FileField processing.
 STORAGES = {
-    "default": {
-        "BACKEND": "conferences.storage_backends.HybridDocumentStorage",
-    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
