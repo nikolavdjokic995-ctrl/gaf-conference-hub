@@ -1467,62 +1467,18 @@ def conference_submissions(request, slug):
     )
 
 @login_required
-def reviewer_topics(request, slug):
-    conference = get_object_or_404(Conference, slug=slug)
-
-    reviewer_role = ConferenceRole.objects.filter(
-        conference=conference,
-        user=request.user,
-        role__in=["content_reviewer", "layout_reviewer"]
-    ).first()
-
-    if not reviewer_role:
-        return redirect("conference_overview", slug=conference.slug)
-
-    topics = ConferenceTopic.objects.filter(
-        conference=conference,
-        enabled=True
-    ).order_by("order", "code")
-
-    sidebar_cards = ConferenceSidebarCard.objects.filter(
-        conference=conference,
-        enabled=True
-    ).order_by("order")
-
-    if request.method == "POST":
-        selected_topic_ids = request.POST.getlist("topics")
-        reviewer_role.topics.set(selected_topic_ids)
-        return redirect("reviewer_topics", slug=conference.slug)
-
-    selected_topics = reviewer_role.topics.values_list("id", flat=True)
-
-    return render(request, "conferences/reviewer_topics.html", {
-        "conference": conference,
-        "topics": topics,
-        "selected_topics": selected_topics,
-    })
-
-
-@login_required
 def upload_revision(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
 
     user_email = (request.user.email or "").strip().lower()
-    coauthor_emails = set()
+    coauthor_emails = []
 
-    if getattr(submission, "coauthor_emails", ""):
-        for email in str(submission.coauthor_emails).replace(",", "
-").replace(";", "
-").splitlines():
-            email = email.strip().lower()
-            if email:
-                coauthor_emails.add(email)
-
-    for item in (getattr(submission, "coauthors_data", None) or []):
-        if isinstance(item, dict):
-            email = str(item.get("email", "")).strip().lower()
-            if email:
-                coauthor_emails.add(email)
+    if submission.coauthor_emails:
+        coauthor_emails = [
+            email.strip().lower()
+            for email in str(submission.coauthor_emails).replace(";", ",").split(",")
+            if email.strip()
+        ]
 
     can_upload_revision = (
         submission.author_id == request.user.id
@@ -1535,12 +1491,7 @@ def upload_revision(request, submission_id):
         messages.error(request, "You do not have permission to upload a revision for this submission.")
         return redirect("my_submissions")
 
-    allowed_statuses = [
-        "revision_required",
-        "layout_revision_required",
-    ]
-
-    if submission.status not in allowed_statuses:
+    if submission.status not in ["revision_required", "layout_revision_required"]:
         messages.error(request, "This submission is not currently open for revision upload.")
         return redirect("my_submissions")
 
@@ -1550,78 +1501,32 @@ def upload_revision(request, submission_id):
         if form.is_valid():
             uploaded_file = form.cleaned_data["full_paper_file"]
             extension = Path(uploaded_file.name).suffix.lower()
-            source_path = None
-            anonymized_path = None
 
             try:
-                with tempfile.NamedTemporaryFile(suffix=extension, delete=False) as source_tmp:
-                    for chunk in uploaded_file.chunks():
-                        source_tmp.write(chunk)
-                    source_path = source_tmp.name
-
                 if submission.status == "revision_required":
                     next_round = submission.revision_round or 1
-                    revised_filename = f"{submission.paper_code}-r{next_round}{extension}"
+                    filename = f"{submission.paper_code}-r{next_round}{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.revised_paper_file.save(revised_filename, uploaded_file, save=False)
-
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(f"revisions/{revised_filename}", uploaded_file, save=False)
-
-                    if extension == ".docx":
-                        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
-                            anonymized_path = anonymized_tmp.name
-
-                        anonymize_docx(source_path, anonymized_path)
-
-                        with open(anonymized_path, "rb") as anonymized_file:
-                            submission.anonymized_paper_file.save(
-                                f"{submission.paper_code}-r{next_round}.docx",
-                                File(anonymized_file),
-                                save=False,
-                            )
-
+                    submission.revised_paper_file.save(filename, uploaded_file, save=False)
+                    submission.full_paper_file.save(filename, uploaded_file, save=False)
                     submission.status = "revised_submitted"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
 
                 else:
                     next_round = submission.layout_revision_round or 1
-                    layout_filename = f"{submission.paper_code}-layout-r{next_round}{extension}"
+                    filename = f"{submission.paper_code}-layout-r{next_round}{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.layout_revised_paper_file.save(layout_filename, uploaded_file, save=False)
-
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(f"layout_revisions/{layout_filename}", uploaded_file, save=False)
-
+                    submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
+                    submission.full_paper_file.save(filename, uploaded_file, save=False)
                     submission.status = "layout_revision_submitted"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
                 submission.save()
 
             except Exception as e:
-                print("Revision upload/anonymization error:", e)
+                print("Revision upload error:", e)
                 messages.error(request, f"Revision upload failed: {e}")
                 return redirect("upload_revision", submission_id=submission.id)
-
-            finally:
-                if source_path and os.path.exists(source_path):
-                    os.remove(source_path)
-                if anonymized_path and os.path.exists(anonymized_path):
-                    os.remove(anonymized_path)
 
             if submission.status == "revised_submitted":
                 send_event_email("revision_uploaded", submission, request=request)
