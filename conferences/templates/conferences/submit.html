@@ -535,6 +535,12 @@
                     </h2>
 
                     <div class="field">
+                        <label for="{{ form.first_author_title.id_for_label }}">{{ form.first_author_title.label }}</label>
+                        {{ form.first_author_title }}
+                        {{ form.first_author_title.errors }}
+                    </div>
+
+                    <div class="field">
                         <label for="{{ form.first_author.id_for_label }}">{{ form.first_author.label }}</label>
                         {{ form.first_author }}
                         {{ form.first_author.errors }}
@@ -578,6 +584,7 @@
 
                     <div id="legacyCoauthorsFields" style="display:none;">
                         {{ form.coauthors }}
+                        {{ form.coauthor_titles }}
                         {{ form.coauthor_emails }}
                         {{ form.coauthor_countries }}
                         {{ form.coauthor_affiliations }}
@@ -585,7 +592,7 @@
                     </div>
 
                     <div class="info-box">
-                        ℹ️ Each co-author now has separate fields for name, email, country, affiliation and ORCID. All authors will receive conference emails correctly.
+                        ℹ️ Each co-author now has separate fields for title, name, email, country, affiliation and ORCID. All authors will receive conference emails correctly.
                     </div>
 
                 </section>
@@ -830,9 +837,24 @@
         wrapper.style.marginBottom = "14px";
 
         wrapper.innerHTML = `
-            <div class="field">
-                <label>Co-author full name</label>
-                <input type="text" class="coauthor-name" value="${escapeHtml(data.name)}">
+            <div class="field-grid">
+                <div class="field">
+                    <label>Title</label>
+                    <select class="coauthor-title">
+                        <option value="">Select</option>
+                        <option value="Prof. Dr." ${data.title === "Prof. Dr." ? "selected" : ""}>Prof. Dr.</option>
+                        <option value="Assoc. Prof. Dr." ${data.title === "Assoc. Prof. Dr." ? "selected" : ""}>Assoc. Prof. Dr.</option>
+                        <option value="Asst. Prof. Dr." ${data.title === "Asst. Prof. Dr." ? "selected" : ""}>Asst. Prof. Dr.</option>
+                        <option value="Dr." ${data.title === "Dr." ? "selected" : ""}>Dr.</option>
+                        <option value="Mr." ${data.title === "Mr." ? "selected" : ""}>Mr.</option>
+                        <option value="Ms." ${data.title === "Ms." ? "selected" : ""}>Ms.</option>
+                    </select>
+                </div>
+
+                <div class="field">
+                    <label>Co-author full name</label>
+                    <input type="text" class="coauthor-name" value="${escapeHtml(data.name)}">
+                </div>
             </div>
 
             <div class="field-grid">
@@ -843,7 +865,12 @@
 
                 <div class="field">
                     <label>Country</label>
-                    <input type="text" class="coauthor-country" value="${escapeHtml(data.country)}">
+                    <select class="coauthor-country">
+                        <option value="">Select country</option>
+                        {% for code, name in form.first_author_country.field.choices %}
+                            <option value="{{ code }}" ${data.country === "{{ code }}" ? "selected" : ""}>{{ name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
             </div>
 
@@ -869,7 +896,7 @@
             syncCoauthors();
         });
 
-        wrapper.querySelectorAll("input").forEach(input => {
+        wrapper.querySelectorAll("input, select").forEach(input => {
             input.addEventListener("input", syncCoauthors);
         });
 
@@ -881,17 +908,19 @@
 
         const data = Array.from(rows)
             .map(row => ({
+                title: row.querySelector(".coauthor-title").value.trim(),
                 name: row.querySelector(".coauthor-name").value.trim(),
                 email: row.querySelector(".coauthor-email").value.trim(),
                 country: row.querySelector(".coauthor-country").value.trim(),
                 affiliation: row.querySelector(".coauthor-affiliation").value.trim(),
                 orcid: row.querySelector(".coauthor-orcid").value.trim(),
             }))
-            .filter(item => item.name || item.email || item.country || item.affiliation || item.orcid);
+            .filter(item => item.title || item.name || item.email || item.country || item.affiliation || item.orcid);
 
         coauthorsJsonInput.value = JSON.stringify(data);
 
         const legacyNames = document.getElementById("id_coauthors");
+        const legacyTitles = document.getElementById("id_coauthor_titles");
         const legacyEmails = document.getElementById("id_coauthor_emails");
         const legacyCountries = document.getElementById("id_coauthor_countries");
         const legacyAffiliations = document.getElementById("id_coauthor_affiliations");
@@ -899,6 +928,9 @@
 
         if (legacyNames) {
             legacyNames.value = data.map(item => item.name).filter(Boolean).join("\n");
+        }
+        if (legacyTitles) {
+            legacyTitles.value = data.map(item => item.title).filter(Boolean).join("\n");
         }
         if (legacyEmails) {
             legacyEmails.value = data.map(item => item.email).filter(Boolean).join("\n");

@@ -53,8 +53,8 @@
         }
 
         .logo-mark{
-            width:66px;
-            height:66px;
+            width:46px;
+            height:46px;
             object-fit:contain;
             filter:brightness(0) invert(1);
         }
@@ -584,12 +584,15 @@
     <div class="navbar">
 
         <div class="logo-text">
-            <img src="{% static 'conferences/images/logo.png' %}"
-                 class="logo-mark"
-                 alt="GAF Conference Hub">
+            
+                {% load static %}
 
-            <span>GAF Conference Hub</span>
-        </div>
+                <div class="navbar">
+
+                    <div class="logo-text">
+                        <img src="{% static 'conferences/images/logo.png' %}" class="logo-mark" alt="GAF Conference Hub">
+                        <span>GAF Conference Hub</span>
+                </div>
 
         <div class="nav-links">
 
@@ -848,7 +851,7 @@
         </div>
 
         <div class="partner-group">
-            <h2>Supported by</h2>
+            <h2>Co-organizers</h2>
 
             <div class="partners-grid">
                 {% for partner in footer_partners %}
