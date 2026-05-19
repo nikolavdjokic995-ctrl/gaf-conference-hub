@@ -128,11 +128,10 @@ LOGIN_URL = "/login/"
 
 LOGIN_REDIRECT_URL = "/"
 
-# Keep the default Django file storage local.
-# Paper uploads are handled directly in conferences/views.py using boto3 -> Cloudflare R2.
-# Do not set the default storage to the R2 backend here, because that re-triggers
-# django-storages SSL handshake errors during FileField processing.
 STORAGES = {
+    "default": {
+        "BACKEND": "conferences.storage_backends.HybridDocumentStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -181,12 +180,3 @@ EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", 10))
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024
-
-
-# =========================
-# Cloudflare R2 configuration
-# =========================
-R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID", "")
-R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
-R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
-R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
