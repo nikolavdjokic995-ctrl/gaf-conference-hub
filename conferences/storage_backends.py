@@ -5,7 +5,10 @@ from botocore.client import Config
 
 class R2Storage(S3Boto3Storage):
     bucket_name = os.getenv("R2_BUCKET_NAME")
-    endpoint_url = os.getenv("R2_ENDPOINT_URL")
+
+    endpoint_url = (
+        f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com"
+    )
 
     access_key = os.getenv("R2_ACCESS_KEY_ID")
     secret_key = os.getenv("R2_SECRET_ACCESS_KEY")
