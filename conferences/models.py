@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.html import strip_tags
 from html import unescape
-from cloudinary_storage.storage import RawMediaCloudinaryStorage
 from .storage_backends import HybridDocumentStorage
 
 

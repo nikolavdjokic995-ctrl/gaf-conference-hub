@@ -25,7 +25,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'django_countries',
     "conferences",
-    "storages",
+
 ]
 
 
@@ -127,7 +127,6 @@ LOGIN_URL = "/login/"
 
 LOGIN_REDIRECT_URL = "/"
 
-
 STORAGES = {
     "default": {
         "BACKEND": "conferences.storage_backends.HybridDocumentStorage",
@@ -180,20 +179,3 @@ EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", 10))
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024
-# =========================
-# Cloudflare R2 Storage
-# =========================
-
-AWS_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
-AWS_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
-AWS_STORAGE_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
-AWS_S3_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
-AWS_S3_REGION_NAME = "auto"
-
-AWS_S3_SIGNATURE_VERSION = "s3v4"
-AWS_S3_ADDRESSING_STYLE = "path"
-AWS_S3_VERIFY = True
-AWS_QUERYSTRING_AUTH = True
-
-AWS_DEFAULT_ACL = None
-AWS_S3_FILE_OVERWRITE = False
