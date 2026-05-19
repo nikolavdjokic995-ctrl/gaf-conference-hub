@@ -200,6 +200,11 @@ class Submission(models.Model):
         blank=True,
         help_text="Separate co-authors with commas or new lines."
     )
+    
+    coauthor_titles = models.TextField(
+        blank=True,
+        help_text="Enter co-author titles, one per line."
+    )
 
     first_author_email = models.EmailField(
         blank=True,
