@@ -584,15 +584,12 @@
     <div class="navbar">
 
         <div class="logo-text">
-            
-                {% load static %}
+            <img src="{% static 'conferences/images/logo.png' %}"
+                 class="logo-mark"
+                 alt="GAF Conference Hub">
 
-                <div class="navbar">
-
-                    <div class="logo-text">
-                        <img src="{% static 'conferences/images/logo.png' %}" class="logo-mark" alt="GAF Conference Hub">
-                        <span>GAF Conference Hub</span>
-                </div>
+            <span>GAF Conference Hub</span>
+        </div>
 
         <div class="nav-links">
 
@@ -851,7 +848,7 @@
         </div>
 
         <div class="partner-group">
-            <h2>Co-organizers</h2>
+            <h2>Supported by</h2>
 
             <div class="partners-grid">
                 {% for partner in footer_partners %}
