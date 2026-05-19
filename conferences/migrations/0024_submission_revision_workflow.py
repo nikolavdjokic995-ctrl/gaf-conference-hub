@@ -1,6 +1,5 @@
 # Generated manually for revision and layout review workflow
 
-import cloudinary_storage.storage
 from django.db import migrations, models
 
 
