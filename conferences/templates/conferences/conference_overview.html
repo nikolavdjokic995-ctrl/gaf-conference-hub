@@ -207,9 +207,10 @@
             background:transparent !important;
             border:none !important;
             border-radius:0 !important;
-            padding:0 24px !important;
+            padding:0 40px !important;
             display:flex !important;
-            justify-content:center;
+            justify-content:flex-start;
+            align-items:flex-start;
             flex-wrap:wrap;
             gap:18px;
             box-shadow:none !important;
@@ -229,6 +230,7 @@
             background:rgba(255,255,255,0.15);
             text-align:center;
             min-width:190px;
+            box-shadow:0 6px 16px rgba(0,0,0,0.06);
 
         }
 
@@ -385,8 +387,9 @@
             }
 
             .hero-buttons{
-                grid-template-columns:1fr;
+                justify-content:flex-start;
                 margin:{{ conference.overview_hero_buttons_margin_top|default:26 }}px 16px 0;
+                padding:0 !important;
             }
 
             .hero-btn{
