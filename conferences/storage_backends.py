@@ -10,6 +10,7 @@ class R2Storage(S3Boto3Storage):
     access_key = os.getenv("R2_ACCESS_KEY_ID")
     secret_key = os.getenv("R2_SECRET_ACCESS_KEY")
     region_name = "auto"
+    verify = False
 
     file_overwrite = False
     default_acl = None
