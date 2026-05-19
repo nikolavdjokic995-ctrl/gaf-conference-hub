@@ -62,10 +62,10 @@
             list-style: none;
             cursor: pointer;
             padding: 28px;
-            display: flex;
+            display: grid;
+            grid-template-columns: minmax(0, 1fr) 210px 38px;
             align-items: center;
-            justify-content: space-between;
-            gap: 20px;
+            gap: 26px;
         }
 
         .conference-summary::-webkit-details-marker {
@@ -84,6 +84,19 @@
             margin-top: 8px;
             color: #4b5563;
             font-size: 15px;
+        }
+
+        .conference-logo-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .conference-logo {
+            width: 190px;
+            max-height: 125px;
+            object-fit: contain;
+            opacity: 0.92;
         }
 
         .toggle-icon {
@@ -157,7 +170,12 @@
             }
 
             .conference-summary {
+                grid-template-columns: minmax(0, 1fr) 34px;
                 align-items: flex-start;
+            }
+
+            .conference-logo-box {
+                display: none;
             }
 
             .conference-summary h3 {
@@ -214,6 +232,13 @@
                         <h3>{{ conference.plain_title }}</h3>
                         <div class="summary-hint">Click to view conference details</div>
                     </div>
+
+                    <div class="conference-logo-box" aria-hidden="true">
+                        <img class="conference-logo"
+                             src="{% static 'conferences/images/gb_conference_logo.png' %}"
+                             alt="Green Building Conference logo">
+                    </div>
+
                     <div class="toggle-icon">+</div>
                 </summary>
 
