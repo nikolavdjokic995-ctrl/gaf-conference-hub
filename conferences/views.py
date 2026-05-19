@@ -2094,3 +2094,34 @@ def terms_of_use(request):
 
 def privacy_policy(request):
     return render(request, "conferences/privacy_policy.html")
+
+@login_required
+def reviewer_topics(request, slug):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    reviewer_role = get_object_or_404(
+        ConferenceRole,
+        conference=conference,
+        user=request.user,
+        role="content_reviewer"
+    )
+
+    topics = ConferenceTopic.objects.filter(
+        conference=conference,
+        enabled=True
+    ).order_by("order")
+
+    if request.method == "POST":
+        selected_topic_ids = request.POST.getlist("topics")
+        reviewer_role.topics.set(selected_topic_ids)
+
+        messages.success(request, "Reviewer topics updated successfully.")
+        return redirect("reviewer_topics", slug=conference.slug)
+
+    selected_topics = reviewer_role.topics.values_list("id", flat=True)
+
+    return render(request, "conferences/reviewer_topics.html", {
+        "conference": conference,
+        "topics": topics,
+        "selected_topics": selected_topics,
+    })
