@@ -207,6 +207,18 @@ class Submission(models.Model):
         help_text="Country of the first author."
     )
 
+    first_author_affiliation = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Affiliation of the first author."
+    )
+
+    first_author_orcid = models.CharField(
+        max_length=50,
+        blank=True,
+        help_text="ORCID iD of the first author."
+    )
+
     coauthor_emails = models.TextField(
         blank=True,
         help_text="Enter co-author emails, one per line."
@@ -217,10 +229,19 @@ class Submission(models.Model):
         help_text="Enter co-author countries, one per line, in the same order as co-authors."
     )
 
+    coauthor_affiliations = models.TextField(
+        blank=True,
+        help_text="Enter co-author affiliations, one per line, in the same order as co-authors."
+    )
+
+    coauthor_orcids = models.TextField(
+        blank=True,
+        help_text="Enter co-author ORCID iDs, one per line, in the same order as co-authors."
+    )
+
     title = models.CharField(max_length=255)
     abstract = models.TextField(
-        max_length=2500,
-        help_text="Write the abstract directly in this field. Maximum 2500 characters."
+        help_text="Write the abstract directly in this field. Maximum 300 words."
     )
     keywords = models.CharField(
         max_length=255,

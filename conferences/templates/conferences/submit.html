@@ -554,6 +554,19 @@
                         <div class="help">Select the country of the first author. This will be used for conference statistics.</div>
                     </div>
 
+                    <div class="field">
+                        <label for="{{ form.first_author_affiliation.id_for_label }}">{{ form.first_author_affiliation.label }}</label>
+                        {{ form.first_author_affiliation }}
+                        {{ form.first_author_affiliation.errors }}
+                    </div>
+
+                    <div class="field">
+                        <label for="{{ form.first_author_orcid.id_for_label }}">{{ form.first_author_orcid.label }}</label>
+                        {{ form.first_author_orcid }}
+                        {{ form.first_author_orcid.errors }}
+                        <div class="help">Example format: 0000-0000-0000-0000</div>
+                    </div>
+
                     
                     <div id="coauthorsContainer"></div>
 
@@ -567,10 +580,12 @@
                         {{ form.coauthors }}
                         {{ form.coauthor_emails }}
                         {{ form.coauthor_countries }}
+                        {{ form.coauthor_affiliations }}
+                        {{ form.coauthor_orcids }}
                     </div>
 
                     <div class="info-box">
-                        ℹ️ Each co-author now has separate fields for name, email and country. All authors will receive conference emails correctly.
+                        ℹ️ Each co-author now has separate fields for name, email, country, affiliation and ORCID. All authors will receive conference emails correctly.
                     </div>
 
                 </section>
@@ -625,15 +640,6 @@
                         <p>Check that the title, abstract, keywords, authors, topics and uploaded file are correct.</p>
                     </div>
 
-                    <div class="review-box">
-                        <strong>After submission</strong>
-                        <p>Your paper will appear in the judge dashboard and can be assigned to reviewers.</p>
-                    </div>
-
-                    <div class="review-box">
-                        <strong>Important</strong>
-                        <p>You may be asked to submit a revised version after content review or layout review.</p>
-                    </div>
                 </section>
 
                 <div class="review-box" style="border-left:4px solid #16a34a; margin-top:18px;">
@@ -729,11 +735,16 @@
     function updateAbstractCount() {
         if (!abstractField || !abstractCount) return;
 
-        const characters = abstractField.value.length;
+        const words = abstractField.value
+            .trim()
+            .split(/\s+/)
+            .filter(Boolean);
 
-        abstractCount.textContent = characters;
+        const wordCount = abstractField.value.trim() ? words.length : 0;
 
-        abstractCount.style.color = characters > 300 ? "#b91c1c" : "";
+        abstractCount.textContent = wordCount;
+
+        abstractCount.style.color = wordCount > 300 ? "#b91c1c" : "";
     }
 
     function updateKeywordsPreview() {
@@ -836,6 +847,18 @@
                 </div>
             </div>
 
+            <div class="field-grid">
+                <div class="field">
+                    <label>Affiliation</label>
+                    <input type="text" class="coauthor-affiliation" value="${escapeHtml(data.affiliation)}">
+                </div>
+
+                <div class="field">
+                    <label>ORCID iD</label>
+                    <input type="text" class="coauthor-orcid" placeholder="0000-0000-0000-0000" value="${escapeHtml(data.orcid)}">
+                </div>
+            </div>
+
             <button type="button" class="btn-secondary remove-coauthor">
                 Remove
             </button>
@@ -861,14 +884,18 @@
                 name: row.querySelector(".coauthor-name").value.trim(),
                 email: row.querySelector(".coauthor-email").value.trim(),
                 country: row.querySelector(".coauthor-country").value.trim(),
+                affiliation: row.querySelector(".coauthor-affiliation").value.trim(),
+                orcid: row.querySelector(".coauthor-orcid").value.trim(),
             }))
-            .filter(item => item.name || item.email || item.country);
+            .filter(item => item.name || item.email || item.country || item.affiliation || item.orcid);
 
         coauthorsJsonInput.value = JSON.stringify(data);
 
         const legacyNames = document.getElementById("id_coauthors");
         const legacyEmails = document.getElementById("id_coauthor_emails");
         const legacyCountries = document.getElementById("id_coauthor_countries");
+        const legacyAffiliations = document.getElementById("id_coauthor_affiliations");
+        const legacyOrcids = document.getElementById("id_coauthor_orcids");
 
         if (legacyNames) {
             legacyNames.value = data.map(item => item.name).filter(Boolean).join("\n");
@@ -878,6 +905,12 @@
         }
         if (legacyCountries) {
             legacyCountries.value = data.map(item => item.country).filter(Boolean).join("\n");
+        }
+        if (legacyAffiliations) {
+            legacyAffiliations.value = data.map(item => item.affiliation).filter(Boolean).join("\n");
+        }
+        if (legacyOrcids) {
+            legacyOrcids.value = data.map(item => item.orcid).filter(Boolean).join("\n");
         }
     }
 

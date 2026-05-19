@@ -81,6 +81,22 @@ class SubmissionForm(forms.ModelForm):
         })
     )
 
+    coauthor_affiliations = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Enter co-author affiliations, one per line, in the same order as co-authors.",
+        })
+    )
+
+    coauthor_orcids = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Enter co-author ORCID iDs, one per line, in the same order as co-authors.",
+        })
+    )
+
     coauthors_json = forms.CharField(
         required=False,
         widget=forms.HiddenInput()
@@ -101,9 +117,13 @@ class SubmissionForm(forms.ModelForm):
             "first_author",
             "first_author_email",
             "first_author_country",
+            "first_author_affiliation",
+            "first_author_orcid",
             "coauthors",
             "coauthor_emails",
             "coauthor_countries",
+            "coauthor_affiliations",
+            "coauthor_orcids",
             "topic",
             "secondary_topic",
             "full_paper_file",
@@ -119,9 +139,13 @@ class SubmissionForm(forms.ModelForm):
             "first_author": "First author (First Name Last Name)",
             "first_author_email": "First author email",
             "first_author_country": "First author country",
+            "first_author_affiliation": "First author affiliation",
+            "first_author_orcid": "First author ORCID iD",
             "coauthors": "Co-authors (First Name Last Name)",
             "coauthor_emails": "Co-author email addresses",
             "coauthor_countries": "Co-author countries",
+            "coauthor_affiliations": "Co-author affiliations",
+            "coauthor_orcids": "Co-author ORCID iDs",
             "topic": "Primary conference topic",
             "secondary_topic": "Second conference topic (optional)",
             "full_paper_file": "Full paper file",
@@ -142,6 +166,12 @@ class SubmissionForm(forms.ModelForm):
             "coauthor_emails": forms.Textarea(attrs={
                 "rows": 4,
                 "placeholder": "Enter co-author emails, one per line",
+            }),
+            "first_author_affiliation": forms.TextInput(attrs={
+                "placeholder": "Institution / university / organization",
+            }),
+            "first_author_orcid": forms.TextInput(attrs={
+                "placeholder": "0000-0000-0000-0000",
             }),
         }
 
@@ -165,12 +195,16 @@ class SubmissionForm(forms.ModelForm):
             name = str(item.get("name", "")).strip()
             email = str(item.get("email", "")).strip()
             country = str(item.get("country", "")).strip()
+            affiliation = str(item.get("affiliation", "")).strip()
+            orcid = str(item.get("orcid", "")).strip()
 
-            if name or email or country:
+            if name or email or country or affiliation or orcid:
                 valid.append({
                     "name": name,
                     "email": email,
                     "country": country,
+                    "affiliation": affiliation,
+                    "orcid": orcid,
                 })
 
         self.cleaned_data["parsed_coauthors"] = valid
@@ -200,12 +234,16 @@ class SubmissionForm(forms.ModelForm):
                 name = str(item.get("name", "")).strip()
                 email = str(item.get("email", "")).strip()
                 country = str(item.get("country", "")).strip()
+                affiliation = str(item.get("affiliation", "")).strip()
+                orcid = str(item.get("orcid", "")).strip()
 
-                if name or email or country:
+                if name or email or country or affiliation or orcid:
                     parsed.append({
                         "name": name,
                         "email": email,
                         "country": country,
+                        "affiliation": affiliation,
+                        "orcid": orcid,
                     })
 
         cleaned_data["parsed_coauthors"] = parsed
@@ -226,6 +264,16 @@ class SubmissionForm(forms.ModelForm):
             item.get("country", "").strip()
             for item in parsed
             if item.get("country", "").strip()
+        )
+        cleaned_data["coauthor_affiliations"] = "\n".join(
+            item.get("affiliation", "").strip()
+            for item in parsed
+            if item.get("affiliation", "").strip()
+        )
+        cleaned_data["coauthor_orcids"] = "\n".join(
+            item.get("orcid", "").strip()
+            for item in parsed
+            if item.get("orcid", "").strip()
         )
 
         return cleaned_data
@@ -282,10 +330,14 @@ class SubmissionForm(forms.ModelForm):
         self.fields["first_author"].required = True
         self.fields["first_author_email"].required = True
         self.fields["first_author_country"].required = True
+        self.fields["first_author_affiliation"].required = True
+        self.fields["first_author_orcid"].required = False
 
         self.fields["coauthors"].required = False
         self.fields["coauthor_emails"].required = False
         self.fields["coauthor_countries"].required = False
+        self.fields["coauthor_affiliations"].required = False
+        self.fields["coauthor_orcids"].required = False
         self.fields["coauthors_json"].required = False
 
         self.fields["full_paper_file"].widget.attrs.update({
