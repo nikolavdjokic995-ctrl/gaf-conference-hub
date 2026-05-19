@@ -20,7 +20,8 @@ class R2Storage(S3Boto3Storage):
     querystring_auth = False
 
     config = Config(
-        signature_version="s3v4"
+        signature_version="s3v4",
+        s3={"addressing_style": "path"},
     )
 
 

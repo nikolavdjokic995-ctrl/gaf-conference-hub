@@ -584,9 +584,15 @@
     <div class="navbar">
 
         <div class="logo-text">
-            <img src="{% static 'images/logo.png' %}" class="logo-mark" alt="GAF Conference Hub">
-            <span>GAF Conference Hub</span>
-        </div>
+            
+                {% load static %}
+
+                <div class="navbar">
+
+                    <div class="logo-text">
+                        <img src="{% static 'conferences/images/logo.png' %}" class="logo-mark" alt="GAF Conference Hub">
+                        <span>GAF Conference Hub</span>
+                </div>
 
         <div class="nav-links">
 
