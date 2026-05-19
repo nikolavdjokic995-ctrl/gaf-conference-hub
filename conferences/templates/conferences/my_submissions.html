@@ -123,9 +123,12 @@
 
 <div class="header">
     <h1>My submissions</h1>
-    <a href="{% url 'conference_overview' submissions.0.conference.slug %}" class="back-btn">
-    ← Back to conference
+    {% if submissions %}
+    <a href="{% url 'conference_overview' submissions.first.conference.slug %}" class="back-btn">
+        ← Back to conference
     </a>
+    {% endif %}
+    
 </div>
 
 <div class="container">
