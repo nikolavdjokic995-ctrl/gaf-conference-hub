@@ -1356,7 +1356,7 @@ def my_submissions(request):
         submission.coauthor_rows = []
 
         names = [x.strip() for x in (submission.coauthors or "").split(";") if x.strip()]
-        titles = [x.strip() for x in (submission.coauthor_titles or "").split(";") if x.strip()]
+        titles = []
         affiliations = [x.strip() for x in (submission.coauthor_affiliations or "").split(";") if x.strip()]
         countries = [x.strip() for x in (submission.coauthor_countries or "").split(";") if x.strip()]
 
