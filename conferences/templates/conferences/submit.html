@@ -530,72 +530,90 @@
                 </section>
 
                 <section class="form-step" data-step="2">
-                    <h2 class="section-title">
-                        <span>👥</span> SECTION 2: Author Information
-                    </h2>
+    <h2 class="section-title">
+        <span>👥</span> SECTION 2: Author Information
+    </h2>
 
-                    <div class="field">
-                        <label for="{{ form.first_author_title.id_for_label }}">{{ form.first_author_title.label }}</label>
-                        {{ form.first_author_title }}
-                        {{ form.first_author_title.errors }}
-                    </div>
-                                               
-                    <div class="field">
-                        <label for="{{ form.first_author.id_for_label }}">{{ form.first_author.label }}</label>
-                        {{ form.first_author }}
-                        {{ form.first_author.errors }}
-                    </div>
+    <div class="review-box">
 
-                    <div class="field">
-                        <label for="{{ form.first_author_email.id_for_label }}">{{ form.first_author_email.label }}</label>
-                        {{ form.first_author_email }}
-                        {{ form.first_author_email.errors }}
-                        <div class="help">Enter the first author's email address, even if the form is submitted by another person.</div>
-                    </div>
+        <div class="field-grid">
+            <div class="field">
+                <label for="{{ form.first_author_title.id_for_label }}">
+                    {{ form.first_author_title.label }}
+                </label>
+                {{ form.first_author_title }}
+                {{ form.first_author_title.errors }}
+            </div>
 
-                    <div class="field">
-                        <label for="{{ form.first_author_country.id_for_label }}">{{ form.first_author_country.label }}</label>
-                        {{ form.first_author_country }}
-                        {{ form.first_author_country.errors }}
-                        <div class="help">Select the country of the first author. This will be used for conference statistics.</div>
-                    </div>
+            <div class="field">
+                <label for="{{ form.first_author.id_for_label }}">
+                    {{ form.first_author.label }}
+                </label>
+                {{ form.first_author }}
+                {{ form.first_author.errors }}
+            </div>
+        </div>
 
-                    <div class="field">
-                        <label for="{{ form.first_author_affiliation.id_for_label }}">{{ form.first_author_affiliation.label }}</label>
-                        {{ form.first_author_affiliation }}
-                        {{ form.first_author_affiliation.errors }}
-                    </div>
+        <div class="field-grid">
+            <div class="field">
+                <label for="{{ form.first_author_email.id_for_label }}">
+                    {{ form.first_author_email.label }}
+                </label>
+                {{ form.first_author_email }}
+                {{ form.first_author_email.errors }}
+            </div>
 
-                    <div class="field">
-                        <label for="{{ form.first_author_orcid.id_for_label }}">{{ form.first_author_orcid.label }}</label>
-                        {{ form.first_author_orcid }}
-                        {{ form.first_author_orcid.errors }}
-                        <div class="help">Example format: 0000-0000-0000-0000</div>
-                    </div>
+            <div class="field">
+                <label for="{{ form.first_author_country.id_for_label }}">
+                    {{ form.first_author_country.label }}
+                </label>
+                {{ form.first_author_country }}
+                {{ form.first_author_country.errors }}
+            </div>
+        </div>
 
-                    
-                    <div id="coauthorsContainer"></div>
+        <div class="field-grid">
+            <div class="field">
+                <label for="{{ form.first_author_affiliation.id_for_label }}">
+                    {{ form.first_author_affiliation.label }}
+                </label>
+                {{ form.first_author_affiliation }}
+                {{ form.first_author_affiliation.errors }}
+            </div>
 
-                    <button type="button" class="btn-outline" id="addCoauthorBtn" style="margin-top:10px;">
-                        + Add co-author
-                    </button>
+            <div class="field">
+                <label for="{{ form.first_author_orcid.id_for_label }}">
+                    {{ form.first_author_orcid.label }}
+                </label>
+                {{ form.first_author_orcid }}
+                {{ form.first_author_orcid.errors }}
+            </div>
+        </div>
 
-                    {{ form.coauthors_json }}
+    </div>
 
-                    <div id="legacyCoauthorsFields" style="display:none;">
-                        {{ form.coauthors }}
-                        {{ form.coauthor_titles }}
-                        {{ form.coauthor_emails }}
-                        {{ form.coauthor_countries }}
-                        {{ form.coauthor_affiliations }}
-                        {{ form.coauthor_orcids }}
-                    </div>
+    <div id="coauthorsContainer"></div>
 
-                    <div class="info-box">
-                        ℹ️ Each co-author now has separate fields for title, name, email, country, affiliation and ORCID. All authors will receive conference emails correctly.
-                    </div>
+    <button type="button" class="btn-outline" id="addCoauthorBtn" style="margin-top:10px;">
+        + Add co-author
+    </button>
 
-                </section>
+    {{ form.coauthors_json }}
+
+    <div id="legacyCoauthorsFields" style="display:none;">
+        {{ form.coauthors }}
+        {{ form.coauthor_titles }}
+        {{ form.coauthor_emails }}
+        {{ form.coauthor_countries }}
+        {{ form.coauthor_affiliations }}
+        {{ form.coauthor_orcids }}
+    </div>
+
+    <div class="info-box">
+        ℹ️ Each co-author now has separate fields for title, name, email, country, affiliation and ORCID. All authors will receive conference emails correctly.
+    </div>
+
+</section>
 
                 <section class="form-step" data-step="3">
                     <h2 class="section-title">
