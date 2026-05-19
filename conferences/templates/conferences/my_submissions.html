@@ -114,15 +114,22 @@
                 <h2 style="margin-top:0;">{{ submission.title }}</h2>
 
                 <div class="info-box">
-                    <p><strong>First author:</strong> {{ submission.first_author_display }}</p>
-
+                    <p>
+                        <strong>First author:</strong>
+                        {{ submission.first_author_title }} {{ submission.first_author }}
+                    </p>
                     {% if submission.coauthor_rows %}
-                        <p><strong>Co-authors:</strong><br>
-                            {% for coauthor in submission.coauthor_rows %}
-                                {{ coauthor.display_name }}{% if coauthor.affiliation %}, {{ coauthor.affiliation }}{% endif %}{% if coauthor.country %}, {{ coauthor.country }}{% endif %}<br>
-                            {% endfor %}
-                        </p>
+                    <p>
+                        <strong>Co-authors:</strong><br>
+                        {% for coauthor in submission.coauthor_rows %}
+                            {{ coauthor.display_name }}
+                            {% if coauthor.affiliation %}, {{ coauthor.affiliation }}{% endif %}
+                            {% if coauthor.country %}, {{ coauthor.country }}{% endif %}
+                            <br>
+                        {% endfor %}
+                    </p>
                     {% endif %}
+                    
 
                     {% if submission.abstract %}
                         <p><strong>Abstract:</strong><br>{{ submission.abstract|linebreaksbr }}</p>

@@ -1346,7 +1346,30 @@ def delete_conference_topic(request, topic_id):
 def my_submissions(request):
     submissions = Submission.objects.filter(
         author=request.user
-    ).select_related("conference", "topic", "secondary_topic").order_by("-created_at")
+    ).select_related(
+        "conference",
+        "topic",
+        "secondary_topic"
+    ).order_by("-created_at")
+
+    for submission in submissions:
+        submission.coauthor_rows = []
+
+        names = [x.strip() for x in (submission.coauthors or "").split(";") if x.strip()]
+        titles = [x.strip() for x in (submission.coauthor_titles or "").split(";") if x.strip()]
+        affiliations = [x.strip() for x in (submission.coauthor_affiliations or "").split(";") if x.strip()]
+        countries = [x.strip() for x in (submission.coauthor_countries or "").split(";") if x.strip()]
+
+        for i, name in enumerate(names):
+            title = titles[i] if i < len(titles) else ""
+            affiliation = affiliations[i] if i < len(affiliations) else ""
+            country = countries[i] if i < len(countries) else ""
+
+            submission.coauthor_rows.append({
+                "display_name": f"{title} {name}".strip(),
+                "affiliation": affiliation,
+                "country": country,
+            })
 
     return render(request, "conferences/my_submissions.html", {
         "submissions": submissions
