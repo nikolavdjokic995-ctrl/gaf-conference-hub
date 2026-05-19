@@ -5,10 +5,12 @@ from botocore.client import Config
 
 class R2Storage(S3Boto3Storage):
     bucket_name = os.getenv("R2_BUCKET_NAME")
-    endpoint_url = f"https://{os.getenv('R2_ACCOUNT_ID')}.r2.cloudflarestorage.com"
+
+    endpoint_url = "https://s3.auto.eu2.cloudflarestorage.com"
 
     access_key = os.getenv("R2_ACCESS_KEY_ID")
     secret_key = os.getenv("R2_SECRET_ACCESS_KEY")
+
     region_name = "auto"
     verify = False
 
@@ -18,7 +20,9 @@ class R2Storage(S3Boto3Storage):
 
     config = Config(
         signature_version="s3v4",
-        s3={"addressing_style": "path"},
+        s3={
+            "addressing_style": "virtual"
+        },
     )
 
 
