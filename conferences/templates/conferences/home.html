@@ -209,11 +209,21 @@
         {% for conference in conferences %}
 
             <details class="conference-card">
-                <summary class="conference-summary">
+                <summary class="conference-summary" style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <h3>GREEN BUILDING 2026<br>INTERNATIONAL SCIENTIFIC CONFERENCE</h3>
+                        <h3 style="font-size:2.2rem; line-height:1.15;">
+                            GREEN BUILDING 2026<br>
+                            INTERNATIONAL SCIENTIFIC CONFERENCE
+                        </h3>
                         <div class="summary-hint">Click to view conference details</div>
                     </div>
+
+                    <div class="conference-logo">
+                        <img src="{% static 'conferences/images/gb_conference_logo.png' %}"
+                            alt="Conference Logo"
+                            style="width:140px; height:auto; opacity:0.75;">
+                    </div>                    
+
                     <div class="toggle-icon">+</div>
                 </summary>
 
