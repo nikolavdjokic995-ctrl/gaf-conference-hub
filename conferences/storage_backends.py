@@ -17,4 +17,4 @@ class HybridDocumentStorage(S3Storage):
 
     querystring_auth = False
 
-    addressing_style = "virtual"
+    addressing_style = "path"
