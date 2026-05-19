@@ -25,4 +25,4 @@ class R2Storage(S3Boto3Storage):
 
 
 class HybridDocumentStorage(R2Storage):
-    location = "papers"
+    location = ""
