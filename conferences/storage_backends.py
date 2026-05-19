@@ -1,21 +1,28 @@
 import os
-from botocore.config import Config
-from storages.backends.s3 import S3Storage
+from storages.backends.s3boto3 import S3Boto3Storage
+from botocore.client import Config
 
 
-class HybridDocumentStorage(S3Storage):
-    bucket_name = os.environ.get("R2_BUCKET_NAME", "gaf-conference-papers")
-    access_key = os.environ.get("R2_ACCESS_KEY_ID")
-    secret_key = os.environ.get("R2_SECRET_ACCESS_KEY")
-    endpoint_url = os.environ.get("R2_ENDPOINT_URL")
+class R2Storage(S3Boto3Storage):
+    bucket_name = os.getenv("R2_BUCKET_NAME")
+    endpoint_url = os.getenv("R2_ENDPOINT_URL")
+
+    access_key = os.getenv("R2_ACCESS_KEY_ID")
+    secret_key = os.getenv("R2_SECRET_ACCESS_KEY")
+
     region_name = "auto"
 
-    default_acl = None
     file_overwrite = False
-    querystring_auth = True
-    custom_domain = False
+    default_acl = None
+    querystring_auth = False
 
     config = Config(
         signature_version="s3v4",
-        s3={"addressing_style": "path"},
+        s3={
+            "addressing_style": "path"
+        }
     )
+
+
+class HybridDocumentStorage(R2Storage):
+    location = "papers"
