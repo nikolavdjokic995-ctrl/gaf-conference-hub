@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import User
 from django.utils.html import strip_tags
 from html import unescape
-from .storage_backends import HybridDocumentStorage
 
 
 class UserProfile(models.Model):
@@ -256,7 +255,6 @@ class Submission(models.Model):
 
     full_paper_file = models.FileField(
         upload_to="papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         max_length=500
@@ -265,7 +263,6 @@ class Submission(models.Model):
 
     original_submission_file = models.FileField(
         upload_to="original_submission_papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         max_length=500
@@ -302,7 +299,6 @@ class Submission(models.Model):
 
     revised_paper_file = models.FileField(
         upload_to="revised_papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         max_length=500
@@ -310,7 +306,6 @@ class Submission(models.Model):
 
     layout_revised_paper_file = models.FileField(
         upload_to="layout_revised_papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         max_length=500
@@ -318,7 +313,6 @@ class Submission(models.Model):
 
     final_publication_file = models.FileField(
         upload_to="final_publication_papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         help_text="Final print-ready paper uploaded by the layout reviewer.",
@@ -327,7 +321,6 @@ class Submission(models.Model):
 
     anonymized_paper_file = models.FileField(
         upload_to="anonymous_papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         max_length=500
@@ -724,7 +717,6 @@ class Review(models.Model):
 
     commented_paper_file = models.FileField(
         upload_to="reviewer_commented_papers/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         help_text="Optional reviewer-uploaded paper with comments for the author.",
@@ -881,7 +873,6 @@ class ConferenceInfoCard(models.Model):
 
     file = models.FileField(
         upload_to="conference_files/",
-        storage=HybridDocumentStorage(),
         blank=True,
         null=True,
         max_length=500

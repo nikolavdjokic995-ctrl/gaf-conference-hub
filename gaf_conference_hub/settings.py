@@ -5,9 +5,9 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-SECRET_KEY = os.getenv("SECRET_KEY", "django-insecure-change-this-later")
+SECRET_KEY = "django-insecure-change-this-later"
 
-DEBUG = os.getenv("DEBUG", "True").lower() in ["1", "true", "yes"]
+DEBUG = True
 
 ALLOWED_HOSTS = [
     "gaf-conference-hub.onrender.com",
@@ -23,15 +23,18 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-    "django_countries",
+    'django_countries',
     "conferences",
-    "storages",
+    "cloudinary",
+    "cloudinary_storage",
 ]
 
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+
     "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -47,8 +50,11 @@ ROOT_URLCONF = "gaf_conference_hub.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
+
         "DIRS": [],
+
         "APP_DIRS": True,
+
         "OPTIONS": {
             "context_processors": [
                 "django.template.context_processors.request",
@@ -105,25 +111,31 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STATICFILES_STORAGE = (
+    "whitenoise.storage.CompressedManifestStaticFilesStorage"
+)
 
 
 MEDIA_URL = "/media/"
 
 MEDIA_ROOT = BASE_DIR / "media"
 
-
+# ============================================================
+# STORAGE STRATEGY
+# ============================================================
+# Static files:
+#   WhiteNoise
+#
+# Media files:
+#   Local Django FileSystemStorage
+#
 # IMPORTANT:
-# Default Django storage stays local so images/logos and old FileField .url calls do not use R2.
-# Paper files are uploaded to Cloudflare R2 directly from views.py via boto3 helper functions.
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
-    },
-}
+# We intentionally DO NOT use django-storages as the default
+# backend because Cloudflare R2 SSL handshakes caused crashes.
+#
+# This setup is stable for conference operation on Render.
+# ============================================================
+
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
@@ -133,21 +145,55 @@ LOGIN_URL = "/login/"
 
 LOGIN_REDIRECT_URL = "/"
 
+import cloudinary
 
-# =========================
-# Cloudflare R2 direct upload configuration
-# =========================
-# These are used by conferences/views.py direct boto3 upload helper.
-# Do NOT configure AWS_* or make R2 the default STORAGES backend here.
-R2_ACCOUNT_ID = os.getenv("R2_ACCOUNT_ID", "")
-R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "")
-R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID", "")
-R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY", "")
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
+    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
+    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
+}
 
-
+STORAGES = {
+    "default": {
+        "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+CLOUDINARY_STORAGE = {
+    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
+    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
+    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
+    "OVERWRITE": True,
+}
 # =========================
 # Email / SMTP configuration
 # =========================
+# Set these values in Render Environment Variables.
+# If EMAIL_HOST is not set, Django will use the console backend so the app will not crash.
+EMAIL_HOST = os.getenv("EMAIL_HOST", "")
+
+if EMAIL_HOST:
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+    EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+    EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "")
+    EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "")
+    EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in ["1", "true", "yes"]
+    EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").lower() in ["1", "true", "yes"]
+else:
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+    EMAIL_PORT = 587
+    EMAIL_HOST_USER = ""
+    EMAIL_HOST_PASSWORD = ""
+    EMAIL_USE_TLS = True
+    EMAIL_USE_SSL = False
+
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    EMAIL_HOST_USER or "Green Building Conference 2026 <no-reply@example.com>",
+)
+SERVER_EMAIL = DEFAULT_FROM_EMAIL
 EMAIL_BACKEND = os.environ.get("EMAIL_BACKEND", "django.core.mail.backends.smtp.EmailBackend")
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")
 EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
@@ -155,17 +201,31 @@ EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
 EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") == "True"
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
-DEFAULT_FROM_EMAIL = os.environ.get(
-    "DEFAULT_FROM_EMAIL",
-    EMAIL_HOST_USER or "Green Building Conference 2026 <no-reply@example.com>",
-)
-SERVER_EMAIL = DEFAULT_FROM_EMAIL
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 EMAIL_TIMEOUT = int(os.environ.get("EMAIL_TIMEOUT", 10))
-
 
 # =========================
 # Upload size limits
 # =========================
+# 50 MB upload limit for manuscript files.
 FILE_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 DATA_UPLOAD_MAX_MEMORY_SIZE = 50 * 1024 * 1024
 MAX_UPLOAD_SIZE = 50 * 1024 * 1024
+# =========================
+# Cloudflare R2 Storage
+# =========================
+
+AWS_ACCESS_KEY_ID = os.environ.get("R2_ACCESS_KEY_ID")
+AWS_SECRET_ACCESS_KEY = os.environ.get("R2_SECRET_ACCESS_KEY")
+
+AWS_STORAGE_BUCKET_NAME = os.environ.get("R2_BUCKET_NAME")
+
+AWS_S3_ENDPOINT_URL = os.environ.get("R2_ENDPOINT_URL")
+
+AWS_S3_REGION_NAME = "auto"
+
+AWS_QUERYSTRING_AUTH = False
+
+AWS_DEFAULT_ACL = None
+
+AWS_S3_FILE_OVERWRITE = False
