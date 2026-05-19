@@ -69,12 +69,6 @@ class RegisterForm(UserCreationForm):
 
 class SubmissionForm(forms.ModelForm):
 
-    first_author_title = forms.ChoiceField(
-        choices=TITLE_CHOICES,
-        required=False,
-        label="Title"
-    )
-
     TITLE_CHOICES = [
         ("", "Select"),
         ("Prof. Dr.", "Prof. Dr."),
@@ -88,6 +82,7 @@ class SubmissionForm(forms.ModelForm):
     first_author_title = forms.ChoiceField(
         choices=TITLE_CHOICES,
         required=True,
+        label="Title"
     )
 
     first_author_country = CountryField(blank_label="Select country").formfield(
