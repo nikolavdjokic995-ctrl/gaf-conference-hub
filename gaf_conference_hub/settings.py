@@ -26,8 +26,6 @@ INSTALLED_APPS = [
     'django_countries',
     "conferences",
     "storages",
-    "cloudinary",
-    "cloudinary_storage",
 ]
 
 
@@ -129,13 +127,6 @@ LOGIN_URL = "/login/"
 
 LOGIN_REDIRECT_URL = "/"
 
-import cloudinary
-
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': os.environ.get('CLOUDINARY_CLOUD_NAME'),
-    'API_KEY': os.environ.get('CLOUDINARY_API_KEY'),
-    'API_SECRET': os.environ.get('CLOUDINARY_API_SECRET'),
-}
 
 STORAGES = {
     "default": {
@@ -144,12 +135,6 @@ STORAGES = {
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
-}
-CLOUDINARY_STORAGE = {
-    "CLOUD_NAME": os.getenv("CLOUDINARY_CLOUD_NAME"),
-    "API_KEY": os.getenv("CLOUDINARY_API_KEY"),
-    "API_SECRET": os.getenv("CLOUDINARY_API_SECRET"),
-    "OVERWRITE": True,
 }
 # =========================
 # Email / SMTP configuration
