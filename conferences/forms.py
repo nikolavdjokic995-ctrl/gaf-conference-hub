@@ -68,32 +68,9 @@ class RegisterForm(UserCreationForm):
 
 class SubmissionForm(forms.ModelForm):
 
-    TITLE_CHOICES = [
-        ("", "Select"),
-        ("Prof. Dr.", "Prof. Dr."),
-        ("Assoc. Prof. Dr.", "Assoc. Prof. Dr."),
-        ("Asst. Prof. Dr.", "Asst. Prof. Dr."),
-        ("Dr.", "Dr."),
-        ("Mr.", "Mr."),
-        ("Ms.", "Ms."),
-    ]
-
-    first_author_title = forms.ChoiceField(
-        choices=TITLE_CHOICES,
-        required=True,
-    )
-
     first_author_country = CountryField(blank_label="Select country").formfield(
         required=True,
         widget=CountrySelectWidget()
-    )
-
-    coauthor_titles = forms.CharField(
-        required=False,
-        widget=forms.Textarea(attrs={
-            "rows": 4,
-            "placeholder": "Enter co-author titles, one per line, in the same order as co-authors.",
-        })
     )
 
     coauthor_countries = forms.CharField(
@@ -137,14 +114,12 @@ class SubmissionForm(forms.ModelForm):
             "abstract",
             "keywords",
             "article_type",
-            "first_author_title",
             "first_author",
             "first_author_email",
             "first_author_country",
             "first_author_affiliation",
             "first_author_orcid",
             "coauthors",
-            "coauthor_titles",
             "coauthor_emails",
             "coauthor_countries",
             "coauthor_affiliations",
@@ -161,14 +136,12 @@ class SubmissionForm(forms.ModelForm):
             "abstract": "Abstract",
             "keywords": "Keywords",
             "article_type": "Article type",
-            "first_author_title": "First author title",
             "first_author": "First author (First Name Last Name)",
             "first_author_email": "First author email",
             "first_author_country": "First author country",
             "first_author_affiliation": "First author affiliation",
             "first_author_orcid": "First author ORCID iD",
             "coauthors": "Co-authors (First Name Last Name)",
-            "coauthor_titles": "Co-author titles",
             "coauthor_emails": "Co-author email addresses",
             "coauthor_countries": "Co-author countries",
             "coauthor_affiliations": "Co-author affiliations",
@@ -219,16 +192,14 @@ class SubmissionForm(forms.ModelForm):
             if not isinstance(item, dict):
                 continue
 
-            title = str(item.get("title", "")).strip()
             name = str(item.get("name", "")).strip()
             email = str(item.get("email", "")).strip()
             country = str(item.get("country", "")).strip()
             affiliation = str(item.get("affiliation", "")).strip()
             orcid = str(item.get("orcid", "")).strip()
 
-            if title or name or email or country or affiliation or orcid:
+            if name or email or country or affiliation or orcid:
                 valid.append({
-                    "title": title,
                     "name": name,
                     "email": email,
                     "country": country,
@@ -260,16 +231,14 @@ class SubmissionForm(forms.ModelForm):
                 if not isinstance(item, dict):
                     continue
 
-                title = str(item.get("title", "")).strip()
                 name = str(item.get("name", "")).strip()
                 email = str(item.get("email", "")).strip()
                 country = str(item.get("country", "")).strip()
                 affiliation = str(item.get("affiliation", "")).strip()
                 orcid = str(item.get("orcid", "")).strip()
 
-                if title or name or email or country or affiliation or orcid:
+                if name or email or country or affiliation or orcid:
                     parsed.append({
-                        "title": title,
                         "name": name,
                         "email": email,
                         "country": country,
@@ -285,11 +254,6 @@ class SubmissionForm(forms.ModelForm):
             item.get("name", "").strip()
             for item in parsed
             if item.get("name", "").strip()
-        )
-        cleaned_data["coauthor_titles"] = "\n".join(
-            item.get("title", "").strip()
-            for item in parsed
-            if item.get("title", "").strip()
         )
         cleaned_data["coauthor_emails"] = "\n".join(
             item.get("email", "").strip()
@@ -363,7 +327,6 @@ class SubmissionForm(forms.ModelForm):
         self.fields["abstract"].required = True
         self.fields["keywords"].required = True
         self.fields["full_paper_file"].required = True
-        self.fields["first_author_title"].required = True
         self.fields["first_author"].required = True
         self.fields["first_author_email"].required = True
         self.fields["first_author_country"].required = True
@@ -371,7 +334,6 @@ class SubmissionForm(forms.ModelForm):
         self.fields["first_author_orcid"].required = False
 
         self.fields["coauthors"].required = False
-        self.fields["coauthor_titles"].required = False
         self.fields["coauthor_emails"].required = False
         self.fields["coauthor_countries"].required = False
         self.fields["coauthor_affiliations"].required = False
@@ -556,6 +518,8 @@ class ConferenceOverviewForm(forms.ModelForm):
             "logo",
             "template_style",
             "hero_image",
+            "overview_hero_image_height",
+            "overview_hero_buttons_margin_top",
             "overview_section_padding",
             "overview_section_radius",
             "overview_grid_min_width",
@@ -573,6 +537,12 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_about_title_size",
             "overview_about_text_size",
         ]
+
+        labels = {
+            "overview_hero_image_height": "Overview image height (px)",
+            "overview_hero_buttons_margin_top": "Buttons distance from image (px)",
+        }
+
 
         widgets = {
             "title_en": forms.Textarea(attrs={

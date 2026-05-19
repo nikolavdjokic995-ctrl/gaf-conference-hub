@@ -112,6 +112,8 @@ class Conference(models.Model):
     overview_about_radius = models.PositiveIntegerField(default=24)
     overview_about_title_size = models.PositiveIntegerField(default=42)
     overview_about_text_size = models.PositiveIntegerField(default=18)
+    overview_hero_image_height = models.PositiveIntegerField(default=620)
+    overview_hero_buttons_margin_top = models.IntegerField(default=26)
 
 
     @property
@@ -178,8 +180,6 @@ class Submission(models.Model):
         on_delete=models.CASCADE
     )
 
-    first_author_title = models.CharField(max_length=50, blank=True)
-
     first_author = models.CharField(max_length=255)
 
     paper_code = models.CharField(max_length=50, blank=True, unique=True)
@@ -217,11 +217,6 @@ class Submission(models.Model):
         max_length=50,
         blank=True,
         help_text="ORCID iD of the first author."
-    )
-
-    coauthor_titles = models.TextField(
-        blank=True,
-        help_text="Enter co-author titles, one per line, in the same order as co-authors."
     )
 
     coauthor_emails = models.TextField(
@@ -346,37 +341,6 @@ class Submission(models.Model):
             topics.append(self.secondary_topic)
 
         return topics
-
-
-
-    @property
-    def first_author_display(self):
-        title = (self.first_author_title or "").strip()
-        name = (self.first_author or "").strip()
-        return f"{title} {name}".strip()
-
-    @property
-    def coauthor_rows(self):
-        names = [line.strip() for line in (self.coauthors or "").splitlines() if line.strip()]
-        titles = [line.strip() for line in (self.coauthor_titles or "").splitlines()]
-        emails = [line.strip() for line in (self.coauthor_emails or "").splitlines()]
-        countries = [line.strip() for line in (self.coauthor_countries or "").splitlines()]
-        affiliations = [line.strip() for line in (self.coauthor_affiliations or "").splitlines()]
-        orcids = [line.strip() for line in (self.coauthor_orcids or "").splitlines()]
-
-        rows = []
-        for index, name in enumerate(names):
-            title = titles[index] if index < len(titles) else ""
-            rows.append({
-                "title": title,
-                "name": name,
-                "display_name": f"{title} {name}".strip(),
-                "email": emails[index] if index < len(emails) else "",
-                "country": countries[index] if index < len(countries) else "",
-                "affiliation": affiliations[index] if index < len(affiliations) else "",
-                "orcid": orcids[index] if index < len(orcids) else "",
-            })
-        return rows
 
 
     def original_author_file(self):
