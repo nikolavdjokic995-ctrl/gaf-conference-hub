@@ -584,9 +584,7 @@
     <div class="navbar">
 
         <div class="logo-text">
-            {% if conference.logo %}
-                <img src="{{ conference.logo.url }}" class="logo-mark" alt="{{ conference.plain_title }}">
-            {% endif %}
+            <img src="{% static 'images/logo.png' %}" class="logo-mark" alt="GAF Conference Hub">
             <span>GAF Conference Hub</span>
         </div>
 
