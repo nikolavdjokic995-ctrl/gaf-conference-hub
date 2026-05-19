@@ -17,9 +17,15 @@ class UserProfile(models.Model):
     title = models.CharField(max_length=50, blank=True)
     country = models.CharField(max_length=100, blank=True)
 
+    @property
+    def full_name_with_title(self):
+        full_name = f"{self.user.first_name} {self.user.last_name}".strip()
+        if self.title:
+            return f"{self.title} {full_name}" if full_name else self.title
+        return full_name or self.user.username
+
     def __str__(self):
-        full_name = f"{self.user.first_name} {self.user.last_name}"
-        return full_name.strip() or self.user.username
+        return self.full_name_with_title
 
 class Conference(models.Model):
     SUBMISSION_MODE_CHOICES = [
@@ -447,7 +453,8 @@ class ReviewAssignment(models.Model):
         return self.accepted_deadline or self.proposed_deadline or self.submission.conference.review_deadline
 
     def __str__(self):
-        return f"{self.submission.title} — {self.reviewer.username} — {self.role}"
+        reviewer_name = getattr(getattr(self.reviewer, "profile", None), "full_name_with_title", None) or self.reviewer.username
+        return f"{self.submission.title} — {reviewer_name} — {self.role}"
 
 
 class Review(models.Model):
@@ -755,7 +762,8 @@ class Review(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.submission.title} — {self.reviewer.username}"
+        reviewer_name = getattr(getattr(self.reviewer, "profile", None), "full_name_with_title", None) or self.reviewer.username
+        return f"{self.submission.title} — {reviewer_name}"
 
 
 class EmailTemplate(models.Model):

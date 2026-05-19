@@ -595,7 +595,7 @@
             {% if user.is_authenticated %}
 
                 <span>
-                    Welcome, {{ user.username }}
+                    Welcome, {{ user.profile.full_name_with_title }}
                 </span>
 
                 <a class="active-top" href="{% url 'conference_overview' conference.slug %}">
@@ -847,7 +847,7 @@
         </div>
 
         <div class="partner-group">
-            <h2>Supported by</h2>
+            <h2>Co-organizers</h2>
 
             <div class="partners-grid">
                 {% for partner in footer_partners %}

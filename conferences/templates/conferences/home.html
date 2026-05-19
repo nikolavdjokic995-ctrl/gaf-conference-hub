@@ -181,7 +181,7 @@
         <div>
             {% if user.is_authenticated %}
                 <span style="margin-right:10px;">
-                    Welcome, <strong>{{ user.username }}</strong>
+                    Welcome, <strong>{{ user.profile.full_name_with_title }}</strong>
                 </span>
 
                 <a href="{% url 'password_change' %}" class="btn secondary" style="margin-right:8px;">
@@ -209,21 +209,19 @@
         {% for conference in conferences %}
 
             <details class="conference-card">
-                <summary class="conference-summary" style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <h3 style="font-size:2.2rem; line-height:1.15;">
+                <summary class="conference-summary" style="display:flex; justify-content:space-between; align-items:center; gap:22px;">
+                    <div style="min-width:0; flex:1;">
+                        <h3 style="font-size:2.2rem; line-height:1.15; margin:0 0 10px;">
                             GREEN BUILDING 2026<br>
                             INTERNATIONAL SCIENTIFIC CONFERENCE
                         </h3>
                         <div class="summary-hint">Click to view conference details</div>
                     </div>
-
-                    <div class="conference-logo">
+                    <div class="conference-logo" style="flex:0 0 140px; text-align:center;">
                         <img src="{% static 'conferences/images/gb_conference_logo.png' %}"
-                            alt="Conference Logo"
-                            style="width:140px; height:auto; opacity:0.75;">
-                    </div>                    
-
+                             alt="Conference Logo"
+                             style="width:140px; height:auto; opacity:0.75; display:block;">
+                    </div>
                     <div class="toggle-icon">+</div>
                 </summary>
 

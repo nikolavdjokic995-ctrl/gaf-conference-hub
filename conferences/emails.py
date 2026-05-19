@@ -119,6 +119,9 @@ def structured_coauthors(submission):
 def user_full_name(user):
     if not user:
         return ""
+    profile = getattr(user, "profile", None)
+    if profile and getattr(profile, "full_name_with_title", ""):
+        return profile.full_name_with_title
     full_name = f"{user.first_name} {user.last_name}".strip()
     return full_name or user.username
 

@@ -4,7 +4,7 @@
 <ul>
     {% for item in roles.paper_manager %}
         <li>
-            {{ item.user.get_full_name|default:item.user.username }}
+            {{ item.user.profile.full_name_with_title }}
             — {{ item.user.email }}
             <a href="/conference/role/{{ item.id }}/delete/">❌</a>
         </li>
@@ -17,7 +17,7 @@
 <ul>
     {% for item in roles.judge %}
         <li>
-            {{ item.user.get_full_name|default:item.user.username }}
+            {{ item.user.profile.full_name_with_title }}
             — {{ item.user.email }}
             <a href="/conference/role/{{ item.id }}/delete/">❌</a>
         </li>
@@ -30,7 +30,7 @@
 <ul>
     {% for item in roles.content_reviewer %}
         <li>
-            {{ item.user.get_full_name|default:item.user.username }}
+            {{ item.user.profile.full_name_with_title }}
             — {{ item.user.email }}
             <a href="/conference/role/{{ item.id }}/delete/">❌</a>
         </li>
@@ -43,7 +43,7 @@
 <ul>
     {% for item in roles.layout_reviewer %}
         <li>
-            {{ item.user.get_full_name|default:item.user.username }}
+            {{ item.user.profile.full_name_with_title }}
             — {{ item.user.email }}
             <a href="/conference/role/{{ item.id }}/delete/">❌</a>
         </li>

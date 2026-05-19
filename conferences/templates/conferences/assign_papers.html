@@ -71,7 +71,7 @@
                 </div>
                 <div class="meta-box">
                     <div class="meta-label">Submitted by</div>
-                    <div class="meta-value">{{ submission.author.username }}</div>
+                    <div class="meta-value">{{ submission.author.profile.full_name_with_title }}</div>
                 </div>
                 <div class="meta-box">
                     <div class="meta-label">Primary topic</div>
@@ -113,7 +113,7 @@
             {% if assignments %}
                 {% for assignment in assignments %}
                     <span class="badge">
-                        {{ assignment.reviewer.username }} — {{ assignment.get_role_display }}
+                        {{ assignment.reviewer.profile.full_name_with_title }} — {{ assignment.get_role_display }}
                         {% if assignment.invitation_status %} — {{ assignment.invitation_status|capfirst }}{% endif %}
                     </span>
                 {% endfor %}
@@ -132,7 +132,7 @@
                         <option value="">Select reviewer</option>
                         {% for reviewer_role in suggested_reviewers %}
                             <option value="{{ reviewer_role.id }}">
-                                {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — Topics:
+                                {{ reviewer_role.user.profile.full_name_with_title }} — Topics:
                                 {% for topic in reviewer_role.topics.all %}
                                     {{ topic.code }}{% if not forloop.last %}, {% endif %}
                                 {% empty %}
@@ -159,7 +159,7 @@
                         <option value="">Select reviewer</option>
                         {% for reviewer_role in all_reviewers %}
                             <option value="{{ reviewer_role.id }}">
-                                {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — Topics:
+                                {{ reviewer_role.user.profile.full_name_with_title }} — Topics:
                                 {% for topic in reviewer_role.topics.all %}
                                     {{ topic.code }}{% if not forloop.last %}, {% endif %}
                                 {% empty %}
@@ -191,7 +191,7 @@
                     <div class="section-title">Current assignments</div>
                     {% if item.assignments %}
                         {% for assignment in item.assignments %}
-                            <span class="badge">{{ assignment.reviewer.username }} — {{ assignment.get_role_display }}</span>
+                            <span class="badge">{{ assignment.reviewer.profile.full_name_with_title }} — {{ assignment.get_role_display }}</span>
                         {% endfor %}
                     {% else %}
                         <div class="empty">No reviewers assigned yet.</div>
@@ -207,7 +207,7 @@
                             <option value="">Select reviewer</option>
                             {% for reviewer_role in item.all_reviewers %}
                                 <option value="{{ reviewer_role.id }}">
-                                    {{ reviewer_role.user.get_full_name|default:reviewer_role.user.username }} — Topics:
+                                    {{ reviewer_role.user.profile.full_name_with_title }} — Topics:
                                     {% for topic in reviewer_role.topics.all %}
                                         {{ topic.code }}{% if not forloop.last %}, {% endif %}
                                     {% empty %}

@@ -252,7 +252,7 @@
                 {% for role in grouped_roles.manager %}
                     <div class="role-user">
                         <div class="user-name">
-                            {{ role.user.first_name }} {{ role.user.last_name }}
+                            {{ role.user.profile.full_name_with_title }}
                         </div>
 
                         <div class="user-meta">
@@ -277,7 +277,7 @@
                 {% for role in grouped_roles.judge %}
                     <div class="role-user">
                         <div class="user-name">
-                            {{ role.user.first_name }} {{ role.user.last_name }}
+                            {{ role.user.profile.full_name_with_title }}
                         </div>
 
                         <div class="user-meta">
@@ -302,7 +302,7 @@
                 {% for role in grouped_roles.content_reviewer %}
                     <div class="role-user">
                         <div class="user-name">
-                            {{ role.user.first_name }} {{ role.user.last_name }}
+                            {{ role.user.profile.full_name_with_title }}
                         </div>
 
                         <div class="user-meta">
@@ -335,7 +335,7 @@
                 {% for role in grouped_roles.layout_reviewer %}
                     <div class="role-user">
                         <div class="user-name">
-                            {{ role.user.first_name }} {{ role.user.last_name }}
+                            {{ role.user.profile.full_name_with_title }}
                         </div>
 
                         <div class="user-meta">
@@ -382,8 +382,7 @@
 
                     <td>
                         <strong>
-                            {{ person.user.first_name }}
-                            {{ person.user.last_name }}
+                            {{ person.user.profile.full_name_with_title }}
                         </strong>
 
                         <br>

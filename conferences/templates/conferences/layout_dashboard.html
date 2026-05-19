@@ -307,7 +307,7 @@
 
                     <td>
                         {% for review in submission.reviews.all %}
-                            {{ review.reviewer.get_full_name|default:review.reviewer.username }}{% if not forloop.last %}, {% endif %}
+                            {{ review.reviewer.profile.full_name_with_title }}{% if not forloop.last %}, {% endif %}
                         {% empty %}
                             -
                         {% endfor %}
