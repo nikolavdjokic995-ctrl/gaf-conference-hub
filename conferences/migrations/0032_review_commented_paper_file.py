@@ -1,6 +1,4 @@
 # Generated for reviewer commented-file workflow.
-
-import cloudinary_storage.storage
 from django.db import migrations, models
 
 
@@ -18,7 +16,6 @@ class Migration(migrations.Migration):
                 blank=True,
                 help_text="Optional reviewer-uploaded paper with comments for the author.",
                 null=True,
-                storage=cloudinary_storage.storage.RawMediaCloudinaryStorage(),
                 upload_to="reviewer_commented_papers/",
             ),
         ),

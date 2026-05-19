@@ -1,4 +1,4 @@
-# Generated manually for Supabase primary + Cloudinary fallback document storage.
+# Generated manually for Cloudflare R2 document storage.
 
 from django.db import migrations, models
 import conferences.storage_backends

@@ -6,8 +6,7 @@ from django.core.files import File
 def save_local_file_to_field(field_file, local_path, storage_name):
     """Save a local temporary file to the model FileField's configured storage.
 
-    The storage is HybridDocumentStorage, so it tries Supabase first and falls back
-    to Cloudinary if Supabase is unavailable/full.
+    The storage is HybridDocumentStorage, backed by Cloudflare R2.
     """
     with open(local_path, "rb") as handle:
         field_file.save(storage_name, File(handle), save=False)
