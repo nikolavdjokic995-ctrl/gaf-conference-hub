@@ -22,7 +22,7 @@ class R2Storage(S3Boto3Storage):
     config = Config(
         signature_version="s3v4",
         s3={
-            "addressing_style": "virtual"
+            "addressing_style": "path"
         }
     )
 
