@@ -6,14 +6,10 @@ from botocore.client import Config
 class R2Storage(S3Boto3Storage):
     bucket_name = os.getenv("R2_BUCKET_NAME")
 
-    endpoint_url = (
-        os.getenv("R2_ENDPOINT_URL", "").strip()
-        or f"https://{os.getenv('R2_ACCOUNT_ID', '').strip()}.r2.cloudflarestorage.com"
-    )
+    account_id = os.getenv("R2_ACCOUNT_ID", "").strip()
 
-    if endpoint_url and not endpoint_url.startswith("https://"):
-        endpoint_url = "https://" + endpoint_url
-    
+    endpoint_url = f"https://{account_id}.r2.cloudflarestorage.com"
+
     access_key = os.getenv("R2_ACCESS_KEY_ID")
     secret_key = os.getenv("R2_SECRET_ACCESS_KEY")
 
@@ -26,7 +22,7 @@ class R2Storage(S3Boto3Storage):
     config = Config(
         signature_version="s3v4",
         s3={
-            "addressing_style": "path"
+            "addressing_style": "virtual"
         }
     )
 
