@@ -9,6 +9,20 @@
 
     <style>
 
+        .footer-conference-title{
+            margin-bottom:18px;
+        }
+
+        .footer-conference-title .conference-card-line1{
+            font-size:22px;
+        }
+
+        .footer-conference-title .conference-card-line2{
+            font-size:14px;
+            letter-spacing:1.5px;
+
+        }
+
         *{
             margin:0;
             padding:0;
@@ -639,8 +653,13 @@
                  alt="GAF Conference Hub">
 
             <div class="conference-title">
-                <span class="title-line-1">GREEN BUILDING 2026</span>
-                <span class="title-line-2">INTERNATIONAL SCIENTIFIC CONFERENCE</span>
+                <div class="title-line-1">
+                    GREEN BUILDING 2026
+                </div>
+
+                <div class="title-line-2">
+                    INTERNATIONAL SCIENTIFIC CONFERENCE
+                </div>
             </div>
         </div>
 
@@ -941,7 +960,16 @@
     <div class="footer-main">
 
         <div>
-            <h3>GREEN BUILDING 2026<br>INTERNATIONAL SCIENTIFIC CONFERENCE</h3>
+
+            <div class="conference-card-title footer-conference-title">
+                <div class="conference-card-line1">
+                    GREEN BUILDING 2026
+                </div>
+
+                <div class="conference-card-line2">
+                    INTERNATIONAL SCIENTIFIC CONFERENCE
+                </div>
+         </div>
 
             {% if conference.footer_description %}
                 <p>{{ conference.footer_description|linebreaksbr }}</p>
