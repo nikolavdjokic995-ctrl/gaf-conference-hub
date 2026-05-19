@@ -20,9 +20,18 @@ class R2Storage(S3Boto3Storage):
     querystring_auth = False
 
     config = Config(
-        signature_version="s3v4",
-        s3={"addressing_style": "path"},
-    )
+    signature_version="s3v4",
+    s3={
+        "addressing_style": "virtual"
+    },
+    retries={
+        "max_attempts": 3,
+        "mode": "standard"
+    }
+)
+
+use_ssl = True
+verify = False
 
 
 class HybridDocumentStorage(R2Storage):
