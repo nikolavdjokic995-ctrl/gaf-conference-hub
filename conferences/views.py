@@ -892,9 +892,10 @@ def submit_paper(request, slug):
 
             try:
                 submission = form.save(commit=False)
+                
                 submission.conference = conference
                 submission.author = request.user
-
+                submission.first_author_title = form.cleaned_data.get("first_author_title")
                 if hasattr(submission, "submitted_by"):
                     submission.submitted_by = request.user
 
