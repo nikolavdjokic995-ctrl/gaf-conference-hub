@@ -2,6 +2,7 @@
 import os
 import tempfile
 import urllib.request
+import mimetypes
 from django.http import HttpResponse
 from django.core.files import File
 from django.core.files.base import ContentFile
@@ -14,8 +15,11 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
+from django.conf import settings
 from pathlib import Path
 from datetime import datetime
+import boto3
+from botocore.client import Config
 
 from .models import (
     Conference,
@@ -53,6 +57,68 @@ from .emails import send_event_email, preview_template, send_test_template_email
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
+
+
+def _r2_upload_bytes(key, data, content_type=None):
+    """
+    Upload directly to Cloudflare R2 using boto3 client.
+    This bypasses django-storages FileField.save(), which caused SSL handshake
+    errors during manuscript upload on Render.
+    """
+    account_id = getattr(settings, "R2_ACCOUNT_ID", "") or os.getenv("R2_ACCOUNT_ID", "")
+    bucket_name = getattr(settings, "R2_BUCKET_NAME", "") or os.getenv("R2_BUCKET_NAME", "")
+    access_key = getattr(settings, "R2_ACCESS_KEY_ID", "") or os.getenv("R2_ACCESS_KEY_ID", "")
+    secret_key = getattr(settings, "R2_SECRET_ACCESS_KEY", "") or os.getenv("R2_SECRET_ACCESS_KEY", "")
+
+    if not all([account_id, bucket_name, access_key, secret_key]):
+        raise ValueError("R2 is not configured. Check Render environment variables.")
+
+    key = str(key).lstrip("/")
+    content_type = content_type or mimetypes.guess_type(key)[0] or "application/octet-stream"
+
+    client = boto3.client(
+        "s3",
+        endpoint_url=f"https://{account_id}.r2.cloudflarestorage.com",
+        aws_access_key_id=access_key,
+        aws_secret_access_key=secret_key,
+        region_name="auto",
+        verify=False,
+        config=Config(
+            signature_version="s3v4",
+            s3={"addressing_style": "path"},
+            retries={"max_attempts": 3, "mode": "standard"},
+        ),
+    )
+
+    client.put_object(
+        Bucket=bucket_name,
+        Key=key,
+        Body=data,
+        ContentType=content_type,
+    )
+
+    return key
+
+
+def _r2_upload_django_file(key, uploaded_file):
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    data = uploaded_file.read()
+
+    try:
+        uploaded_file.seek(0)
+    except Exception:
+        pass
+
+    return _r2_upload_bytes(
+        key,
+        data,
+        content_type=getattr(uploaded_file, "content_type", None),
+    )
+
 
 @login_required
 def send_test_email_template(request, template_id):
@@ -899,15 +965,13 @@ def submit_paper(request, slug):
 
                 submission.status = "submitted"
 
-                # Prevent Django from uploading the raw form file before we generate
-                # the paper code and the final R2 object names.
+                # Do not let Django/django-storages upload automatically.
+                # Files are uploaded directly to R2 below, then only object keys are stored.
                 submission.full_paper_file = None
                 submission.original_submission_file = None
                 submission.anonymized_paper_file = None
 
-                # Generate unique paper code safely.
                 conference_code = conference.slug.replace("-", "").upper()[:6]
-
                 last_submission = (
                     Submission.objects
                     .filter(conference=conference)
@@ -917,7 +981,6 @@ def submit_paper(request, slug):
                 )
 
                 next_number = 1
-
                 if last_submission and last_submission.paper_code:
                     try:
                         next_number = int(last_submission.paper_code.split("-")[-1]) + 1
@@ -937,19 +1000,15 @@ def submit_paper(request, slug):
                     extension = Path(uploaded_file.name).suffix.lower()
                     original_filename = f"{submission.paper_code}_submission_{submission.id}{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(original_filename, uploaded_file, save=False)
+                    paper_key = f"papers/{original_filename}"
+                    original_key = f"original_submission_papers/{original_filename}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.original_submission_file.save(original_filename, uploaded_file, save=False)
+                    _r2_upload_django_file(paper_key, uploaded_file)
+                    _r2_upload_django_file(original_key, uploaded_file)
 
-                    # Prepare local temporary source only for DOCX anonymization.
+                    submission.full_paper_file.name = paper_key
+                    submission.original_submission_file.name = original_key
+
                     if extension == ".docx":
                         try:
                             uploaded_file.seek(0)
@@ -973,12 +1032,15 @@ def submit_paper(request, slug):
                         ):
                             raise ValueError("Anonymized DOCX was not created correctly.")
 
+                        anonymized_key = f"anonymous_papers/{submission.paper_code}_submission_{submission.id}.docx"
                         with open(anonymized_path, "rb") as anonymized_file:
-                            submission.anonymized_paper_file.save(
-                                f"{submission.paper_code}_submission_{submission.id}.docx",
-                                File(anonymized_file),
-                                save=False,
+                            _r2_upload_bytes(
+                                anonymized_key,
+                                anonymized_file.read(),
+                                content_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                             )
+
+                        submission.anonymized_paper_file.name = anonymized_key
 
                     submission.save()
 
@@ -1506,18 +1568,24 @@ def upload_revision(request, submission_id):
                 if submission.status == "revision_required":
                     next_round = submission.revision_round or 1
                     filename = f"{submission.paper_code}-r{next_round}{extension}"
+                    key = f"revised_papers/{filename}"
 
-                    submission.revised_paper_file.save(filename, uploaded_file, save=False)
-                    submission.full_paper_file.save(filename, uploaded_file, save=False)
+                    _r2_upload_django_file(key, uploaded_file)
+
+                    submission.revised_paper_file.name = key
+                    submission.full_paper_file.name = key
                     submission.status = "revised_submitted"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
 
                 else:
                     next_round = submission.layout_revision_round or 1
                     filename = f"{submission.paper_code}-layout-r{next_round}{extension}"
+                    key = f"layout_revised_papers/{filename}"
 
-                    submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
-                    submission.full_paper_file.save(filename, uploaded_file, save=False)
+                    _r2_upload_django_file(key, uploaded_file)
+
+                    submission.layout_revised_paper_file.name = key
+                    submission.full_paper_file.name = key
                     submission.status = "layout_revision_submitted"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
@@ -1557,7 +1625,6 @@ def upload_revision(request, submission_id):
         "submission": submission,
         "form": form,
     })
-
 
 @login_required
 def layout_dashboard(request):
