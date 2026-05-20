@@ -797,6 +797,8 @@ class EmailTemplate(models.Model):
         ("paper_submitted", "2. Submission confirmation – author"),
         ("coauthor_submission_confirmation", "3. Submission confirmation – co-author"),
         ("review_invitation", "4. Invitation to review manuscript"),
+        ("review_declined_judge", "4a. Reviewer declined invitation – Judge notification"),
+        ("review_declined_author", "4b. Reviewer declined invitation – Author notification"),
         ("review_request_accepted", "5. Review request accepted"),
         ("review_initiated", "6. Review initiated – author notification"),
         ("review_due_soon", "7. Reminder: review due soon"),
