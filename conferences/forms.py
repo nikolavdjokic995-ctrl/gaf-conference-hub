@@ -777,3 +777,10 @@ class ConferenceFooterPartnerForm(forms.ModelForm):
             "order",
             "enabled",
         ]
+
+
+# Overview customization fields enabled
+try:
+    ConferenceForm.base_fields["overview_background_color"].widget.attrs.update({"type": "color"})
+except:
+    pass

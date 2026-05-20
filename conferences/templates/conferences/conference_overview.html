@@ -664,6 +664,36 @@
 
     </style>
 
+
+<style>
+body{
+    background: {{ conference.overview_background_color|default:"#f3f1e7" }};
+}
+
+.sidebar-menu{
+    width: {{ conference.overview_menu_width|default:260 }}px;
+    background: {{ conference.overview_menu_background|default:"#ffffff" }};
+}
+
+.hero-image{
+    height: {{ conference.overview_hero_height|default:560 }}px;
+}
+
+.hero-image img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.main-overview-content{
+    max-width: {{ conference.overview_content_width|default:1060 }}px;
+}
+
+.info-card{
+    background: {{ conference.overview_card_background|default:"#ffffff" }};
+}
+</style>
+
 </head>
 
 <body>
