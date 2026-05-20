@@ -896,6 +896,7 @@ def submit_paper(request, slug):
                 submission.conference = conference
                 submission.author = request.user
                 submission.first_author_title = form.cleaned_data.get("first_author_title")
+                submission.coauthor_titles = form.cleaned_data.get("coauthor_titles", "")
                 if hasattr(submission, "submitted_by"):
                     submission.submitted_by = request.user
 
@@ -1355,10 +1356,13 @@ def my_submissions(request):
     for submission in submissions:
         submission.coauthor_rows = []
 
-        names = [x.strip() for x in (submission.coauthors or "").split(";") if x.strip()]
-        titles = []
-        affiliations = [x.strip() for x in (submission.coauthor_affiliations or "").split(";") if x.strip()]
-        countries = [x.strip() for x in (submission.coauthor_countries or "").split(";") if x.strip()]
+        names = [x.strip() for x in (submission.coauthors or "").replace("\n", ";").split(";") if x.strip()]
+
+        titles = [x.strip() for x in (submission.coauthor_titles or "").replace("\n", ";").split(";") if x.strip()]
+
+        affiliations = [x.strip() for x in (submission.coauthor_affiliations or "").replace("\n", ";").split(";") if x.strip()]
+
+        countries = [x.strip() for x in (submission.coauthor_countries or "").replace("\n", ";").split(";") if x.strip()]
 
         for i, name in enumerate(names):
             title = titles[i] if i < len(titles) else ""
