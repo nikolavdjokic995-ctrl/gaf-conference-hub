@@ -575,13 +575,13 @@
 
         .conference-footer{
             margin-top:70px;
-            background:#052e24;
             color:white;
+            background:{{ conference.overview_partners_area_background_color|default:"#eef2f1" }};
         }
 
         .footer-partners{
             background:{{ conference.overview_partners_area_background_color|default:"#eef2f1" }};
-            padding:70px 30px;
+            padding:70px 30px 0;
             color:#111827;
         }
 
