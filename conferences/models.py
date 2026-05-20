@@ -134,6 +134,16 @@ class Conference(models.Model):
         default="#f9fafb",
         help_text="Background colour of overview information cards."
     )
+    overview_info_area_background_color = models.CharField(
+        max_length=20,
+        default="#ffffff"
+    )
+
+    overview_partners_area_background_color = models.CharField(
+        max_length=20,
+        default="#eef2f1"
+    )
+
 
     overview_hero_image_height = models.PositiveIntegerField(default=620)
     overview_hero_image_width = models.PositiveIntegerField(default=78)

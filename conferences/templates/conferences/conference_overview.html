@@ -265,6 +265,7 @@
         }
 
         .overview-section{
+            background: {{ conference.overview_info_area_background_color|default:"#ffffff" }};
             max-width:{{ conference.overview_content_width|default:1380 }}px;
             margin:50px auto 60px;
             background:{{ conference.overview_section_background_color|default:conference.overview_section_background|default:'#ffffff' }};
@@ -570,7 +571,7 @@
         }
 
         .footer-partners{
-            background:#eef2f1;
+            background:{{ conference.overview_partners_area_background_color|default:"#eef2f1" }};
             padding:70px 30px;
             color:#111827;
         }
