@@ -44,7 +44,9 @@
         }
 
         .hero-visual{
-            width:100%;
+            width:{{ conference.overview_hero_image_width|default:78 }}%;
+            margin-left:auto;
+            margin-right:auto;
             height:{{ conference.overview_hero_image_height|default:620 }}px;
             background:{{ conference.overview_secondary_background|default:'#ece8da' }};
             overflow:hidden;
@@ -210,10 +212,10 @@
 
         .hero-menu-wrap{
             position:absolute;
-            left:70px;
+            left:18px;
             top:115px;
             z-index:20;
-            width:{{ conference.overview_menu_width|default:260 }}px;
+            width:{{ conference.overview_menu_width|default:220 }}px;
         }
 
         .hero-sidebar-menu{
@@ -228,14 +230,7 @@
         }
 
         .sidebar-title{
-            background:#065f46;
-            color:white;
-            border-radius:12px 12px 6px 6px;
-            padding:14px 16px;
-            text-align:center;
-            font-weight:900;
-            letter-spacing:0.08em;
-            font-size:14px;
+            display:none;
         }
 
         .hero-btn{
@@ -262,10 +257,10 @@
         }
 
         .hero-btn.active{
-            background:#16a34a;
-            border-color:#16a34a;
-            color:white;
-            box-shadow:none;
+            background:rgba(255,255,255,0.15);
+            border-color:#065f46;
+            color:#065f46;
+            box-shadow:0 6px 16px rgba(0,0,0,0.06);
 
         }
 
@@ -390,6 +385,7 @@
             }
 
             .hero-visual{
+                width:100%;
                 height:min({{ conference.overview_hero_image_height|default:620 }}px, 62vw);
                 min-height:320px;
             }
@@ -799,10 +795,6 @@ body{
 
     <div class="hero-menu-wrap">
         <nav class="hero-sidebar-menu" aria-label="Conference menu">
-
-            <div class="sidebar-title">
-                ☰ MENU
-            </div>
 
             <a class="hero-btn active"
                href="{% url 'conference_overview' conference.slug %}">

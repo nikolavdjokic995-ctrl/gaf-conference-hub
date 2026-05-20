@@ -136,6 +136,7 @@ class Conference(models.Model):
     )
 
     overview_hero_image_height = models.PositiveIntegerField(default=620)
+    overview_hero_image_width = models.PositiveIntegerField(default=78)
     overview_hero_buttons_margin_top = models.IntegerField(default=26)
 
     # Extra overview customization fields (kept in sync with migrations 0062/0063)

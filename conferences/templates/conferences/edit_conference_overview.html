@@ -458,6 +458,15 @@
                     </div>
                     {% endif %}
 
+                    {% if form.overview_hero_image_width %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_hero_image_width.id_for_label }}">{{ form.overview_hero_image_width.label }}</label>
+                        {{ form.overview_hero_image_width }}
+                        {{ form.overview_hero_image_width.errors }}
+                        <small>Controls the visible width of the main hero image, in percent.</small>
+                    </div>
+                    {% endif %}
+
                     {% if form.overview_hero_buttons_margin_top %}
                     <div class="form-row">
                         <label for="{{ form.overview_hero_buttons_margin_top.id_for_label }}">{{ form.overview_hero_buttons_margin_top.label }}</label>

@@ -580,6 +580,7 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_section_background_color",
             "overview_card_background_color",
             "overview_hero_image_height",
+            "overview_hero_image_width",
             "overview_hero_buttons_margin_top",
             "overview_menu_width",
             "overview_menu_background",
@@ -608,6 +609,7 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": forms.TextInput(attrs={"type": "color"}),
             "overview_section_background": forms.TextInput(attrs={"type": "color"}),
             "overview_secondary_background": forms.TextInput(attrs={"type": "color"}),
+            "overview_hero_image_width": forms.NumberInput(attrs={"min": 40, "max": 100, "step": 1}),
         }
 
         labels = {
@@ -624,6 +626,7 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": "Main text colour",
             "overview_section_background": "Extra section background colour",
             "overview_secondary_background": "Secondary background colour",
+            "overview_hero_image_width": "Hero image width (%)",
         }
 
 
