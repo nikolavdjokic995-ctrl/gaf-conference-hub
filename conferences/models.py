@@ -138,6 +138,16 @@ class Conference(models.Model):
     overview_hero_image_height = models.PositiveIntegerField(default=620)
     overview_hero_buttons_margin_top = models.IntegerField(default=26)
 
+    # Extra overview customization fields (kept in sync with migrations 0062/0063)
+    overview_menu_width = models.PositiveIntegerField(default=260)
+    overview_menu_background = models.CharField(max_length=20, default="#ffffff")
+    overview_content_width = models.PositiveIntegerField(default=1060)
+    overview_hero_height = models.PositiveIntegerField(default=560)
+    overview_card_background = models.CharField(max_length=20, default="#ffffff")
+    overview_text_color = models.CharField(max_length=20, default="#0b5d3b")
+    overview_section_background = models.CharField(max_length=20, default="#f5f4ee")
+    overview_secondary_background = models.CharField(max_length=20, default="#ece8da")
+
 
     @property
     def plain_title(self):

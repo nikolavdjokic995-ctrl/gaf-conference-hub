@@ -581,6 +581,13 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_card_background_color",
             "overview_hero_image_height",
             "overview_hero_buttons_margin_top",
+            "overview_menu_width",
+            "overview_menu_background",
+            "overview_content_width",
+            "overview_card_background",
+            "overview_text_color",
+            "overview_section_background",
+            "overview_secondary_background",
             
         ]
 
@@ -593,7 +600,14 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_hero_background_color": forms.TextInput(attrs={"type": "color"}),
             "overview_section_background_color": forms.TextInput(attrs={"type": "color"}),
             "overview_card_background_color": forms.TextInput(attrs={"type": "color"}),
-            "overview_hero_image_height": forms.NumberInput(attrs={"min": 250, "max": 1200, "step": 10}),
+            "overview_hero_image_height": forms.NumberInput(attrs={"min": 250, "max": 1400, "step": 10}),
+            "overview_menu_width": forms.NumberInput(attrs={"min": 180, "max": 520, "step": 10}),
+            "overview_content_width": forms.NumberInput(attrs={"min": 760, "max": 1600, "step": 10}),
+            "overview_menu_background": forms.TextInput(attrs={"type": "color"}),
+            "overview_card_background": forms.TextInput(attrs={"type": "color"}),
+            "overview_text_color": forms.TextInput(attrs={"type": "color"}),
+            "overview_section_background": forms.TextInput(attrs={"type": "color"}),
+            "overview_secondary_background": forms.TextInput(attrs={"type": "color"}),
         }
 
         labels = {
@@ -603,6 +617,13 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_card_background_color": "Information card background colour",
             "overview_hero_image_height": "Hero image height",
             "overview_hero_buttons_margin_top": "Hero buttons margin top",
+            "overview_menu_width": "Left menu width",
+            "overview_menu_background": "Left menu background colour",
+            "overview_content_width": "Overview content width",
+            "overview_card_background": "Extra card background colour",
+            "overview_text_color": "Main text colour",
+            "overview_section_background": "Extra section background colour",
+            "overview_secondary_background": "Secondary background colour",
         }
 
 

@@ -32,7 +32,7 @@
         body{
             font-family:Arial,sans-serif;
             background:{{ conference.overview_page_background_color|default:'#f3f1e7' }};
-            color:#0f3d2e;
+            color:{{ conference.overview_text_color|default:'#0f3d2e' }};
         }
 
         .hero{
@@ -46,9 +46,16 @@
         .hero-visual{
             width:100%;
             height:{{ conference.overview_hero_image_height|default:620 }}px;
-            background-size:65%;
-            background-repeat:no-repeat;
-            background-position:center center;
+            background:{{ conference.overview_secondary_background|default:'#ece8da' }};
+            overflow:hidden;
+        }
+
+        .hero-visual img{
+            width:100%;
+            height:100%;
+            object-fit:cover;
+            object-position:center center;
+            display:block;
         }
 
         .navbar{
@@ -206,11 +213,11 @@
             left:70px;
             top:115px;
             z-index:20;
-            width:260px;
+            width:{{ conference.overview_menu_width|default:260 }}px;
         }
 
         .hero-sidebar-menu{
-            background:rgba(255,255,255,0.96);
+            background:{{ conference.overview_menu_background|default:'#ffffff' }};
             border:1px solid rgba(6,95,70,0.18);
             border-radius:16px;
             padding:14px;
@@ -263,9 +270,9 @@
         }
 
         .overview-section{
-            max-width:1380px;
+            max-width:{{ conference.overview_content_width|default:1380 }}px;
             margin:50px auto 60px;
-            background:{{ conference.overview_section_background_color|default:'#ffffff' }};
+            background:{{ conference.overview_section_background_color|default:conference.overview_section_background|default:'#ffffff' }};
             border-radius:{{ conference.overview_section_radius|default:26 }}px;
             padding:{{ conference.overview_section_padding|default:40 }}px;
             position:relative;
@@ -281,7 +288,7 @@
         }
 
         .overview-card{
-            background:{{ conference.overview_card_background_color|default:'#f9fafb' }};
+            background:{{ conference.overview_card_background_color|default:conference.overview_card_background|default:'#f9fafb' }};
             border-radius:{{ conference.overview_card_radius|default:20 }}px;
             padding:{{ conference.overview_card_padding|default:28 }}px;
         }
@@ -304,7 +311,7 @@
             margin-top:34px;
             padding:{{ conference.overview_about_padding|default:38 }}px;
             border-radius:{{ conference.overview_about_radius|default:24 }}px;
-            background:#ffffff;
+            background:{{ conference.overview_card_background|default:'#ffffff' }};
             border:1px solid #e5e7eb;
             box-shadow:0 10px 26px rgba(0,0,0,0.06);
         }
@@ -782,21 +789,13 @@ body{
 
     </div>
 
-    {% if conference.hero_image %}
-        <div class="hero-visual"
-             aria-hidden="true"
-             style="background-image:
-                linear-gradient(90deg, rgba(248,250,248,0.10) 0%, rgba(248,250,248,0.05) 46%, rgba(248,250,248,0.01) 100%),
-                url('{{ conference.hero_image.url }}');">
-        </div>
-    {% else %}
-        <div class="hero-visual"
-             aria-hidden="true"
-             style="background-image:
-                linear-gradient(90deg, rgba(248,250,248,0.10) 0%, rgba(248,250,248,0.05) 46%, rgba(248,250,248,0.01) 100%),
-                url('{% static "conferences/images/hero.jpg" %}');">
-        </div>
-    {% endif %}
+    <div class="hero-visual" aria-hidden="true">
+        {% if conference.hero_image %}
+            <img src="{{ conference.hero_image.url }}" alt="">
+        {% else %}
+            <img src="{% static "conferences/images/hero.jpg" %}" alt="">
+        {% endif %}
+    </div>
 
     <div class="hero-menu-wrap">
         <nav class="hero-sidebar-menu" aria-label="Conference menu">
