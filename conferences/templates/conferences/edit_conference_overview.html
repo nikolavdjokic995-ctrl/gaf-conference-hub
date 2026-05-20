@@ -444,48 +444,6 @@
                         {{ form.overview_card_background_color.errors }}
                     </div>
 
-                    {% if form.overview_section_background %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_section_background.id_for_label }}">{{ form.overview_section_background.label }}</label>
-                        {{ form.overview_section_background }}
-                        {{ form.overview_section_background.errors }}
-                        <small>Controls additional lower/section backgrounds on the overview page.</small>
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_secondary_background %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_secondary_background.id_for_label }}">{{ form.overview_secondary_background.label }}</label>
-                        {{ form.overview_secondary_background }}
-                        {{ form.overview_secondary_background.errors }}
-                        <small>Use this for blocks such as organiser/footer-style overview areas.</small>
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_menu_background %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_menu_background.id_for_label }}">{{ form.overview_menu_background.label }}</label>
-                        {{ form.overview_menu_background }}
-                        {{ form.overview_menu_background.errors }}
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_card_background %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_card_background.id_for_label }}">{{ form.overview_card_background.label }}</label>
-                        {{ form.overview_card_background }}
-                        {{ form.overview_card_background.errors }}
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_text_color %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_text_color.id_for_label }}">{{ form.overview_text_color.label }}</label>
-                        {{ form.overview_text_color }}
-                        {{ form.overview_text_color.errors }}
-                    </div>
-                    {% endif %}
-
                     <div class="settings-section-title">
                         <h2>Overview page layout</h2>
                         <p>Adjust card sizes, spacing and text sizes without editing template code. Values are in pixels.</p>
@@ -497,31 +455,6 @@
                         {{ form.overview_hero_image_height }}
                         {{ form.overview_hero_image_height.errors }}
                         <small>Controls the visible height of the main hero image, in pixels.</small>
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_hero_height %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_hero_height.id_for_label }}">{{ form.overview_hero_height.label }}</label>
-                        {{ form.overview_hero_height }}
-                        {{ form.overview_hero_height.errors }}
-                        <small>Alternative hero block height used by the newer overview layout.</small>
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_menu_width %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_menu_width.id_for_label }}">{{ form.overview_menu_width.label }}</label>
-                        {{ form.overview_menu_width }}
-                        {{ form.overview_menu_width.errors }}
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_content_width %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_content_width.id_for_label }}">{{ form.overview_content_width.label }}</label>
-                        {{ form.overview_content_width }}
-                        {{ form.overview_content_width.errors }}
                     </div>
                     {% endif %}
 
