@@ -9,6 +9,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment
+from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
 
 
 def split_people(value):
@@ -259,6 +260,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "revision_deadline": "",
         "layout_deadline": "",
         "temporary_password": "",
+        "decline_reason": assignment.decline_reason if assignment else "",
     }
     if extra:
         context.update(extra)
@@ -289,6 +291,14 @@ def build_email_bodies(body):
 
 def recipients_for_template(template, submission=None, reviewer=None):
     recipients = []
+
+    if submission and template.event == "review_declined_judge":
+        for email in ConferenceRole.objects.filter(
+            conference=submission.conference,
+            role__in=["judge", "manager"],
+            user__email__gt=""
+        ).values_list("user__email", flat=True):
+            add_unique_email(recipients, email)
 
     if submission:
         # Centralized author/co-author recipient logic.
@@ -330,6 +340,21 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
         conference=submission.conference,
         event=event,
     ).first()
+
+    if template is None and event in DEFAULT_EMAIL_TEMPLATES_2026:
+        defaults = DEFAULT_EMAIL_TEMPLATES_2026[event]
+        template = EmailTemplate.objects.create(
+            conference=submission.conference,
+            event=event,
+            enabled=defaults.get("enabled", True),
+            subject=defaults.get("subject", ""),
+            body=defaults.get("body", ""),
+            send_to_author=defaults.get("send_to_author", True),
+            send_to_coauthors=defaults.get("send_to_coauthors", True),
+            send_to_reviewer=defaults.get("send_to_reviewer", False),
+            send_to_managers=defaults.get("send_to_managers", False),
+            send_to_layout_reviewers=defaults.get("send_to_layout_reviewers", False),
+        )
 
     if template is None:
         EmailLog.objects.create(
@@ -464,6 +489,7 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "revision_deadline": "01.05.2026.",
             "layout_deadline": "22.03.2026.",
             "temporary_password": "temporary-password",
+            "decline_reason": "Reviewer is not available to complete the review within the proposed period.",
         })
     return {
         "subject": render_template_text(template.subject, context).strip(),

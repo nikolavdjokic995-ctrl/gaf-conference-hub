@@ -153,6 +153,28 @@ def review_invitation_response(request, assignment_id):
             assignment.decline_reason = request.POST.get("decline_reason", "")
             assignment.save()
 
+            decline_extra = {
+                "decline_reason": assignment.decline_reason,
+            }
+
+            send_event_email(
+                "review_declined_judge",
+                submission,
+                request=request,
+                reviewer=request.user,
+                assignment=assignment,
+                extra=decline_extra,
+            )
+
+            send_event_email(
+                "review_declined_author",
+                submission,
+                request=request,
+                reviewer=request.user,
+                assignment=assignment,
+                extra=decline_extra,
+            )
+
             messages.success(
                 request,
                 "Review invitation declined."

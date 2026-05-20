@@ -3,6 +3,8 @@ OFFICIAL_EMAIL_EVENTS = [
     "paper_submitted",
     "coauthor_submission_confirmation",
     "review_invitation",
+    "review_declined_judge",
+    "review_declined_author",
     "review_request_accepted",
     "review_initiated",
     "review_due_soon",
@@ -37,6 +39,52 @@ DEFAULT_EMAIL_TEMPLATES_2026 = {
         "subject": "Invitation to Review Manuscript: {{ paper_title }}",
         "body": """Dear Reviewer,\n\nWe are writing to extend an invitation to you as a potential reviewer of the manuscript entitled {{ paper_title }}, which has been submitted to Green Building Conference.\n\nWe kindly invite you to review this paper and evaluate its suitability for publication in the Green Building International Scientific Conference Proceedings. The article abstract is available at the end of this message.\n\nThe proposed review period is {{ review_days }} days, with the proposed deadline {{ review_deadline }}. If you require additional time, you may request a different deadline when accepting the review invitation.\n\nTo respond to this review invitation and access the full manuscript and review report form, please click on the link below:\n{{ review_link }}\n\nThank you for considering our invitation. Your expertise and contributions are highly valued.\n\nKind Regards,\nThe Editorial Board\nGreen Building International Scientific Conference\n\nMANUSCRIPT DETAILS\nManuscript title: {{ paper_title }}\nManuscript ID: {{ paper_code }}\nArticle type: {{ article_type }}\nSubmitted on: {{ submitted_on }}\nAbstract:\n{{ abstract }}\nKeywords: {{ keywords }}\n\nNote: Reviewers are obliged to keep all manuscript files confidential. For technical issues, please contact us at {{ conference_contact_email }}.""",
         "send_to_author": False, "send_to_coauthors": False, "send_to_reviewer": True,
+    },
+    "review_declined_judge": {
+        "subject": "Reviewer declined review invitation – Manuscript: {{ paper_title }}",
+        "body": """Dear Judge,
+
+This is an automatic notification that the reviewer {{ reviewer_name }} has declined the invitation to review the following manuscript:
+
+Manuscript title: {{ paper_title }}
+Manuscript ID: {{ paper_code }}
+Article type: {{ article_type }}
+Conference: {{ conference_name }}
+
+{% if decline_reason %}
+Reason provided by the reviewer:
+{{ decline_reason }}
+{% else %}
+No reason was provided by the reviewer.
+{% endif %}
+
+Please assign another reviewer when convenient.
+
+Kind Regards,
+The Editorial Office
+Green Building International Scientific Conference""",
+        "send_to_author": False, "send_to_coauthors": False, "send_to_reviewer": False, "send_to_managers": False,
+    },
+    "review_declined_author": {
+        "subject": "Reviewer assignment update – Manuscript: {{ paper_title }}",
+        "body": """Dear Author,
+
+This is an automatic notification regarding your manuscript:
+
+Manuscript title: {{ paper_title }}
+Manuscript ID: {{ paper_code }}
+Conference: {{ conference_name }}
+
+One of the invited reviewers has declined the review invitation. The editorial team has been notified and will assign another reviewer as soon as possible.
+
+This does not require any action from you at this moment.
+
+Thank you for your patience.
+
+Kind Regards,
+The Editorial Office
+Green Building International Scientific Conference""",
+        "send_to_author": True, "send_to_coauthors": True, "send_to_reviewer": False,
     },
     "review_request_accepted": {
         "subject": "Review Request Accepted – Manuscript: {{ paper_title }}",
