@@ -274,11 +274,15 @@
 
                     <td class="authors-col">
 
-                        <strong>{{ submission.first_author }}</strong>
+                        <strong>
+                            {{ submission.first_author_title }} {{ submission.first_author }}
+                        </strong>
 
-                        {% if submission.coauthors %}
+                        {% if submission.coauthor_rows %}
                             <br><br>
-                            {{ submission.coauthors|linebreaksbr }}
+                            {% for coauthor in submission.coauthor_rows %}
+                                {{ coauthor.display_name }}<br>
+                            {% endfor %}
                         {% endif %}
 
                     </td>
