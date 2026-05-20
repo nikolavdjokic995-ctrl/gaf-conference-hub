@@ -1989,7 +1989,13 @@ def my_reviews(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user,
         role="content_reviewer",
-        submission__status__in=["under_review", "revised_submitted", "revision_required"]
+        submission__status__in=[
+            "submitted",
+            "under_review",
+            "revised_submitted",
+            "revision_required",
+            "reviews_completed",
+        ]
     ).select_related(
         "submission",
         "submission__conference",
@@ -2005,7 +2011,13 @@ def reviewer_dashboard(request):
     assignments = ReviewAssignment.objects.filter(
         reviewer=request.user,
         role="content_reviewer",
-        submission__status__in=["under_review", "revised_submitted", "revision_required"]
+        submission__status__in=[
+            "submitted",
+            "under_review",
+            "revised_submitted",
+            "revision_required",
+            "reviews_completed",
+        ]
     ).select_related(
         "submission",
         "submission__conference",
