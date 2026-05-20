@@ -1525,6 +1525,28 @@ def conference_submissions(request, slug):
         "review_assignments__reviewer"
     ).order_by("-created_at")
 
+    for submission in submissions:
+        submission.coauthor_rows = []
+
+        names = [
+            x.strip()
+            for x in (submission.coauthors or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        titles = [
+            x.strip()
+            for x in (submission.coauthor_titles or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        for i, name in enumerate(names):
+            title = titles[i] if i < len(titles) else ""
+
+            submission.coauthor_rows.append({
+                "display_name": f"{title} {name}".strip(),
+            })
+
     reviewers = ConferenceRole.objects.filter(
         conference=conference,
         role="content_reviewer"
