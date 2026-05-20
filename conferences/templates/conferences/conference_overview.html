@@ -264,11 +264,15 @@
 
         }
 
+        .overview-info-area{
+            background:{{ conference.overview_info_area_background_color|default:"#f3f1e7" }};
+            padding:50px 0 60px;
+        }
+
         .overview-section{
-            background: {{ conference.overview_info_area_background_color|default:"#ffffff" }};
-            max-width:{{ conference.overview_content_width|default:1380 }}px;
-            margin:50px auto 60px;
             background:{{ conference.overview_section_background_color|default:conference.overview_section_background|default:'#ffffff' }};
+            max-width:{{ conference.overview_content_width|default:1380 }}px;
+            margin:0 auto;
             border-radius:{{ conference.overview_section_radius|default:26 }}px;
             padding:{{ conference.overview_section_padding|default:40 }}px;
             position:relative;
@@ -424,8 +428,12 @@
                 text-align:center;
             }
 
+            .overview-info-area{
+                padding:40px 0;
+            }
+
             .overview-section{
-                margin:40px 16px 40px;
+                margin:0 16px;
                 padding:24px;
             }
 
@@ -842,6 +850,8 @@ body{
 </section>
 
 
+<div class="overview-info-area">
+
 <section class="countdown-section">
     <div class="countdown-card"
          data-submission-deadline="{{ conference.submission_deadline|date:'Y-m-d' }}"
@@ -955,6 +965,9 @@ body{
 </section>
 
 
+
+
+</div>
 
 <footer class="conference-footer">
 
