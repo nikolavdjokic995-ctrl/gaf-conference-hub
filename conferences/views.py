@@ -424,6 +424,7 @@ def assign_papers(request, slug, submission_id=None):
         if not created:
             if proposed_deadline:
                 assignment.proposed_deadline = proposed_deadline
+
             assignment.invitation_status = "pending"
             assignment.accepted_deadline = None
             assignment.deadline_extension_requested = False
@@ -448,7 +449,10 @@ def assign_papers(request, slug, submission_id=None):
 
             messages.success(request, "Reviewer assigned successfully.")
         else:
-            messages.info(request, "This reviewer was already assigned. The invitation status was reset to pending.")
+            messages.info(
+                request,
+                "This reviewer was already assigned. The invitation status was reset to pending."
+            )
 
         submission.status = "under_review"
         submission.save(update_fields=["status", "updated_at"])
@@ -471,6 +475,27 @@ def assign_papers(request, slug, submission_id=None):
             id=submission_id
         )
 
+        submission.coauthor_rows = []
+
+        names = [
+            x.strip()
+            for x in (submission.coauthors or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        titles = [
+            x.strip()
+            for x in (submission.coauthor_titles or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        for i, name in enumerate(names):
+            title = titles[i] if i < len(titles) else ""
+
+            submission.coauthor_rows.append({
+                "display_name": f"{title} {name}".strip(),
+            })
+
         topic_ids = [
             topic.id
             for topic in [submission.topic, submission.secondary_topic]
@@ -492,6 +517,28 @@ def assign_papers(request, slug, submission_id=None):
     submission_data = []
 
     for submission in submissions:
+
+        submission.coauthor_rows = []
+
+        names = [
+            x.strip()
+            for x in (submission.coauthors or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        titles = [
+            x.strip()
+            for x in (submission.coauthor_titles or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        for i, name in enumerate(names):
+            title = titles[i] if i < len(titles) else ""
+
+            submission.coauthor_rows.append({
+                "display_name": f"{title} {name}".strip(),
+            })
+
         topic_ids = [
             topic.id
             for topic in [submission.topic, submission.secondary_topic]
