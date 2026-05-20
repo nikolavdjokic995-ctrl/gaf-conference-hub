@@ -67,7 +67,9 @@
                 </div>
                 <div class="meta-box">
                     <div class="meta-label">First author</div>
-                    <div class="meta-value">{{ submission.first_author }}</div>
+                    <div class="meta-value">
+                        {{ submission.first_author_title }} {{ submission.first_author }}
+                    </div>
                 </div>
                 <div class="meta-box">
                     <div class="meta-label">Submitted by</div>
@@ -96,7 +98,13 @@
                 <div class="meta-box" style="grid-column:1/-1;">
                     <div class="meta-label">Co-authors</div>
                     <div class="meta-value">
-                        {% if submission.coauthors %}{{ submission.coauthors }}{% else %}No co-authors{% endif %}
+                        {% if submission.coauthor_rows %}
+                            {% for coauthor in submission.coauthor_rows %}
+                                {{ coauthor.display_name }}<br>
+                            {% endfor %}
+                        {% else %}
+                            No co-authors
+                        {% endif %}
                     </div>
                 </div>
                 <div class="meta-box" style="grid-column:1/-1;">
