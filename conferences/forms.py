@@ -575,6 +575,10 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_about_radius",
             "overview_about_title_size",
             "overview_about_text_size",
+            "overview_page_background_color",
+            "overview_hero_background_color",
+            "overview_section_background_color",
+            "overview_card_background_color",
         ]
 
         widgets = {
@@ -582,6 +586,17 @@ class ConferenceOverviewForm(forms.ModelForm):
                 "rows": 3,
                 "placeholder": "Green Building\nInternational Scientific Conference\n2026",
             }),
+            "overview_page_background_color": forms.TextInput(attrs={"type": "color"}),
+            "overview_hero_background_color": forms.TextInput(attrs={"type": "color"}),
+            "overview_section_background_color": forms.TextInput(attrs={"type": "color"}),
+            "overview_card_background_color": forms.TextInput(attrs={"type": "color"}),
+        }
+
+        labels = {
+            "overview_page_background_color": "Page background colour",
+            "overview_hero_background_color": "Hero background colour",
+            "overview_section_background_color": "Main section background colour",
+            "overview_card_background_color": "Information card background colour",
         }
 
 

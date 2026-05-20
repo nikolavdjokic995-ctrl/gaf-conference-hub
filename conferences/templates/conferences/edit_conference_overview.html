@@ -415,6 +415,36 @@
                     </div>
 
                     <div class="settings-section-title">
+                        <h2>Overview page colours</h2>
+                        <p>Choose colours that match the conference hero image and visual identity.</p>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_page_background_color.id_for_label }}">{{ form.overview_page_background_color.label }}</label>
+                        {{ form.overview_page_background_color }}
+                        {{ form.overview_page_background_color.errors }}
+                        <small>Recommended for the current hero image: #f3f1e7 or #ece8da.</small>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_hero_background_color.id_for_label }}">{{ form.overview_hero_background_color.label }}</label>
+                        {{ form.overview_hero_background_color }}
+                        {{ form.overview_hero_background_color.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_background_color.id_for_label }}">{{ form.overview_section_background_color.label }}</label>
+                        {{ form.overview_section_background_color }}
+                        {{ form.overview_section_background_color.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_background_color.id_for_label }}">{{ form.overview_card_background_color.label }}</label>
+                        {{ form.overview_card_background_color }}
+                        {{ form.overview_card_background_color.errors }}
+                    </div>
+
+                    <div class="settings-section-title">
                         <h2>Overview page layout</h2>
                         <p>Adjust card sizes, spacing and text sizes without editing template code. Values are in pixels.</p>
                     </div>

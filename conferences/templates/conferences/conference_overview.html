@@ -31,14 +31,14 @@
 
         body{
             font-family:Arial,sans-serif;
-            background:#f8faf9;
+            background:{{ conference.overview_page_background_color|default:'#f3f1e7' }};
             color:#0f3d2e;
         }
 
         .hero{
             position:relative;
             min-height:0;
-            background:#f8faf8;
+            background:{{ conference.overview_hero_background_color|default:'#f3f1e7' }};
             display:flex;
             flex-direction:column;
         }
@@ -265,7 +265,7 @@
         .overview-section{
             max-width:1380px;
             margin:50px auto 60px;
-            background:white;
+            background:{{ conference.overview_section_background_color|default:'#ffffff' }};
             border-radius:{{ conference.overview_section_radius|default:26 }}px;
             padding:{{ conference.overview_section_padding|default:40 }}px;
             position:relative;
@@ -281,7 +281,7 @@
         }
 
         .overview-card{
-            background:#f9fafb;
+            background:{{ conference.overview_card_background_color|default:'#f9fafb' }};
             border-radius:{{ conference.overview_card_radius|default:20 }}px;
             padding:{{ conference.overview_card_padding|default:28 }}px;
         }

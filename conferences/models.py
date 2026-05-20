@@ -112,6 +112,29 @@ class Conference(models.Model):
     overview_about_radius = models.PositiveIntegerField(default=24)
     overview_about_title_size = models.PositiveIntegerField(default=42)
     overview_about_text_size = models.PositiveIntegerField(default=18)
+
+    # Overview page colour settings
+    overview_page_background_color = models.CharField(
+        max_length=20,
+        default="#f3f1e7",
+        help_text="Background colour of the conference overview page."
+    )
+    overview_hero_background_color = models.CharField(
+        max_length=20,
+        default="#f3f1e7",
+        help_text="Background colour behind the hero image."
+    )
+    overview_section_background_color = models.CharField(
+        max_length=20,
+        default="#ffffff",
+        help_text="Background colour of the main overview content section."
+    )
+    overview_card_background_color = models.CharField(
+        max_length=20,
+        default="#f9fafb",
+        help_text="Background colour of overview information cards."
+    )
+
     overview_hero_image_height = models.PositiveIntegerField(default=620)
     overview_hero_buttons_margin_top = models.IntegerField(default=26)
 
