@@ -340,6 +340,11 @@ class Submission(models.Model):
     judge_revision_message = models.TextField(blank=True)
     layout_revision_message = models.TextField(blank=True)
 
+    author_revision_deadline = models.DateField(
+        null=True,
+        blank=True
+    )
+
     revision_round = models.PositiveSmallIntegerField(default=0)
     layout_revision_round = models.PositiveSmallIntegerField(default=0)
 

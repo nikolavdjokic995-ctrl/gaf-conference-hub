@@ -800,6 +800,14 @@ class JudgeDecisionForm(forms.Form):
         required=False,
     )
 
+    revision_deadline = forms.DateField(
+        required=False,
+        label="Author revision deadline",
+        widget=forms.DateInput(attrs={
+            "type": "date",
+        }),
+    )
+
 
 class RevisionUploadForm(forms.Form):
 

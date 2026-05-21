@@ -351,13 +351,19 @@ def make_decision(request, submission_id):
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
+            revision_deadline = form.cleaned_data["revision_deadline"]
 
             submission.status = status
             submission.final_comment = comment
 
             if status == "revision_required":
                 submission.judge_revision_message = comment
+                submission.author_revision_deadline = revision_deadline
                 submission.revision_round += 1
+
+            elif status == "layout_revision_required":
+                submission.layout_revision_message = comment
+                submission.author_revision_deadline = revision_deadline
 
             submission.save()
 
@@ -372,8 +378,9 @@ def make_decision(request, submission_id):
             return redirect("submission_result", submission_id=submission.id)
     else:
         form = JudgeDecisionForm(initial={
-            "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "rejected"] else "accepted_for_layout",
+            "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "layout_revision_required", "rejected"] else "accepted_for_layout",
             "comment": submission.final_comment,
+            "revision_deadline": submission.author_revision_deadline,
         })
 
     return render(request, "conferences/make_decision.html", {
@@ -1771,6 +1778,7 @@ def layout_decision(request, submission_id):
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
+            revision_deadline = form.cleaned_data["revision_deadline"]
 
             submission.status = status
             submission.final_comment = comment
