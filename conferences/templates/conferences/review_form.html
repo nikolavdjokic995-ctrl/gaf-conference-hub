@@ -197,29 +197,7 @@
                     </span>
                 </label>
             </div>
-
-            <div class="declaration-box">
-                {{ form.extension_requested.errors }}
-                <label class="check-row">
-                    {{ form.extension_requested }}
-                    <span>
-                        {{ form.extension_requested.label }}
-                        <div class="help">Use this only if you need more time than the current review deadline{% if submission.conference.review_deadline %}: {{ submission.conference.review_deadline|date:"d.m.Y." }}{% endif %}.</div>
-                    </span>
-                </label>
-
-                <div id="extension-fields" class="extension-fields">
-                    <div class="date-row">
-                        <div>
-                            <strong>{{ form.requested_deadline.label }}</strong>
-                            <div class="help">The editor/chair will review this request.</div>
-                        </div>
-                        <div>
-                            {{ form.requested_deadline.errors }}
-                            {{ form.requested_deadline }}
-                        </div>
-                    </div>
-                </div>
+        </div>
             </div>
         </div>
 
@@ -261,7 +239,7 @@
 
         <div class="card">
             <h2>Comments to the authors</h2>
-            <div class="help">Please include your comments for the author(s) in the box below.</div>
+            <div class="help">Please include your comments for the author(s) in the box below. Reviews should provide detailed, constructive, and well-argued comments that help the authors improve the quality and clarity of their manuscript. Comments should be formulated in a professional, respectful, and collegial manner, recognizing that the conference applies a double-blind review process and that some submissions may be authored by early-career researchers and PhD students. Whenever possible, criticism should be accompanied by clear suggestions for improvement.</div>
             {{ form.comments_for_authors.errors }}
             {{ form.comments_for_authors }}
 
@@ -317,29 +295,5 @@
         </div>
     </form>
 </div>
-<script>
-(function () {
-    const checkbox = document.getElementById("id_extension_requested");
-    const fields = document.getElementById("extension-fields");
-    const dateInput = document.getElementById("id_requested_deadline");
-
-    function updateExtensionFields() {
-        if (!checkbox || !fields) return;
-        const enabled = checkbox.checked;
-        fields.classList.toggle("is-hidden", !enabled);
-        if (dateInput) {
-            dateInput.disabled = !enabled;
-            if (!enabled) {
-                dateInput.value = "";
-            }
-        }
-    }
-
-    if (checkbox) {
-        checkbox.addEventListener("change", updateExtensionFields);
-        updateExtensionFields();
-    }
-})();
-</script>
 </body>
 </html>
