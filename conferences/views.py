@@ -1741,6 +1741,57 @@ def upload_revision(request, submission_id):
         "form": form,
     })
 
+def _split_submission_people_field(value):
+    return [
+        item.strip()
+        for item in (value or "").replace("\n", ";").split(";")
+        if item.strip()
+    ]
+
+
+def _attach_author_rows(submission):
+    first_author_display = f"{submission.first_author_title or ''} {submission.first_author or ''}".strip()
+
+    submission.first_author_details = {
+        "display_name": first_author_display or submission.first_author,
+        "email": submission.first_author_email or getattr(submission.author, "email", ""),
+        "affiliation": submission.first_author_affiliation or "",
+        "country": submission.first_author_country or "",
+        "orcid": submission.first_author_orcid or "",
+    }
+
+    names = _split_submission_people_field(submission.coauthors)
+    titles = _split_submission_people_field(submission.coauthor_titles)
+    affiliations = _split_submission_people_field(submission.coauthor_affiliations)
+    countries = _split_submission_people_field(submission.coauthor_countries)
+    emails = _split_submission_people_field(submission.coauthor_emails)
+    orcids = _split_submission_people_field(submission.coauthor_orcids)
+
+    max_len = max(
+        len(names),
+        len(titles),
+        len(affiliations),
+        len(countries),
+        len(emails),
+        len(orcids),
+        0,
+    )
+
+    submission.coauthor_rows = []
+    for index in range(max_len):
+        name = names[index] if index < len(names) else ""
+        title = titles[index] if index < len(titles) else ""
+        submission.coauthor_rows.append({
+            "display_name": f"{title} {name}".strip() or name,
+            "email": emails[index] if index < len(emails) else "",
+            "affiliation": affiliations[index] if index < len(affiliations) else "",
+            "country": countries[index] if index < len(countries) else "",
+            "orcid": orcids[index] if index < len(orcids) else "",
+        })
+
+    return submission
+
+
 @login_required
 def layout_dashboard(request):
     layout_roles = ConferenceRole.objects.filter(
@@ -1778,6 +1829,12 @@ def layout_dashboard(request):
     ).prefetch_related(
         "reviews__reviewer"
     ).order_by("-updated_at")
+
+    for submission in submissions:
+        _attach_author_rows(submission)
+
+    for submission in accepted_publication_submissions:
+        _attach_author_rows(submission)
 
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,
