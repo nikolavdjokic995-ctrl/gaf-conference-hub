@@ -13,6 +13,61 @@ def _clear_paragraph_text_only(paragraph):
         run.text = ""
 
 
+
+
+def _set_paragraph_text(paragraph, replacement):
+    """
+    Replace paragraph visible text while keeping paragraph/style.
+    """
+    if paragraph.runs:
+        paragraph.runs[0].text = replacement
+        for run in paragraph.runs[1:]:
+            run.text = ""
+    else:
+        paragraph.add_run(replacement)
+
+
+def _looks_like_template_author_placeholder(text):
+    """
+    Detect author-name placeholder lines from the Green Building paper template,
+    including cases like:
+    Name and Family Name1 (Style Author), Name and Family Name2 ...
+    """
+    if not text:
+        return False
+
+    compact = " ".join(text.strip().split())
+    lower = compact.lower()
+
+    author_phrases = [
+        "name and family name",
+        "style author",
+        "author1",
+        "author 1",
+        "author2",
+        "author 2",
+        "author3",
+        "author 3",
+        "author4",
+        "author 4",
+    ]
+
+    return any(phrase in lower for phrase in author_phrases)
+
+
+def _clear_author_blocks_in_tables(doc):
+    """
+    Some DOCX templates keep title/author data inside tables.
+    """
+    for table in doc.tables:
+        for row in table.rows:
+            row_text = " ".join(cell.text for cell in row.cells)
+            if _looks_like_template_author_placeholder(row_text) or _looks_like_author_line(row_text):
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        _set_paragraph_text(paragraph, "[REMOVED FOR BLIND REVIEW]")
+
+
 def _clear_docx_review_xml_text(input_docx_path, output_docx_path):
     """
     Clear footnote/endnote/comment text, but preserve footnote separator notes.
@@ -115,6 +170,9 @@ def _looks_like_author_line(text):
 
     lower = text.lower()
 
+    if _looks_like_template_author_placeholder(text):
+        return True
+
     if lower.startswith("abstract"):
         return False
 
@@ -168,6 +226,14 @@ def anonymize_docx(source_path, target_path):
             pass
 
     paragraphs = list(doc.paragraphs)
+
+    # Remove explicit author placeholders and author-name lines on the cover page.
+    for paragraph in paragraphs:
+        text = _normal_text(paragraph)
+        if _looks_like_template_author_placeholder(text):
+            _set_paragraph_text(paragraph, "[REMOVED FOR BLIND REVIEW]")
+
+    _clear_author_blocks_in_tables(doc)
 
     title_index = None
     abstract_index = None
