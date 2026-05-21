@@ -4,7 +4,8 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("conferences", "0068_remove_conference_hub_background_color_and_more"),
+    ("conferences", "0069_overview_menu_controls"),
+]
     ]
 
     operations = [
