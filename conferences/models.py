@@ -159,6 +159,11 @@ class Conference(models.Model):
     hub_left_margin = models.PositiveIntegerField(default=200)
     hub_background_image_width = models.PositiveIntegerField(default=100)
     hub_background_image_opacity = models.FloatField(default=1)
+    hub_background_image = models.ImageField(
+        upload_to="conference_hub/",
+        blank=True,
+        null=True
+    )
     hub_logo_width = models.PositiveIntegerField(default=140)
     hub_card_radius = models.PositiveIntegerField(default=18)
     hub_card_padding = models.PositiveIntegerField(default=28)

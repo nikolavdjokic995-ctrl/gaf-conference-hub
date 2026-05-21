@@ -21,7 +21,13 @@
             content: "";
             position: fixed;
             inset: 0;
+
+            {% if conferences.0.hub_background_image %}
+            background-image: url('{{ conferences.0.hub_background_image.url }}');
+            {% else %}
             background-image: url('{% static "conferences/images/GB2026_HUB_Naslovna_2560x1440.jpg" %}');
+            {% endif %}
+
             background-repeat: no-repeat;
             background-position: center center;
             background-size: {{ conferences.0.hub_background_image_width|default:100 }}% auto;

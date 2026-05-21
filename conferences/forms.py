@@ -600,6 +600,7 @@ class ConferenceOverviewForm(forms.ModelForm):
             "hub_logo_width",
             "hub_card_radius",
             "hub_card_padding",
+            "hub_background_image",
             
         ]
 
@@ -636,6 +637,7 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": "Main text colour",
             "overview_section_background": "Extra section background colour",
             "overview_secondary_background": "Secondary background colour",
+            "hub_background_image": "Hub background image",
         }
 
 
