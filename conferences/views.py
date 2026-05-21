@@ -349,9 +349,17 @@ def make_decision(request, submission_id):
         form = JudgeDecisionForm(request.POST)
 
         if form.is_valid():
-            status = form.cleaned_data["status"]
+            selected_status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
             revision_deadline = form.cleaned_data["revision_deadline"]
+
+            # In the Judge decision workflow, "Accept after minor revision"
+            # still means that the AUTHOR must revise the manuscript.
+            # Layout revision is handled later by the layout reviewer.
+            if selected_status == "layout_revision_required":
+                status = "revision_required"
+            else:
+                status = selected_status
 
             submission.status = status
             submission.final_comment = comment
@@ -360,10 +368,6 @@ def make_decision(request, submission_id):
                 submission.judge_revision_message = comment
                 submission.author_revision_deadline = revision_deadline
                 submission.revision_round += 1
-
-            elif status == "layout_revision_required":
-                submission.layout_revision_message = comment
-                submission.author_revision_deadline = revision_deadline
 
             submission.save()
 
