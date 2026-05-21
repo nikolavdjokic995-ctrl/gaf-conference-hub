@@ -631,7 +631,7 @@ def review_submission(request, submission_id):
                 assigned_reviewers_count > 0
                 and completed_reviews_count >= assigned_reviewers_count
             ):
-                submission.status = "reviewed_by_reviewer"
+                submission.status = "reviews_completed"
                 submission.save(update_fields=["status", "updated_at"])
 
             messages.success(request, f"Review for round {current_round} saved successfully.")

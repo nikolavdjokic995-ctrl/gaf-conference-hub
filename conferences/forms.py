@@ -469,6 +469,56 @@ class ReviewForm(forms.ModelForm):
 
         return file
 
+    def _author_scale_from_quality(self, value):
+        """
+        Keep legacy reviewer-evaluation fields in sync with the current
+        Green Building review form fields, so older result templates do not
+        keep showing default values such as "Can be improved".
+        """
+        mapping = {
+            "excellent": "yes",
+            "good": "yes",
+            "normal": "can_be_improved",
+            "poor": "must_be_improved",
+        }
+        return mapping.get(value, "can_be_improved")
+
+    def _english_from_clarity(self, value):
+        if value == "poor":
+            return "needs_improvement"
+        return "fine"
+
+    def save(self, commit=True):
+        review = super().save(commit=False)
+
+        review.content_context = self._author_scale_from_quality(
+            review.quality_originality
+        )
+        review.research_design = self._author_scale_from_quality(
+            review.quality_methodological_approach
+        )
+        review.arguments_discussion = self._author_scale_from_quality(
+            review.quality_scientific_contribution
+        )
+        review.results_presented = self._author_scale_from_quality(
+            review.quality_scientific_contribution
+        )
+        review.references_adequate = self._author_scale_from_quality(
+            review.quality_references
+        )
+        review.conclusions_supported = self._author_scale_from_quality(
+            review.quality_scientific_contribution
+        )
+        review.english_quality = self._english_from_clarity(
+            review.quality_clarity_expression
+        )
+
+        if commit:
+            review.save()
+
+        return review
+
+
 class ReviewInvitationResponseForm(forms.Form):
 
     RESPONSE_CHOICES = [
@@ -588,6 +638,20 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color",
             "overview_section_background",
             "overview_secondary_background",
+            "hub_background_color",
+            "hub_header_background",
+            "hub_card_background",
+            "hub_title_color",
+            "hub_text_color",
+            "hub_container_width",
+            "hub_left_margin",
+            "hub_background_image_width",
+            "hub_background_image_opacity",
+            "hub_logo_width",
+            "hub_card_radius",
+            "hub_card_padding",
+            "hero_image",
+            "hub_background_image",
             
         ]
 
@@ -608,6 +672,54 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": forms.TextInput(attrs={"type": "color"}),
             "overview_section_background": forms.TextInput(attrs={"type": "color"}),
             "overview_secondary_background": forms.TextInput(attrs={"type": "color"}),
+
+            "hub_background_color": forms.TextInput(attrs={"type": "color"}),
+            "hub_header_background": forms.TextInput(attrs={"type": "color"}),
+            "hub_card_background": forms.TextInput(attrs={"type": "color"}),
+            "hub_title_color": forms.TextInput(attrs={"type": "color"}),
+            "hub_text_color": forms.TextInput(attrs={"type": "color"}),
+
+            "hub_container_width": forms.NumberInput(attrs={
+                "min": 500,
+                "max": 1800,
+                "step": 10
+            }),
+
+            "hub_left_margin": forms.NumberInput(attrs={
+                "min": 0,
+                "max": 600,
+                "step": 10
+            }),
+
+            "hub_background_image_width": forms.NumberInput(attrs={
+                "min": 10,
+                "max": 100,
+                "step": 1
+            }),
+
+            "hub_background_image_opacity": forms.NumberInput(attrs={
+                "min": 0,
+                "max": 1,
+                "step": 0.1
+            }),
+ 
+            "hub_logo_width": forms.NumberInput(attrs={
+                "min": 40,
+                "max": 300,
+                "step": 5
+            }),
+
+            "hub_card_radius": forms.NumberInput(attrs={
+                "min": 0,
+                "max": 60,
+                "step": 1
+            }),
+
+            "hub_card_padding": forms.NumberInput(attrs={
+                "min": 10,
+                "max": 80,
+                "step": 2
+            }),
         }
 
         labels = {
@@ -624,6 +736,20 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": "Main text colour",
             "overview_section_background": "Extra section background colour",
             "overview_secondary_background": "Secondary background colour",
+            "hub_background_image": "Hub background image",
+            "hub_background_color": "Hub background colour",
+            "hub_header_background": "Hub header colour",
+            "hub_card_background": "Hub card background",
+            "hub_title_color": "Hub title colour",
+            "hub_text_color": "Hub text colour",
+            "hub_container_width": "Hub container width",
+            "hub_left_margin": "Hub left margin",
+            "hub_background_image_width": "Background image width (%)",
+            "hub_background_image_opacity": "Background image opacity",
+            "hub_logo_width": "Conference logo width",
+            "hub_card_radius": "Conference card radius",
+            "hub_card_padding": "Conference card padding",
+            "hub_background_image": "Hub background image",
         }
 
 
