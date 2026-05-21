@@ -361,34 +361,6 @@ def make_decision(request, submission_id):
 
             submission.save()
 
-            reviewer_comments = []
-
-            reviews = Review.objects.filter(submission=submission)
-
-            for review in reviews:
-                if review.comments_for_authors:
-                    reviewer_comments.append(
-                        f"- {review.comments_for_authors}"
-                    )
-
-            reviewer_comments_text = "\n\n".join(reviewer_comments)
-
-            notification_reviews = Review.objects.filter(
-                submission=submission,
-                wants_final_notification="yes"
-            ).select_related("reviewer")
-
-            for review in notification_reviews:
-                send_event_email(
-                    "reviewer_editor_decision",
-                    submission,
-                    request=request,
-                    reviewer=review.reviewer,
-                    extra={
-                        "reviewer_comments": reviewer_comments_text,
-                    }
-                )
-
             if status == "revision_required":
                 send_event_email("revision_requested", submission, request=request)
             elif status == "accepted_for_layout":
@@ -659,7 +631,7 @@ def review_submission(request, submission_id):
                 assigned_reviewers_count > 0
                 and completed_reviews_count >= assigned_reviewers_count
             ):
-                submission.status = "reviews_completed"
+                submission.status = "reviewed_by_reviewer"
                 submission.save(update_fields=["status", "updated_at"])
 
             messages.success(request, f"Review for round {current_round} saved successfully.")

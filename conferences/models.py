@@ -136,7 +136,6 @@ class Conference(models.Model):
     )
 
     overview_hero_image_height = models.PositiveIntegerField(default=620)
-    overview_hero_image_width = models.PositiveIntegerField(default=78)
     overview_hero_buttons_margin_top = models.IntegerField(default=26)
 
     # Extra overview customization fields (kept in sync with migrations 0062/0063)
@@ -148,25 +147,6 @@ class Conference(models.Model):
     overview_text_color = models.CharField(max_length=20, default="#0b5d3b")
     overview_section_background = models.CharField(max_length=20, default="#f5f4ee")
     overview_secondary_background = models.CharField(max_length=20, default="#ece8da")
-
-    # Hub home page appearance settings
-    hub_background_color = models.CharField(max_length=20, default="#f4f1e6")
-    hub_header_background = models.CharField(max_length=20, default="#13365c")
-    hub_card_background = models.CharField(max_length=20, default="#ffffff")
-    hub_title_color = models.CharField(max_length=20, default="#0f3d2e")
-    hub_text_color = models.CharField(max_length=20, default="#374151")
-    hub_container_width = models.PositiveIntegerField(default=880)
-    hub_left_margin = models.PositiveIntegerField(default=200)
-    hub_background_image_width = models.PositiveIntegerField(default=100)
-    hub_background_image_opacity = models.FloatField(default=1)
-    hub_background_image = models.ImageField(
-        upload_to="conference_hub/",
-        blank=True,
-        null=True
-    )
-    hub_logo_width = models.PositiveIntegerField(default=140)
-    hub_card_radius = models.PositiveIntegerField(default=18)
-    hub_card_padding = models.PositiveIntegerField(default=28)
 
 
     @property
@@ -213,6 +193,7 @@ class Submission(models.Model):
         ("submitted", "Submitted"),
         ("under_review", "Under content review"),
         ("reviews_completed", "Content review completed"),
+        ("reviewed_by_reviewer", "Reviewed by reviewer"),
         ("revision_required", "Revision requested"),
         ("revised_submitted", "Revised paper submitted"),
         ("accepted_for_layout", "Accepted for layout review"),
