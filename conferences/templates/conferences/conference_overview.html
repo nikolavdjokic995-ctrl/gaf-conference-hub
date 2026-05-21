@@ -739,6 +739,10 @@ body{
                     Welcome, {{ user.profile.full_name_with_title }}
                 </span>
 
+                <a href="{% url 'home' %}">
+                    Conference Hub
+                </a>
+
                 <a class="active-top" href="{% url 'conference_overview' conference.slug %}">
                     Home
                 </a>
