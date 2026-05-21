@@ -201,6 +201,7 @@ class Submission(models.Model):
         ("reviewed_by_reviewer", "Reviewed by reviewer"),
         ("revision_required", "Revision requested"),
         ("revised_submitted", "Revised paper submitted"),
+        ("paper_revision_completed", "Paper revision completed"),
         ("accepted_for_layout", "Accepted for layout review"),
         ("layout_revision_required", "Layout corrections requested"),
         ("layout_revision_submitted", "Layout corrected paper submitted"),

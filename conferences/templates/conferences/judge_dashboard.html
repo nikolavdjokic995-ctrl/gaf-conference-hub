@@ -22,6 +22,7 @@ th,td{white-space:nowrap}
         <a class="filter-btn" href="/judge-dashboard/?status=under_review">Under content review</a>
         <a class="filter-btn" href="/judge-dashboard/?status=reviewed_by_reviewer">Reviews completed</a>
         <a class="filter-btn" href="/judge-dashboard/?status=revision_required">Revision requested</a>
+        <a class="filter-btn" href="/judge-dashboard/?status=paper_revision_completed">Paper revision completed</a>
         <a class="filter-btn" href="/judge-dashboard/?status=accepted_for_layout">Paper accepted</a>
         <a class="filter-btn" href="/judge-dashboard/?status=layout_revision_required">Layout revision requested</a>
         <a class="filter-btn" href="/judge-dashboard/?status=final_accepted">Accepted for publication</a>
@@ -67,6 +68,8 @@ th,td{white-space:nowrap}
                             <span class="status status-revision">Layout revision requested</span>
                         {% elif item.status == "revision_required" %}
                             <span class="status status-revision">Revision requested</span>
+                        {% elif item.status == "paper_revision_completed" %}
+                            <span class="status status-revision">Paper revision completed</span>
                         {% elif item.status == "revised_submitted" %}
                             <span class="status status-revision">Reviews completed</span>
                         {% elif item.status == "layout_revision_submitted" %}

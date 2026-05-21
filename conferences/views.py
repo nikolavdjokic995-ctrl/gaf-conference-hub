@@ -697,7 +697,7 @@ def send_revision_to_reviewers(request, submission_id):
     if request.method != "POST":
         return redirect("submission_result", submission_id=submission.id)
 
-    if submission.status != "revised_submitted":
+    if submission.status != "paper_revision_completed":
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
@@ -1656,7 +1656,7 @@ def upload_revision(request, submission_id):
                         pass
                     submission.full_paper_file.save(filename, uploaded_file, save=False)
 
-                    submission.status = "revised_submitted"
+                    submission.status = "paper_revision_completed"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
 
                 else:
@@ -1685,7 +1685,7 @@ def upload_revision(request, submission_id):
                 messages.error(request, f"Revision upload failed: {e}")
                 return redirect("upload_revision", submission_id=submission.id)
 
-            if submission.status == "revised_submitted":
+            if submission.status == "paper_revision_completed":
                 send_event_email("revision_uploaded", submission, request=request)
 
                 assignments = ReviewAssignment.objects.filter(
@@ -2027,6 +2027,7 @@ def my_reviews(request):
             "submitted",
             "under_review",
             "revised_submitted",
+            "paper_revision_completed",
             "revision_required",
             "reviews_completed",
         ]
@@ -2049,6 +2050,7 @@ def reviewer_dashboard(request):
             "submitted",
             "under_review",
             "revised_submitted",
+            "paper_revision_completed",
             "revision_required",
             "reviews_completed",
         ]
