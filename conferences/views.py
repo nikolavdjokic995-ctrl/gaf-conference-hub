@@ -359,7 +359,9 @@ def make_decision(request, submission_id):
                 submission.judge_revision_message = comment
                 submission.revision_round += 1
 
-                        reviewer_comments = []
+            submission.save()
+
+            reviewer_comments = []
 
             reviews = Review.objects.filter(submission=submission)
 
@@ -385,9 +387,7 @@ def make_decision(request, submission_id):
                     extra={
                         "reviewer_comments": reviewer_comments_text,
                     }
-                )           
-
-            submission.save()
+                )
 
             if status == "revision_required":
                 send_event_email("revision_requested", submission, request=request)
