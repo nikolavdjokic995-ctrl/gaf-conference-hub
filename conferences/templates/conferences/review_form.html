@@ -243,9 +243,13 @@
             {{ form.comments_for_authors.errors }}
             {{ form.comments_for_authors }}
 
-            <h2>Review File</h2>
+            <h2>Review File (optional)</h2>
             <div class="review-file">
-                <div class="help">Please upload a relevant anonymized review file. We accept DOC, DOCX and PDF files.</div>
+                <div class="help">
+                    Uploading a commented/anonymized review file is optional. 
+                    You may attach additional review notes or annotated manuscript files if needed. 
+                    Accepted formats: DOC, DOCX and PDF.
+                </div>
                 <div>
                     {{ form.commented_paper_file.errors }}
                     {{ form.commented_paper_file }}
