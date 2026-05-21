@@ -147,7 +147,13 @@
             color: white;
             cursor: not-allowed;
             opacity: 0.75;
-        }  
+        }
+
+        .hero-btn.disabled{
+            background:rgba(255,255,255,0.22);
+            color:#4b5563;
+            opacity:0.8;
+        }
 
         .nav-links span{
             font-weight:500;
@@ -235,34 +241,30 @@
         }
 
         .hero-btn{
-            padding:18px 26px;
-            border:2px solid #065f46;
-            border-radius:14px;
-            color:#065f46;
+            padding:20px 18px;
+            border:none;
+            border-radius:18px;
+            color:#0b5c46;
             text-decoration:none;
             font-weight:800;
-            font-size:16px;
+            font-size:18px;
             transition:0.25s;
-            background:rgba(255,255,255,0.10);
-            backdrop-filter:blur(4px);
+            background:rgba(255,255,255,0.28);
+            backdrop-filter:blur(6px);
             text-align:center;
-            min-width:0;
             width:100%;
             display:block;
-            box-shadow:0 6px 16px rgba(0,0,0,0.06);
+            box-shadow:none;
         }
 
         .hero-btn:hover{
-            transform:translateY(-2px);
-            background:rgba(255,255,255,0.12);
+            transform:translateX(4px);
+            background:rgba(255,255,255,0.38);
         }
 
         .hero-btn.active{
-            background:rgba(255,255,255,0.15);
-            border-color:#065f46;
-            color:#065f46;
-            box-shadow:0 6px 16px rgba(0,0,0,0.06);
-
+            background:rgba(255,255,255,0.42);
+            color:#064e3b;
         }
 
         .overview-info-area{
