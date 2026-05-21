@@ -359,6 +359,34 @@ def make_decision(request, submission_id):
                 submission.judge_revision_message = comment
                 submission.revision_round += 1
 
+                        reviewer_comments = []
+
+            reviews = Review.objects.filter(submission=submission)
+
+            for review in reviews:
+                if review.comments_for_authors:
+                    reviewer_comments.append(
+                        f"- {review.comments_for_authors}"
+                    )
+
+            reviewer_comments_text = "\n\n".join(reviewer_comments)
+
+            notification_reviews = Review.objects.filter(
+                submission=submission,
+                wants_final_notification="yes"
+            ).select_related("reviewer")
+
+            for review in notification_reviews:
+                send_event_email(
+                    "reviewer_editor_decision",
+                    submission,
+                    request=request,
+                    reviewer=review.reviewer,
+                    extra={
+                        "reviewer_comments": reviewer_comments_text,
+                    }
+                )           
+
             submission.save()
 
             if status == "revision_required":
