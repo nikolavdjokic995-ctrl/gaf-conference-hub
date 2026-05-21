@@ -224,17 +224,6 @@
                 <div class="title">{{ submission.title }}</div>
 
                 <div class="meta">
-                    <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
-                    <strong>First author:</strong> {{ submission.first_author_details.display_name }}<br>
-
-                    <strong>Topics:</strong>
-                    {% for topic in submission.topic_list %}
-                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
-                    {% empty %}
-                        No topic selected
-                    {% endfor %}
-                    <br>
-
                     <strong>Status:</strong>
                     {% if submission.status == "final_accepted" %}
                         <span class="badge badge-final">{{ submission.get_status_display }}</span>

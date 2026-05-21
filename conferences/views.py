@@ -1749,6 +1749,80 @@ def _split_submission_people_field(value):
     ]
 
 
+
+def _country_full_name(value):
+    country = (value or "").strip()
+    if not country:
+        return ""
+
+    country_map = {
+        "RS": "Serbia",
+        "SRB": "Serbia",
+        "Serbia": "Serbia",
+        "BA": "Bosnia and Herzegovina",
+        "BIH": "Bosnia and Herzegovina",
+        "ME": "Montenegro",
+        "MNE": "Montenegro",
+        "MK": "North Macedonia",
+        "MKD": "North Macedonia",
+        "HR": "Croatia",
+        "HRV": "Croatia",
+        "SI": "Slovenia",
+        "SVN": "Slovenia",
+        "BG": "Bulgaria",
+        "BGR": "Bulgaria",
+        "RO": "Romania",
+        "ROU": "Romania",
+        "HU": "Hungary",
+        "HUN": "Hungary",
+        "AL": "Albania",
+        "ALB": "Albania",
+        "GR": "Greece",
+        "GRC": "Greece",
+        "IT": "Italy",
+        "ITA": "Italy",
+        "DE": "Germany",
+        "DEU": "Germany",
+        "AT": "Austria",
+        "AUT": "Austria",
+        "FR": "France",
+        "FRA": "France",
+        "ES": "Spain",
+        "ESP": "Spain",
+        "PT": "Portugal",
+        "PRT": "Portugal",
+        "NL": "Netherlands",
+        "NLD": "Netherlands",
+        "BE": "Belgium",
+        "BEL": "Belgium",
+        "CH": "Switzerland",
+        "CHE": "Switzerland",
+        "SE": "Sweden",
+        "SWE": "Sweden",
+        "NO": "Norway",
+        "NOR": "Norway",
+        "DK": "Denmark",
+        "DNK": "Denmark",
+        "FI": "Finland",
+        "FIN": "Finland",
+        "PL": "Poland",
+        "POL": "Poland",
+        "CZ": "Czech Republic",
+        "CZE": "Czech Republic",
+        "SK": "Slovakia",
+        "SVK": "Slovakia",
+        "TR": "Turkey",
+        "TUR": "Turkey",
+        "US": "United States",
+        "USA": "United States",
+        "UK": "United Kingdom",
+        "GB": "United Kingdom",
+        "GBR": "United Kingdom",
+    }
+
+    return country_map.get(country, country_map.get(country.upper(), country))
+
+
 def _attach_author_rows(submission):
     first_author_display = f"{submission.first_author_title or ''} {submission.first_author or ''}".strip()
 
@@ -1756,7 +1830,7 @@ def _attach_author_rows(submission):
         "display_name": first_author_display or submission.first_author,
         "email": submission.first_author_email or getattr(submission.author, "email", ""),
         "affiliation": submission.first_author_affiliation or "",
-        "country": submission.first_author_country or "",
+        "country": _country_full_name(submission.first_author_country),
         "orcid": submission.first_author_orcid or "",
     }
 
@@ -1785,7 +1859,7 @@ def _attach_author_rows(submission):
             "display_name": f"{title} {name}".strip() or name,
             "email": emails[index] if index < len(emails) else "",
             "affiliation": affiliations[index] if index < len(affiliations) else "",
-            "country": countries[index] if index < len(countries) else "",
+            "country": _country_full_name(countries[index] if index < len(countries) else ""),
             "orcid": orcids[index] if index < len(orcids) else "",
         })
 
