@@ -148,6 +148,11 @@ class Conference(models.Model):
     overview_section_background = models.CharField(max_length=20, default="#f5f4ee")
     overview_secondary_background = models.CharField(max_length=20, default="#ece8da")
 
+    overview_menu_left = models.PositiveIntegerField(default=18)
+    overview_menu_top = models.PositiveIntegerField(default=115)
+    overview_menu_opacity = models.FloatField(default=0.28)
+
+
 
     @property
     def plain_title(self):

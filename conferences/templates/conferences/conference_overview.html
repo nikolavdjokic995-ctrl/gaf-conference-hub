@@ -218,8 +218,8 @@
 
         .hero-menu-wrap{
             position:absolute;
-            left:18px;
-            top:115px;
+            left:{{ conference.overview_menu_left|default:18 }}px;
+            top:{{ conference.overview_menu_top|default:115 }}px;
             z-index:20;
             width:{{ conference.overview_menu_width|default:220 }}px;
         }
@@ -249,7 +249,7 @@
             font-weight:800;
             font-size:18px;
             transition:0.25s;
-            background:rgba(255,255,255,0.28);
+            background:rgba(255,255,255,{{ conference.overview_menu_opacity|default:0.28 }});
             backdrop-filter:blur(6px);
             text-align:center;
             width:100%;
@@ -259,7 +259,7 @@
 
         .hero-btn:hover{
             transform:translateX(4px);
-            background:rgba(255,255,255,0.38);
+            background:rgba(255,255,255,0.48);
         }
 
         .hero-btn.active{
