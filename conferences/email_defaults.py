@@ -13,6 +13,7 @@ OFFICIAL_EMAIL_EVENTS = [
     "rereview_invitation",
     "reviewer_editor_decision",
     "review_completed_author",
+    "accepted_for_layout",
     "manuscript_accepted",
     "layout_correction_needed",
     "layout_correction_submitted",
@@ -124,6 +125,21 @@ Green Building International Scientific Conference""",
     "review_completed_author": {
         "subject": "Review Completed – Manuscript: {{ paper_title }}",
         "body": """Dear Author,\n\nThank you once again for submitting your manuscript. The following decision has now been reached:\n\n{{ editor_decision }}\n\nThe editor's decision letter and reviewer comments can be found below.\n\nPlease revise your manuscript according to provided comments by: {{ revision_deadline }}\n\nEditor Comments to Author\n{{ editor_comments }}\n\nReviewer(s)' Comments to Author:\n{{ reviewer_comments }}\n\nKind Regards,\nThe Editorial Board\nGreen Building International Scientific Conference""",
+        "send_to_author": True, "send_to_coauthors": True,
+    },
+    "accepted_for_layout": {
+        "subject": "Manuscript accepted for layout preparation: {{ paper_title }}",
+        "body": """Dear Author,
+
+We are pleased to inform you that your manuscript entitled {{ paper_title }} has successfully passed the scientific review process and has been accepted for the layout preparation stage.
+
+The manuscript will now proceed to technical editing and layout review before final publication.
+
+If additional corrections or formatting adjustments are required, you will be contacted by the editorial team.
+
+Kind Regards,
+The Editorial Team
+Green Building International Scientific Conference""",
         "send_to_author": True, "send_to_coauthors": True,
     },
     "manuscript_accepted": {
