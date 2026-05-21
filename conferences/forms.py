@@ -780,8 +780,9 @@ class EmailTemplateForm(forms.ModelForm):
 class JudgeDecisionForm(forms.Form):
 
     STATUS_CHOICES = [
-        ("accepted_for_layout", "Accept for layout review"),
-        ("revision_required", "Request author revision"),
+        ("accepted_for_layout", "Accept in present form"),
+        ("layout_revision_required", "Accept after minor revision"),
+        ("revision_required", "Reconsider after major revision"),
         ("rejected", "Reject"),
     ]
 
