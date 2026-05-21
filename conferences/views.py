@@ -628,6 +628,13 @@ def review_submission(request, submission_id):
             review.review_round = current_round
             review.save()
 
+            send_event_email(
+                "review_received",
+                submission,
+                request=request,
+                reviewer=request.user,
+            )
+
             assigned_reviewers_count = ReviewAssignment.objects.filter(
                 submission=submission,
                 role="content_reviewer"
@@ -2026,7 +2033,7 @@ def my_reviews(request):
         submission__status__in=[
             "submitted",
             "under_review",
-            "revised_submitted",
+            "paper_revision_completed",
             "paper_revision_completed",
             "revision_required",
             "reviews_completed",
