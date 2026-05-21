@@ -600,7 +600,6 @@ class ConferenceOverviewForm(forms.ModelForm):
             "hub_logo_width",
             "hub_card_radius",
             "hub_card_padding",
-            "hero_image",
             "hub_background_image",
             
         ]
