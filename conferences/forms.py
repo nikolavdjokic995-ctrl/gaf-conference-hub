@@ -579,10 +579,7 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_hero_background_color",
             "overview_section_background_color",
             "overview_card_background_color",
-            "overview_info_area_background_color",
-            "overview_partners_area_background_color",
             "overview_hero_image_height",
-            "overview_hero_image_width",
             "overview_hero_buttons_margin_top",
             "overview_menu_width",
             "overview_menu_background",
@@ -591,6 +588,18 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color",
             "overview_section_background",
             "overview_secondary_background",
+            "hub_background_color",
+            "hub_header_background",
+            "hub_card_background",
+            "hub_title_color",
+            "hub_text_color",
+            "hub_container_width",
+            "hub_left_margin",
+            "hub_background_image_width",
+            "hub_background_image_opacity",
+            "hub_logo_width",
+            "hub_card_radius",
+            "hub_card_padding",
             
         ]
 
@@ -603,8 +612,6 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_hero_background_color": forms.TextInput(attrs={"type": "color"}),
             "overview_section_background_color": forms.TextInput(attrs={"type": "color"}),
             "overview_card_background_color": forms.TextInput(attrs={"type": "color"}),
-            "overview_info_area_background_color": forms.TextInput(attrs={"type": "color"}),
-            "overview_partners_area_background_color": forms.TextInput(attrs={"type": "color"}),
             "overview_hero_image_height": forms.NumberInput(attrs={"min": 250, "max": 1400, "step": 10}),
             "overview_menu_width": forms.NumberInput(attrs={"min": 180, "max": 520, "step": 10}),
             "overview_content_width": forms.NumberInput(attrs={"min": 760, "max": 1600, "step": 10}),
@@ -613,7 +620,6 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": forms.TextInput(attrs={"type": "color"}),
             "overview_section_background": forms.TextInput(attrs={"type": "color"}),
             "overview_secondary_background": forms.TextInput(attrs={"type": "color"}),
-            "overview_hero_image_width": forms.NumberInput(attrs={"min": 40, "max": 100, "step": 1}),
         }
 
         labels = {
@@ -621,8 +627,6 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_hero_background_color": "Hero background colour",
             "overview_section_background_color": "Main section background colour",
             "overview_card_background_color": "Information card background colour",
-            "overview_info_area_background_color": "Information section background colour",
-            "overview_partners_area_background_color": "Partners section background colour",
             "overview_hero_image_height": "Hero image height",
             "overview_hero_buttons_margin_top": "Hero buttons margin top",
             "overview_menu_width": "Left menu width",
@@ -632,7 +636,6 @@ class ConferenceOverviewForm(forms.ModelForm):
             "overview_text_color": "Main text colour",
             "overview_section_background": "Extra section background colour",
             "overview_secondary_background": "Secondary background colour",
-            "overview_hero_image_width": "Hero image width (%)",
         }
 
 

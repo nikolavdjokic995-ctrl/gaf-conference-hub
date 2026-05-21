@@ -134,16 +134,6 @@ class Conference(models.Model):
         default="#f9fafb",
         help_text="Background colour of overview information cards."
     )
-    overview_info_area_background_color = models.CharField(
-        max_length=20,
-        default="#ffffff"
-    )
-
-    overview_partners_area_background_color = models.CharField(
-        max_length=20,
-        default="#eef2f1"
-    )
-
 
     overview_hero_image_height = models.PositiveIntegerField(default=620)
     overview_hero_image_width = models.PositiveIntegerField(default=78)
@@ -158,6 +148,20 @@ class Conference(models.Model):
     overview_text_color = models.CharField(max_length=20, default="#0b5d3b")
     overview_section_background = models.CharField(max_length=20, default="#f5f4ee")
     overview_secondary_background = models.CharField(max_length=20, default="#ece8da")
+
+    # Hub home page appearance settings
+    hub_background_color = models.CharField(max_length=20, default="#f4f1e6")
+    hub_header_background = models.CharField(max_length=20, default="#13365c")
+    hub_card_background = models.CharField(max_length=20, default="#ffffff")
+    hub_title_color = models.CharField(max_length=20, default="#0f3d2e")
+    hub_text_color = models.CharField(max_length=20, default="#374151")
+    hub_container_width = models.PositiveIntegerField(default=880)
+    hub_left_margin = models.PositiveIntegerField(default=200)
+    hub_background_image_width = models.PositiveIntegerField(default=100)
+    hub_background_image_opacity = models.FloatField(default=1)
+    hub_logo_width = models.PositiveIntegerField(default=140)
+    hub_card_radius = models.PositiveIntegerField(default=18)
+    hub_card_padding = models.PositiveIntegerField(default=28)
 
 
     @property

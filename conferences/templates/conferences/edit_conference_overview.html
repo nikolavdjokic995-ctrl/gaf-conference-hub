@@ -414,6 +414,110 @@
                         {{ form.template_style.errors }}
                     </div>
 
+
+                    <div class="settings-section-title">
+                        <h2>Hub home page appearance</h2>
+                        <p>Adjust the public Hub landing page background, header, conference card and image proportions.</p>
+                    </div>
+
+                    {% if form.hub_background_color %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_background_color.id_for_label }}">{{ form.hub_background_color.label }}</label>
+                        {{ form.hub_background_color }}
+                        {{ form.hub_background_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_header_background %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_header_background.id_for_label }}">{{ form.hub_header_background.label }}</label>
+                        {{ form.hub_header_background }}
+                        {{ form.hub_header_background.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_card_background %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_card_background.id_for_label }}">{{ form.hub_card_background.label }}</label>
+                        {{ form.hub_card_background }}
+                        {{ form.hub_card_background.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_title_color %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_title_color.id_for_label }}">{{ form.hub_title_color.label }}</label>
+                        {{ form.hub_title_color }}
+                        {{ form.hub_title_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_text_color %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_text_color.id_for_label }}">{{ form.hub_text_color.label }}</label>
+                        {{ form.hub_text_color }}
+                        {{ form.hub_text_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_container_width %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_container_width.id_for_label }}">{{ form.hub_container_width.label }}</label>
+                        {{ form.hub_container_width }}
+                        {{ form.hub_container_width.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_left_margin %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_left_margin.id_for_label }}">{{ form.hub_left_margin.label }}</label>
+                        {{ form.hub_left_margin }}
+                        {{ form.hub_left_margin.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_background_image_width %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_background_image_width.id_for_label }}">{{ form.hub_background_image_width.label }}</label>
+                        {{ form.hub_background_image_width }}
+                        {{ form.hub_background_image_width.errors }}
+                        <small>0 hides the background image, 100 uses full page width.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_background_image_opacity %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_background_image_opacity.id_for_label }}">{{ form.hub_background_image_opacity.label }}</label>
+                        {{ form.hub_background_image_opacity }}
+                        {{ form.hub_background_image_opacity.errors }}
+                        <small>Use values from 0 to 1, for example 0.6.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_logo_width %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_logo_width.id_for_label }}">{{ form.hub_logo_width.label }}</label>
+                        {{ form.hub_logo_width }}
+                        {{ form.hub_logo_width.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_card_radius %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_card_radius.id_for_label }}">{{ form.hub_card_radius.label }}</label>
+                        {{ form.hub_card_radius }}
+                        {{ form.hub_card_radius.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_card_padding %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_card_padding.id_for_label }}">{{ form.hub_card_padding.label }}</label>
+                        {{ form.hub_card_padding }}
+                        {{ form.hub_card_padding.errors }}
+                    </div>
+                    {% endif %}
+
                     <div class="settings-section-title">
                         <h2>Overview page colours</h2>
                         <p>Choose colours that match the conference hero image and visual identity.</p>
@@ -444,27 +548,6 @@
                         {{ form.overview_card_background_color.errors }}
                     </div>
 
-
-                    <div class="form-row">
-                        <label for="{{ form.overview_info_area_background_color.id_for_label }}">
-                            {{ form.overview_info_area_background_color.label }}
-                        </label>
-
-                        {{ form.overview_info_area_background_color }}
-
-                        {{ form.overview_info_area_background_color.errors }}
-                    </div>
-
-                    <div class="form-row">
-                        <label for="{{ form.overview_partners_area_background_color.id_for_label }}">
-                            {{ form.overview_partners_area_background_color.label }}
-                        </label>
-
-                        {{ form.overview_partners_area_background_color }}
-
-                        {{ form.overview_partners_area_background_color.errors }}
-                    </div>
-
                     <div class="settings-section-title">
                         <h2>Overview page layout</h2>
                         <p>Adjust card sizes, spacing and text sizes without editing template code. Values are in pixels.</p>
@@ -476,15 +559,6 @@
                         {{ form.overview_hero_image_height }}
                         {{ form.overview_hero_image_height.errors }}
                         <small>Controls the visible height of the main hero image, in pixels.</small>
-                    </div>
-                    {% endif %}
-
-                    {% if form.overview_hero_image_width %}
-                    <div class="form-row">
-                        <label for="{{ form.overview_hero_image_width.id_for_label }}">{{ form.overview_hero_image_width.label }}</label>
-                        {{ form.overview_hero_image_width }}
-                        {{ form.overview_hero_image_width.errors }}
-                        <small>Controls the visible width of the main hero image, in percent.</small>
                     </div>
                     {% endif %}
 
