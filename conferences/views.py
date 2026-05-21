@@ -371,6 +371,25 @@ def make_decision(request, submission_id):
 
             submission.save()
 
+            # Notify reviewers about the final editor/judge decision only if
+            # they explicitly requested final-decision notification in their review form.
+            notify_reviewers = Review.objects.filter(
+                submission=submission,
+                wants_final_notification="yes"
+            ).select_related("reviewer")
+
+            for review in notify_reviewers:
+                send_event_email(
+                    "reviewer_editor_decision",
+                    submission,
+                    request=request,
+                    reviewer=review.reviewer,
+                    extra={
+                        "editor_decision": submission.get_status_display(),
+                        "editor_comments": submission.final_comment,
+                    }
+                )
+
             if status == "revision_required":
                 send_event_email("review_completed_author", submission, request=request)
             elif status == "accepted_for_layout":
