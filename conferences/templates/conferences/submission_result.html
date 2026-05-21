@@ -266,33 +266,38 @@
                     </tr>
 
                     <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Originality</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_originality_display }}</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Originality of the topic</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_quality_originality_display }}</td>
                     </tr>
 
                     <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Contribution</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_contribution_display }}</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Scientific contribution</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_quality_scientific_contribution_display }}</td>
                     </tr>
 
                     <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Structure clarity</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_structure_clarity_display }}</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Methodological approach</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_quality_methodological_approach_display }}</td>
                     </tr>
 
                     <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Logical coherence</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_logical_coherence_display }}</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Quality of references</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_quality_references_display }}</td>
                     </tr>
 
                     <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Engagement with sources</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_engagement_sources_display }}</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Clarity in expression</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_quality_clarity_expression_display }}</td>
                     </tr>
 
                     <tr>
-                        <td style="padding:12px; border-top:1px solid #ddd;">Overall merit</td>
-                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_overall_merit_display }}</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Paper classification</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_paper_classification_display }}</td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:12px; border-top:1px solid #ddd;">Reviewer competency</td>
+                        <td style="padding:12px; border-top:1px solid #ddd;">{{ review.get_reviewer_competency_display }}</td>
                     </tr>
                 </table>
 
