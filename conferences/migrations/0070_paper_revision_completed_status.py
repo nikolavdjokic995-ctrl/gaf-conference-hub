@@ -4,8 +4,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-    ("conferences", "0069_overview_menu_controls"),
-]
+        ("conferences", "0069_overview_menu_controls"),
     ]
 
     operations = [
