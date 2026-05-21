@@ -8,44 +8,562 @@
         font-family:Calibri,Arial,sans-serif;
         color:#123524;
     }
+
+    .editor-shell{
+        max-width:1100px;
+        margin:0 auto;
+    }
+
+    .editor-card{
+        background:#ffffff;
+        border-radius:28px;
+        padding:36px;
+        box-shadow:0 18px 50px rgba(16,24,40,0.08);
+        border:1px solid rgba(13,92,47,0.1);
+    }
+
+    .eyebrow{
+        text-transform:uppercase;
+        letter-spacing:.08em;
+        color:#17804b;
+        font-size:12px;
+        font-weight:800;
+        margin-bottom:10px;
+    }
+
+    h1{
+        margin:0 0 28px;
+        color:#0d5c2f;
+        font-size:42px;
+    }
+
+    form{
+        display:grid;
+        gap:24px;
+    }
+
+    .form-grid{
+        display:grid;
+        grid-template-columns:1fr 1fr;
+        gap:22px;
+    }
+
+    .form-row{
+        display:grid;
+        gap:10px;
+    }
+
+    .form-row.full{
+        grid-column:1 / -1;
+    }
+
+    label{
+        font-weight:800;
+        color:#0d5c2f;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="url"],
+    input[type="date"],
+    input[type="file"],
+    input[type="number"],
+    select,
+    textarea{
+        width:100%;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:16px;
+        padding:14px 16px;
+        font-size:15px;
+        background:#fff;
+        color:#123524;
+        box-sizing:border-box;
+    }
+
+    textarea{
+        min-height:150px;
+    }
+
+    input[type="color"]{
+        width:100%;
+        height:48px;
+        padding:6px;
+        border:1px solid rgba(13,92,47,0.18);
+        border-radius:16px;
+        background:white;
+    }
+
+    .current-file{
+        padding:12px 14px;
+        border-radius:14px;
+        background:#f5fbf7;
+        color:#315a45;
+        font-size:14px;
+        line-height:1.5;
+    }
+
+    .settings-section-title{
+        grid-column:1 / -1;
+        margin:16px 0 0;
+        padding-top:24px;
+        border-top:1px solid rgba(13,92,47,0.14);
+    }
+
+    .settings-section-title h2{
+        margin:0 0 6px;
+        color:#0d5c2f;
+        font-size:24px;
+    }
+
+    .settings-section-title p{
+        margin:0;
+        color:#4b6958;
+        font-size:14px;
+        line-height:1.5;
+    }
+
+    .helptext,
+    small{
+        color:#587568;
+        font-size:13px;
+        line-height:1.45;
+    }
+
+    .btn-row{
+        display:flex;
+        gap:14px;
+        flex-wrap:wrap;
+        margin-top:8px;
+    }
+
+    .btn-save,
+    .btn-back{
+        display:inline-flex;
+        align-items:center;
+        justify-content:center;
+        border-radius:999px;
+        padding:12px 20px;
+        font-weight:800;
+        text-decoration:none;
+        transition:.15s ease;
+    }
+
+    .btn-save{
+        background:#16a34a;
+        color:#fff;
+        border:none;
+        cursor:pointer;
+        box-shadow:0 10px 24px rgba(22,163,74,0.25);
+    }
+
+    .btn-back{
+        background:#eef7f1;
+        color:#0d5c2f;
+        border:1px solid rgba(13,92,47,0.14);
+    }
+
+    .btn-save:hover,
+    .btn-back:hover{
+        transform:translateY(-1px);
+    }
+
+    .errorlist{
+        background:#fef2f2;
+        color:#991b1b;
+        border:1px solid #fecaca;
+        border-radius:12px;
+        padding:12px 16px;
+        margin:0;
+        list-style-position:inside;
+    }
+
+    @media(max-width:800px){
+        .form-grid{
+            grid-template-columns:1fr;
+        }
+
+        h1{
+            font-size:34px;
+        }
+
+        .editor-card{
+            padding:26px;
+        }
+    }
 </style>
 
-<!-- FILE SHORTENED FOR ZIP PATCH -->
+<div class="editor-page">
+    <div class="editor-shell">
+        <div class="editor-card">
 
-<div class="form-row">
-    <label for="{{ form.hero_image.id_for_label }}">Hero image</label>
+            <p class="eyebrow">Conference public page editor</p>
+            <h1>Edit conference overview</h1>
 
-    {% if conference.hero_image %}
-        <div class="current-file">
-            Current file:
-            <a href="{{ conference.hero_image.url }}" target="_blank">{{ conference.hero_image.name }}</a>
+            <form id="overview-form" method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    {{ form.non_field_errors }}
+                {% endif %}
+
+                <div class="form-grid">
+
+                    <div class="settings-section-title">
+                        <h2>Basic conference information</h2>
+                        <p>Main public information shown on the overview page.</p>
+                    </div>
+
+                    <div class="form-row full">
+                        <label for="{{ form.title_en.id_for_label }}">Conference title</label>
+                        {{ form.title_en }}
+                        {{ form.title_en.errors }}
+                    </div>
+
+                    <div class="form-row full">
+                        <label for="{{ form.description_en.id_for_label }}">Description</label>
+                        {{ form.description_en }}
+                        {{ form.description_en.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.location.id_for_label }}">Location</label>
+                        {{ form.location }}
+                        {{ form.location.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.organizer.id_for_label }}">Organizer</label>
+                        {{ form.organizer }}
+                        {{ form.organizer.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.contact_email.id_for_label }}">Contact email</label>
+                        {{ form.contact_email }}
+                        {{ form.contact_email.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.registration_url.id_for_label }}">Registration URL</label>
+                        {{ form.registration_url }}
+                        {{ form.registration_url.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.start_date.id_for_label }}">Start date</label>
+                        {{ form.start_date }}
+                        {{ form.start_date.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.end_date.id_for_label }}">End date</label>
+                        {{ form.end_date }}
+                        {{ form.end_date.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.submission_deadline.id_for_label }}">Submission deadline</label>
+                        {{ form.submission_deadline }}
+                        {{ form.submission_deadline.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.review_deadline.id_for_label }}">Review deadline</label>
+                        {{ form.review_deadline }}
+                        {{ form.review_deadline.errors }}
+                    </div>
+
+                    <div class="form-row">
+                        <label for="{{ form.template_style.id_for_label }}">Template style</label>
+                        {{ form.template_style }}
+                        {{ form.template_style.errors }}
+                    </div>
+
+                    <div class="settings-section-title">
+                        <h2>Hub home page appearance</h2>
+                        <p>Controls the main Hub landing page. For R:240 G:237 B:222 use <strong>#f0edde</strong>.</p>
+                    </div>
+
+                    {% if form.hub_background_image %}
+                    <div class="form-row full">
+                        <label for="{{ form.hub_background_image.id_for_label }}">
+                            Hub background image
+                        </label>
+
+                        {% if conference.hub_background_image %}
+                            <div class="current-file">
+                                Current file:
+                                <a href="{{ conference.hub_background_image.url }}" target="_blank">
+                                    {{ conference.hub_background_image.name }}
+                                </a>
+                            </div>
+                        {% endif %}
+
+                        {{ form.hub_background_image }}
+                        {{ form.hub_background_image.errors }}
+                        <small>Upload custom background image for the Conference Hub homepage.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_background_color %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_background_color.id_for_label }}">{{ form.hub_background_color.label }}</label>
+                        {{ form.hub_background_color }}
+                        {{ form.hub_background_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_header_background %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_header_background.id_for_label }}">{{ form.hub_header_background.label }}</label>
+                        {{ form.hub_header_background }}
+                        {{ form.hub_header_background.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_card_background %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_card_background.id_for_label }}">{{ form.hub_card_background.label }}</label>
+                        {{ form.hub_card_background }}
+                        {{ form.hub_card_background.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_title_color %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_title_color.id_for_label }}">{{ form.hub_title_color.label }}</label>
+                        {{ form.hub_title_color }}
+                        {{ form.hub_title_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_text_color %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_text_color.id_for_label }}">{{ form.hub_text_color.label }}</label>
+                        {{ form.hub_text_color }}
+                        {{ form.hub_text_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_container_width %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_container_width.id_for_label }}">{{ form.hub_container_width.label }}</label>
+                        {{ form.hub_container_width }}
+                        {{ form.hub_container_width.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_left_margin %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_left_margin.id_for_label }}">{{ form.hub_left_margin.label }}</label>
+                        {{ form.hub_left_margin }}
+                        {{ form.hub_left_margin.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_background_image_width %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_background_image_width.id_for_label }}">{{ form.hub_background_image_width.label }}</label>
+                        {{ form.hub_background_image_width }}
+                        {{ form.hub_background_image_width.errors }}
+                        <small>0 hides the background image, 100 uses full page width.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_background_image_opacity %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_background_image_opacity.id_for_label }}">{{ form.hub_background_image_opacity.label }}</label>
+                        {{ form.hub_background_image_opacity }}
+                        {{ form.hub_background_image_opacity.errors }}
+                        <small>Use values from 0 to 1, for example 0.6.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_logo_width %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_logo_width.id_for_label }}">{{ form.hub_logo_width.label }}</label>
+                        {{ form.hub_logo_width }}
+                        {{ form.hub_logo_width.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_card_radius %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_card_radius.id_for_label }}">{{ form.hub_card_radius.label }}</label>
+                        {{ form.hub_card_radius }}
+                        {{ form.hub_card_radius.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.hub_card_padding %}
+                    <div class="form-row">
+                        <label for="{{ form.hub_card_padding.id_for_label }}">{{ form.hub_card_padding.label }}</label>
+                        {{ form.hub_card_padding }}
+                        {{ form.hub_card_padding.errors }}
+                    </div>
+                    {% endif %}
+
+                    <div class="settings-section-title">
+                        <h2>Overview page colours</h2>
+                        <p>Controls the overview background areas. For R:240 G:237 B:222 use <strong>#f0edde</strong>.</p>
+                    </div>
+
+                    {% if form.overview_page_background_color %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_page_background_color.id_for_label }}">{{ form.overview_page_background_color.label }}</label>
+                        {{ form.overview_page_background_color }}
+                        {{ form.overview_page_background_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_hero_background_color %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_hero_background_color.id_for_label }}">{{ form.overview_hero_background_color.label }}</label>
+                        {{ form.overview_hero_background_color }}
+                        {{ form.overview_hero_background_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_section_background_color %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_background_color.id_for_label }}">{{ form.overview_section_background_color.label }}</label>
+                        {{ form.overview_section_background_color }}
+                        {{ form.overview_section_background_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_card_background_color %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_background_color.id_for_label }}">{{ form.overview_card_background_color.label }}</label>
+                        {{ form.overview_card_background_color }}
+                        {{ form.overview_card_background_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_section_background %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_section_background.id_for_label }}">{{ form.overview_section_background.label }}</label>
+                        {{ form.overview_section_background }}
+                        {{ form.overview_section_background.errors }}
+                        <small>Use this for the information area background. Suggested value: #f0edde.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_secondary_background %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_secondary_background.id_for_label }}">{{ form.overview_secondary_background.label }}</label>
+                        {{ form.overview_secondary_background }}
+                        {{ form.overview_secondary_background.errors }}
+                        <small>Use this for the organizer/supported by background. Suggested value: #f0edde.</small>
+                    </div>
+                    {% endif %}
+
+                    <div class="settings-section-title">
+                        <h2>Overview page layout</h2>
+                        <p>Adjust image size, content width, cards, spacing and text sizes.</p>
+                    </div>
+
+                    {% if form.overview_hero_image_height %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_hero_image_height.id_for_label }}">{{ form.overview_hero_image_height.label }}</label>
+                        {{ form.overview_hero_image_height }}
+                        {{ form.overview_hero_image_height.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_hero_buttons_margin_top %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_hero_buttons_margin_top.id_for_label }}">{{ form.overview_hero_buttons_margin_top.label }}</label>
+                        {{ form.overview_hero_buttons_margin_top }}
+                        {{ form.overview_hero_buttons_margin_top.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_menu_width %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_menu_width.id_for_label }}">{{ form.overview_menu_width.label }}</label>
+                        {{ form.overview_menu_width }}
+                        {{ form.overview_menu_width.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_content_width %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_content_width.id_for_label }}">{{ form.overview_content_width.label }}</label>
+                        {{ form.overview_content_width }}
+                        {{ form.overview_content_width.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_text_color %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_text_color.id_for_label }}">{{ form.overview_text_color.label }}</label>
+                        {{ form.overview_text_color }}
+                        {{ form.overview_text_color.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_menu_background %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_menu_background.id_for_label }}">{{ form.overview_menu_background.label }}</label>
+                        {{ form.overview_menu_background }}
+                        {{ form.overview_menu_background.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% if form.overview_card_background %}
+                    <div class="form-row">
+                        <label for="{{ form.overview_card_background.id_for_label }}">{{ form.overview_card_background.label }}</label>
+                        {{ form.overview_card_background }}
+                        {{ form.overview_card_background.errors }}
+                    </div>
+                    {% endif %}
+
+                    {% for field in form %}
+                        {% if field.name != "title_en" and field.name != "description_en" and field.name != "location" and field.name != "organizer" and field.name != "contact_email" and field.name != "registration_url" and field.name != "start_date" and field.name != "end_date" and field.name != "submission_deadline" and field.name != "review_deadline" and field.name != "template_style" and field.name != "hub_background_image" and field.name != "hub_background_color" and field.name != "hub_header_background" and field.name != "hub_card_background" and field.name != "hub_title_color" and field.name != "hub_text_color" and field.name != "hub_container_width" and field.name != "hub_left_margin" and field.name != "hub_background_image_width" and field.name != "hub_background_image_opacity" and field.name != "hub_logo_width" and field.name != "hub_card_radius" and field.name != "hub_card_padding" and field.name != "overview_page_background_color" and field.name != "overview_hero_background_color" and field.name != "overview_section_background_color" and field.name != "overview_card_background_color" and field.name != "overview_section_background" and field.name != "overview_secondary_background" and field.name != "overview_hero_image_height" and field.name != "overview_hero_buttons_margin_top" and field.name != "overview_menu_width" and field.name != "overview_content_width" and field.name != "overview_text_color" and field.name != "overview_menu_background" and field.name != "overview_card_background" %}
+                            <div class="form-row">
+                                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+
+                                {% if field.name == "logo" and conference.logo %}
+                                    <div class="current-file">
+                                        Current file:
+                                        <a href="{{ conference.logo.url }}" target="_blank">{{ conference.logo.name }}</a>
+                                    </div>
+                                {% endif %}
+
+                                {% if field.name == "hero_image" and conference.hero_image %}
+                                    <div class="current-file">
+                                        Current file:
+                                        <a href="{{ conference.hero_image.url }}" target="_blank">{{ conference.hero_image.name }}</a>
+                                    </div>
+                                {% endif %}
+
+                                {{ field }}
+                                {{ field.errors }}
+                                {% if field.help_text %}
+                                    <small>{{ field.help_text }}</small>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+
+                </div>
+
+                <div class="btn-row">
+                    <button type="submit" class="btn-save">Save changes</button>
+
+                    <a class="btn-back" href="{% url 'conference_overview' conference.slug %}">
+                        ← Back to conference page
+                    </a>
+
+                    <a class="btn-back" href="{% url 'conference_settings' conference.slug %}">
+                        ← Back to settings
+                    </a>
+                </div>
+            </form>
+
         </div>
-    {% endif %}
-
-    {{ form.hero_image }}
-    {{ form.hero_image.errors }}
-</div>
-
-<div class="form-row">
-    <label for="{{ form.hub_background_image.id_for_label }}">
-        Hub background image
-    </label>
-
-    {% if conference.hub_background_image %}
-        <div class="current-file">
-            Current file:
-            <a href="{{ conference.hub_background_image.url }}" target="_blank">
-                {{ conference.hub_background_image.name }}
-            </a>
-        </div>
-    {% endif %}
-
-    {{ form.hub_background_image }}
-    {{ form.hub_background_image.errors }}
-
-    <small>
-        Upload custom background image for the Conference Hub homepage.
-    </small>
+    </div>
 </div>
 
 {% endblock %}
