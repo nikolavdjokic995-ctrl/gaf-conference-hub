@@ -353,10 +353,10 @@ def make_decision(request, submission_id):
             comment = form.cleaned_data["comment"]
             revision_deadline = form.cleaned_data["revision_deadline"]
 
-            # In the Judge decision workflow, "Accept after minor revision"
-            # still means that the AUTHOR must revise the manuscript.
+            # In the Judge decision workflow, both minor and major revisions
+            # mean that the AUTHOR must revise the manuscript.
             # Layout revision is handled later by the layout reviewer.
-            if selected_status == "layout_revision_required":
+            if selected_status == "minor_revision":
                 status = "revision_required"
             else:
                 status = selected_status
@@ -372,7 +372,7 @@ def make_decision(request, submission_id):
             submission.save()
 
             if status == "revision_required":
-                send_event_email("revision_requested", submission, request=request)
+                send_event_email("review_completed_author", submission, request=request)
             elif status == "accepted_for_layout":
                 send_event_email("accepted_for_layout", submission, request=request)
             elif status == "rejected":
@@ -382,7 +382,7 @@ def make_decision(request, submission_id):
             return redirect("submission_result", submission_id=submission.id)
     else:
         form = JudgeDecisionForm(initial={
-            "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "layout_revision_required", "rejected"] else "accepted_for_layout",
+            "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "rejected"] else "accepted_for_layout",
             "comment": submission.final_comment,
             "revision_deadline": submission.author_revision_deadline,
         })

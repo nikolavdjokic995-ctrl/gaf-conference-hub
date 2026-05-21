@@ -781,7 +781,7 @@ class JudgeDecisionForm(forms.Form):
 
     STATUS_CHOICES = [
         ("accepted_for_layout", "Accept in present form"),
-        ("layout_revision_required", "Accept after minor revision"),
+        ("minor_revision", "Accept after minor revision"),
         ("revision_required", "Reconsider after major revision"),
         ("rejected", "Reject"),
     ]

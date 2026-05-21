@@ -257,7 +257,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "editor_decision": submission.get_status_display() if submission else "",
         "editor_comments": submission.final_comment if submission else "",
         "reviewer_comments": "",
-        "revision_deadline": "",
+        "revision_deadline": format_date(getattr(submission, "author_revision_deadline", None)) if submission else "",
         "layout_deadline": "",
         "temporary_password": "",
         "decline_reason": assignment.decline_reason if assignment else "",
