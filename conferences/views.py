@@ -396,7 +396,7 @@ def make_decision(request, submission_id):
             # In the Judge decision workflow, both minor and major revisions
             # mean that the AUTHOR must revise the manuscript.
             # Layout revision is handled later by the layout reviewer.
-            if selected_status == "minor_revision":
+            if selected_status in ["minor_revision", "major_revision", "revision_required"]:
                 status = "revision_required"
             else:
                 status = selected_status
@@ -407,7 +407,11 @@ def make_decision(request, submission_id):
             if status == "revision_required":
                 submission.judge_revision_message = comment
                 submission.author_revision_deadline = revision_deadline
-                submission.revision_round += 1
+
+                if submission.revision_round is None:
+                    submission.revision_round = 1
+                else:
+                    submission.revision_round += 1
 
             submission.save()
 
@@ -431,7 +435,15 @@ def make_decision(request, submission_id):
                 )
 
             if status == "revision_required":
-                send_event_email("review_completed_author", submission, request=request)
+                send_event_email(
+                    "review_completed_author",
+                    submission,
+                    request=request,
+                    extra={
+                        "editor_decision": "Revision requested",
+                        "editor_comments": comment,
+                    },
+                )
             elif status == "accepted_for_layout":
                 send_event_email("accepted_for_layout", submission, request=request)
             elif status == "rejected":
