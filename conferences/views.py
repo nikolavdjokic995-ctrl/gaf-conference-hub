@@ -137,26 +137,6 @@ def review_invitation_response(request, assignment_id):
 
             assignment.save()
 
-            if assignment.deadline_extension_requested:
-                send_event_email(
-                    "review_deadline_extension_requested",
-                    submission,
-                    request=request,
-                    reviewer=request.user,
-                    assignment=assignment,
-                    extra={
-                        "requested_review_deadline": assignment.accepted_deadline.strftime("%d.%m.%Y.") if assignment.accepted_deadline else "",
-                    },
-                )
-
-            send_event_email(
-                "review_request_accepted",
-                submission,
-                request=request,
-                reviewer=request.user,
-                assignment=assignment,
-            )
-
             messages.success(
                 request,
                 "Review invitation accepted successfully."
@@ -365,26 +345,6 @@ def make_decision(request, submission_id):
     if not role:
         return redirect("/")
 
-    current_round = submission.revision_round or 0
-    decision_reviews = Review.objects.filter(
-        submission=submission,
-        review_round=current_round,
-    ).select_related("reviewer", "reviewer__profile").order_by(
-        "reviewer__first_name",
-        "reviewer__last_name",
-        "reviewer__username",
-    )
-
-    if not decision_reviews.exists():
-        decision_reviews = Review.objects.filter(
-            submission=submission,
-        ).select_related("reviewer", "reviewer__profile").order_by(
-            "review_round",
-            "reviewer__first_name",
-            "reviewer__last_name",
-            "reviewer__username",
-        )
-
     if request.method == "POST":
         form = JudgeDecisionForm(request.POST)
 
@@ -411,31 +371,32 @@ def make_decision(request, submission_id):
 
             submission.save()
 
-            # Notify reviewers about the final editor/judge decision only if
-            # they explicitly requested final-decision notification in their review form.
-            notify_reviewers = Review.objects.filter(
-                submission=submission,
-                wants_final_notification="yes"
-            ).select_related("reviewer")
-
-            for review in notify_reviewers:
-                send_event_email(
-                    "reviewer_editor_decision",
-                    submission,
-                    request=request,
-                    reviewer=review.reviewer,
-                    extra={
-                        "editor_decision": submission.get_status_display(),
-                        "editor_comments": submission.final_comment,
-                    }
-                )
+            decision_email_extra = {
+                "editor_decision": submission.get_status_display(),
+                "editor_comments": submission.final_comment,
+            }
 
             if status == "revision_required":
-                send_event_email("review_completed_author", submission, request=request)
+                send_event_email(
+                    "review_completed_author",
+                    submission,
+                    request=request,
+                    extra=decision_email_extra,
+                )
             elif status == "accepted_for_layout":
-                send_event_email("accepted_for_layout", submission, request=request)
+                send_event_email(
+                    "accepted_for_layout",
+                    submission,
+                    request=request,
+                    extra=decision_email_extra,
+                )
             elif status == "rejected":
-                send_event_email("rejected", submission, request=request)
+                send_event_email(
+                    "rejected",
+                    submission,
+                    request=request,
+                    extra=decision_email_extra,
+                )
 
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
@@ -449,7 +410,6 @@ def make_decision(request, submission_id):
     return render(request, "conferences/make_decision.html", {
         "submission": submission,
         "form": form,
-        "decision_reviews": decision_reviews,
     })
 
 
@@ -838,20 +798,11 @@ def judge_dashboard(request):
     data = []
 
     for submission in submissions:
-        reviews = Review.objects.filter(submission=submission).select_related("reviewer", "reviewer__profile")
-        assignments = ReviewAssignment.objects.filter(
-            submission=submission,
-            role="content_reviewer",
-        ).select_related("reviewer", "reviewer__profile").order_by(
-            "reviewer__first_name",
-            "reviewer__last_name",
-            "reviewer__username",
-        )
+        reviews = Review.objects.filter(submission=submission)
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
         data.append({
             "submission": submission,
             "reviews": reviews,
-            "assignments": assignments,
             "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),

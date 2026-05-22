@@ -5,7 +5,6 @@ OFFICIAL_EMAIL_EVENTS = [
     "review_invitation",
     "review_declined_judge",
     "review_declined_author",
-    "review_deadline_extension_requested",
     "review_request_accepted",
     "review_initiated",
     "review_due_soon",
@@ -14,6 +13,7 @@ OFFICIAL_EMAIL_EVENTS = [
     "rereview_invitation",
     "reviewer_editor_decision",
     "review_completed_author",
+    "accepted_for_layout",
     "manuscript_accepted",
     "layout_correction_needed",
     "layout_correction_submitted",
@@ -87,32 +87,6 @@ The Editorial Office
 Green Building International Scientific Conference""",
         "send_to_author": True, "send_to_coauthors": True, "send_to_reviewer": False,
     },
-    "review_deadline_extension_requested": {
-        "subject": "Reviewer requested a different review deadline – Manuscript: {{ paper_title }}",
-        "body": """Dear Editor,
-
-This is an automatic notification that reviewer {{ reviewer_name }} has accepted the review invitation, but requested a different review deadline.
-
-Manuscript title: {{ paper_title }}
-Manuscript ID: {{ paper_code }}
-Conference: {{ conference_name }}
-
-Originally proposed deadline:
-{{ proposed_review_deadline }}
-
-Reviewer requested deadline:
-{{ accepted_review_deadline }}
-
-Please check the assignment in the Judge Dashboard if you need to follow up.
-
-Kind Regards,
-The Editorial Office
-Green Building International Scientific Conference""",
-        "send_to_author": False,
-        "send_to_coauthors": False,
-        "send_to_reviewer": False,
-        "send_to_managers": True,
-    },
     "review_request_accepted": {
         "subject": "Review Request Accepted – Manuscript: {{ paper_title }}",
         "body": """Dear Reviewer,\n\nThank you for accepting the invitation to review the following manuscript:\n\nManuscript ID: {{ paper_code }}\nManuscript Type: {{ article_type }}\nTitle: {{ paper_title }}\n\nTo provide your review, please use the review report form available at the following link:\n{{ review_link }}\n\nThe deadline for submitting your review report is {{ review_deadline }}.\n\nReviews should provide detailed, constructive, and well-argued comments that help the authors improve the quality and clarity of their manuscript. Comments should be formulated in a professional, respectful, and collegial manner.\n\nKind Regards,\nThe Editorial Office\nGreen Building International Scientific Conference""",
@@ -152,6 +126,32 @@ Green Building International Scientific Conference""",
         "subject": "Review Completed – Manuscript: {{ paper_title }}",
         "body": """Dear Author,\n\nThank you once again for submitting your manuscript. The following decision has now been reached:\n\n{{ editor_decision }}\n\nThe editor's decision letter and reviewer comments can be found below.\n\nPlease revise your manuscript according to provided comments by: {{ revision_deadline }}\n\nEditor Comments to Author\n{{ editor_comments }}\n\nReviewer(s)' Comments to Author:\n{{ reviewer_comments }}\n\nKind Regards,\nThe Editorial Board\nGreen Building International Scientific Conference""",
         "send_to_author": True, "send_to_coauthors": True,
+    },
+
+    "accepted_for_layout": {
+        "subject": "Manuscript accepted for layout preparation – {{ paper_title }}",
+        "body": """Dear Author,
+
+We are pleased to inform you that your manuscript entitled {{ paper_title }} (Identifier: {{ paper_code }}) has been accepted by the Editor/Judge and will now proceed to the layout preparation stage.
+
+The scientific review stage has been successfully completed. The manuscript will now be transferred to the layout reviewer for technical formatting and final preparation.
+
+Below are the editor's comments and reviewer comments for your records.
+
+Editor Comments to Author
+{{ editor_comments }}
+
+Reviewer(s)' Comments to Author:
+{{ reviewer_comments }}
+
+Kind Regards,
+The Editorial Team
+Green Building International Scientific Conference""",
+        "send_to_author": True,
+        "send_to_coauthors": True,
+        "send_to_reviewer": False,
+        "send_to_managers": False,
+        "send_to_layout_reviewers": False,
     },
     "manuscript_accepted": {
         "subject": "Manuscript accepted for publication: {{ paper_title }}",
