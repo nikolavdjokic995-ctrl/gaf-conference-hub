@@ -695,14 +695,25 @@ def review_submission(request, submission_id):
                 reviewer=request.user,
             )
 
+            # Count only active reviewers.
+            # Reviewers who declined the invitation must not block the paper
+            # from moving to "reviewed_by_reviewer" after all active reviewers
+            # have submitted their reviews.
             assigned_reviewers_count = ReviewAssignment.objects.filter(
                 submission=submission,
                 role="content_reviewer"
+            ).exclude(
+                invitation_status="declined"
             ).count()
 
             completed_reviews_count = Review.objects.filter(
                 submission=submission,
                 review_round=current_round
+            ).filter(
+                reviewer__review_assignments__submission=submission,
+                reviewer__review_assignments__role="content_reviewer",
+            ).exclude(
+                reviewer__review_assignments__invitation_status="declined"
             ).values("reviewer").distinct().count()
 
             if (
@@ -773,6 +784,8 @@ def send_revision_to_reviewers(request, submission_id):
     reviewer_count = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
+    ).exclude(
+        invitation_status="declined"
     ).count()
 
     if reviewer_count == 0:
@@ -785,6 +798,8 @@ def send_revision_to_reviewers(request, submission_id):
     assignments = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
+    ).exclude(
+        invitation_status="declined"
     ).select_related("reviewer")
 
     sent_recipients = []
@@ -865,6 +880,8 @@ def judge_dashboard(request):
         assignments = ReviewAssignment.objects.filter(
             submission=submission,
             role="content_reviewer",
+        ).exclude(
+            invitation_status="declined"
         ).select_related("reviewer", "reviewer__profile").order_by(
             "reviewer__first_name",
             "reviewer__last_name",
