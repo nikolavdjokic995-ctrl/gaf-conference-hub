@@ -418,19 +418,6 @@ def make_decision(request, submission_id):
                 wants_final_notification="yes"
             ).select_related("reviewer")
 
-            # Send reviewers the EXACT final editor decision
-            # only if they requested final-decision notifications.
-            decision_text = submission.get_status_display()
-
-            if status == "revision_required":
-                decision_text = "Revision requested"
-            elif status == "accepted_for_layout":
-                decision_text = "Accepted for layout review"
-            elif status == "rejected":
-                decision_text = "Rejected"
-            elif status == "final_accepted":
-                decision_text = "Accepted for publication"
-
             for review in notify_reviewers:
                 send_event_email(
                     "reviewer_editor_decision",
@@ -438,7 +425,7 @@ def make_decision(request, submission_id):
                     request=request,
                     reviewer=review.reviewer,
                     extra={
-                        "editor_decision": decision_text,
+                        "editor_decision": submission.get_status_display(),
                         "editor_comments": submission.final_comment,
                     }
                 )
@@ -1816,81 +1803,6 @@ def layout_dashboard(request):
 
     conferences = [role.conference for role in layout_roles]
 
-    def split_author_field(value):
-        """Split author metadata safely.
-
-        We intentionally do NOT split by comma because affiliations and country
-        names often contain commas. Authors are expected to be separated by new
-        lines or semicolons in the stored text fields.
-        """
-        if not value:
-            return []
-
-        text = str(value).replace("\r\n", "\n").replace("\r", "\n")
-        parts = []
-
-        for block in text.replace(";", "\n").split("\n"):
-            item = block.strip()
-            if item:
-                parts.append(item)
-
-        return parts
-
-    def decorate_author_details(submission):
-        first_author_title = (submission.first_author_title or "").strip()
-        first_author_name = (submission.first_author or "").strip()
-
-        submission.first_author_details = {
-            "display_name": f"{first_author_title} {first_author_name}".strip() or "-",
-            "affiliation": (submission.first_author_affiliation or "").strip() or "-",
-            "country": (submission.first_author_country or "").strip() or "-",
-            "email": (submission.first_author_email or "").strip() or "-",
-            "orcid": (submission.first_author_orcid or "").strip() or "-",
-        }
-
-        names = split_author_field(submission.coauthors)
-        titles = split_author_field(submission.coauthor_titles)
-        affiliations = split_author_field(submission.coauthor_affiliations)
-        countries = split_author_field(submission.coauthor_countries)
-        emails = split_author_field(submission.coauthor_emails)
-        orcids = split_author_field(submission.coauthor_orcids)
-
-        row_count = max(
-            len(names),
-            len(titles),
-            len(affiliations),
-            len(countries),
-            len(emails),
-            len(orcids),
-            0,
-        )
-
-        submission.coauthor_rows = []
-
-        for index in range(row_count):
-            name = names[index] if index < len(names) else ""
-            title = titles[index] if index < len(titles) else ""
-
-            if not any([
-                name,
-                title,
-                affiliations[index] if index < len(affiliations) else "",
-                countries[index] if index < len(countries) else "",
-                emails[index] if index < len(emails) else "",
-                orcids[index] if index < len(orcids) else "",
-            ]):
-                continue
-
-            submission.coauthor_rows.append({
-                "display_name": f"{title} {name}".strip() or "-",
-                "affiliation": affiliations[index] if index < len(affiliations) else "-",
-                "country": countries[index] if index < len(countries) else "-",
-                "email": emails[index] if index < len(emails) else "-",
-                "orcid": orcids[index] if index < len(orcids) else "-",
-            })
-
-        return submission
-
     submissions = Submission.objects.filter(
         conference__in=conferences,
         status__in=[
@@ -1916,12 +1828,6 @@ def layout_dashboard(request):
     ).prefetch_related(
         "reviews__reviewer"
     ).order_by("-updated_at")
-
-    for submission in submissions:
-        decorate_author_details(submission)
-
-    for submission in accepted_publication_submissions:
-        decorate_author_details(submission)
 
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,

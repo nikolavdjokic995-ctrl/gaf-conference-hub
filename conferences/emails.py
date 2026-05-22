@@ -185,19 +185,13 @@ def format_reviewer_comments_for_authors(submission, review_round=None):
 
     for review in reviews:
         comment = (review.comments_for_authors or "").strip()
-
         if not comment:
             continue
-
-        # IMPORTANT:
-        # Reviewer identities must remain anonymous for authors.
-        # Authors will only see Reviewer 1, Reviewer 2, etc.
         reviewer_label = f"Reviewer {reviewer_index}"
-
         blocks.append(
-            f"{reviewer_label} (Round {review.review_round}):\n{comment}"
+            f"{reviewer_label} (Round {review.review_round}):
+{comment}"
         )
-
         reviewer_index += 1
 
     return "\n\n".join(blocks)
@@ -226,12 +220,18 @@ def format_reviewer_comments_for_editors(submission, review_round=None):
     )
 
     blocks = []
+    reviewer_index = 1
+
     for review in reviews:
         comment = (review.comments_for_editors or "").strip()
         if not comment:
             continue
-        reviewer_name = user_full_name(review.reviewer) or "Reviewer"
-        blocks.append(f"{reviewer_name} (Round {review.review_round}):\n{comment}")
+        reviewer_label = f"Reviewer {reviewer_index}"
+        blocks.append(
+            f"{reviewer_label} (Round {review.review_round}):
+{comment}"
+        )
+        reviewer_index += 1
 
     return "\n\n".join(blocks)
 
@@ -318,7 +318,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "coauthor_emails": ", ".join(coauthor_emails),
         "all_authors": ", ".join(all_authors),
         "all_author_emails": ", ".join(all_author_emails),
-        "reviewer_name": user_full_name(reviewer) if reviewer else "",
+        "reviewer_name": "Reviewer",
         "reviewer_email": reviewer.email if reviewer else "",
         "revision_message": submission.judge_revision_message if submission else "",
         "layout_revision_message": submission.layout_revision_message if submission else "",
