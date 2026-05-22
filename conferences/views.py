@@ -50,9 +50,56 @@ from .forms import (
 )
 
 from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
-from .email_defaults import OFFICIAL_EMAIL_EVENTS
+from .email_defaults import OFFICIAL_EMAIL_EVENTS, DEFAULT_EMAIL_TEMPLATES_2026
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
+
+
+def ensure_workflow_email_template(conference, event, *, send_to_author=None, send_to_coauthors=None, send_to_reviewer=None):
+    """Ensure a workflow email template exists and is enabled before an automatic send.
+
+    This keeps important workflow emails active even if the template was missing
+    from the database after earlier migrations or settings changes.
+    """
+    defaults = DEFAULT_EMAIL_TEMPLATES_2026.get(event, {})
+
+    template, created = EmailTemplate.objects.get_or_create(
+        conference=conference,
+        event=event,
+        defaults={
+            "enabled": True,
+            "subject": defaults.get("subject", ""),
+            "body": defaults.get("body", ""),
+            "send_to_author": defaults.get("send_to_author", False),
+            "send_to_coauthors": defaults.get("send_to_coauthors", False),
+            "send_to_reviewer": defaults.get("send_to_reviewer", False),
+            "send_to_managers": defaults.get("send_to_managers", False),
+            "send_to_layout_reviewers": defaults.get("send_to_layout_reviewers", False),
+        },
+    )
+
+    changed = False
+
+    if not template.enabled:
+        template.enabled = True
+        changed = True
+
+    if send_to_author is not None and template.send_to_author != send_to_author:
+        template.send_to_author = send_to_author
+        changed = True
+
+    if send_to_coauthors is not None and template.send_to_coauthors != send_to_coauthors:
+        template.send_to_coauthors = send_to_coauthors
+        changed = True
+
+    if send_to_reviewer is not None and template.send_to_reviewer != send_to_reviewer:
+        template.send_to_reviewer = send_to_reviewer
+        changed = True
+
+    if changed:
+        template.save(update_fields=["enabled", "send_to_author", "send_to_coauthors", "send_to_reviewer"])
+
+    return template
 
 
 @login_required
@@ -384,6 +431,13 @@ def make_decision(request, submission_id):
                     extra=decision_email_extra,
                 )
             elif status == "accepted_for_layout":
+                ensure_workflow_email_template(
+                    submission.conference,
+                    "accepted_for_layout",
+                    send_to_author=True,
+                    send_to_coauthors=True,
+                    send_to_reviewer=False,
+                )
                 send_event_email(
                     "accepted_for_layout",
                     submission,
@@ -728,10 +782,12 @@ def send_revision_to_reviewers(request, submission_id):
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
-    reviewer_count = ReviewAssignment.objects.filter(
+    assignments = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
-    ).count()
+    ).select_related("reviewer")
+
+    reviewer_count = assignments.count()
 
     if reviewer_count == 0:
         messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
@@ -740,9 +796,32 @@ def send_revision_to_reviewers(request, submission_id):
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
 
+    ensure_workflow_email_template(
+        submission.conference,
+        "rereview_invitation",
+        send_to_author=False,
+        send_to_coauthors=False,
+        send_to_reviewer=True,
+    )
+
+    sent_recipients = []
+    for assignment in assignments:
+        sent_recipients.extend(
+            send_event_email(
+                "rereview_invitation",
+                submission,
+                request=request,
+                reviewer=assignment.reviewer,
+                assignment=assignment,
+                extra={
+                    "editor_comments": submission.judge_revision_message or submission.final_comment,
+                },
+            )
+        )
+
     messages.success(
         request,
-        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s)."
+        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s). Email notifications sent: {len(sent_recipients)}."
     )
     return redirect("submission_result", submission_id=submission.id)
 
@@ -1721,21 +1800,9 @@ def upload_revision(request, submission_id):
                 return redirect("upload_revision", submission_id=submission.id)
 
             if submission.status == "paper_revision_completed":
+                # Only confirm receipt to authors here. Reviewers are notified later,
+                # when the judge explicitly clicks "Send revised paper to reviewers".
                 send_event_email("revision_uploaded", submission, request=request)
-
-                assignments = ReviewAssignment.objects.filter(
-                    submission=submission,
-                    role="content_reviewer"
-                ).select_related("reviewer")
-
-                for assignment in assignments:
-                    send_event_email(
-                        "rereview_invitation",
-                        submission,
-                        request=request,
-                        reviewer=assignment.reviewer,
-                        assignment=assignment,
-                    )
 
             elif submission.status == "layout_revision_submitted":
                 send_event_email("layout_correction_submitted", submission, request=request)
@@ -2061,8 +2128,6 @@ def my_reviews(request):
         submission__status__in=[
             "submitted",
             "under_review",
-            "paper_revision_completed",
-            "paper_revision_completed",
             "revision_required",
             "reviews_completed",
         ]
@@ -2085,7 +2150,6 @@ def reviewer_dashboard(request):
             "submitted",
             "under_review",
             "revised_submitted",
-            "paper_revision_completed",
             "revision_required",
             "reviews_completed",
         ]
