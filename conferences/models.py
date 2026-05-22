@@ -95,79 +95,6 @@ class Conference(models.Model):
         null=True
     )
 
-    # Hub home page appearance settings
-    hub_background_image = models.ImageField(
-        upload_to="conference_hub_backgrounds/",
-        blank=True,
-        null=True,
-        help_text="Custom background image for the main Hub landing page."
-    )
-
-    hub_background_color = models.CharField(
-        max_length=20,
-        default="#f4f1e6",
-        help_text="Background colour of the main Hub landing page."
-    )
-
-    hub_header_background = models.CharField(
-        max_length=20,
-        default="#13365c",
-        help_text="Header background colour on the main Hub landing page."
-    )
-
-    hub_card_background = models.CharField(
-        max_length=20,
-        default="#ffffff",
-        help_text="Conference card background colour on the main Hub landing page."
-    )
-
-    hub_title_color = models.CharField(
-        max_length=20,
-        default="#0f3d2e",
-        help_text="Main heading and conference title colour on the Hub landing page."
-    )
-
-    hub_text_color = models.CharField(
-        max_length=20,
-        default="#374151",
-        help_text="Main text colour on the Hub landing page."
-    )
-
-    hub_container_width = models.PositiveIntegerField(
-        default=880,
-        help_text="Content/card area width on the Hub landing page in pixels."
-    )
-
-    hub_left_margin = models.PositiveIntegerField(
-        default=200,
-        help_text="Left margin of the Hub content/card area in pixels."
-    )
-
-    hub_background_image_width = models.PositiveIntegerField(
-        default=100,
-        help_text="Background image zoom/width percentage. Lower values show more of the image."
-    )
-
-    hub_background_image_opacity = models.FloatField(
-        default=1,
-        help_text="Background image opacity from 0 to 1."
-    )
-
-    hub_logo_width = models.PositiveIntegerField(
-        default=140,
-        help_text="Logo width inside the Hub conference card in pixels."
-    )
-
-    hub_card_radius = models.PositiveIntegerField(
-        default=18,
-        help_text="Hub conference card corner radius in pixels."
-    )
-
-    hub_card_padding = models.PositiveIntegerField(
-        default=28,
-        help_text="Hub conference card inner spacing in pixels."
-    )
-
     # Overview page layout settings
     overview_section_padding = models.PositiveIntegerField(default=40)
     overview_section_radius = models.PositiveIntegerField(default=26)
@@ -273,6 +200,7 @@ class Submission(models.Model):
         ("reviews_completed", "Content review completed"),
         ("reviewed_by_reviewer", "Reviewed by reviewer"),
         ("revision_required", "Revision requested"),
+        ("paper_revision_completed", "Paper revision completed"),
         ("paper_revision_completed", "Paper revision completed"),
         ("accepted_for_layout", "Accepted for layout review"),
         ("layout_revision_required", "Layout corrections requested"),
@@ -916,6 +844,7 @@ class EmailTemplate(models.Model):
         ("review_invitation", "4. Invitation to review manuscript"),
         ("review_declined_judge", "4a. Reviewer declined invitation – Judge notification"),
         ("review_declined_author", "4b. Reviewer declined invitation – Author notification"),
+        ("review_deadline_extension_requested", "4c. Reviewer requested different review deadline – Judge notification"),
         ("review_request_accepted", "5. Review request accepted"),
         ("review_initiated", "6. Review initiated – author notification"),
         ("review_due_soon", "7. Reminder: review due soon"),

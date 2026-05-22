@@ -8,6 +8,12 @@
         .container{max-width:900px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
         h1{color:#14532d;margin-top:0}
         .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:24px;line-height:1.7}
+        .review-box{background:#ffffff;border:1px solid #d1d5db;border-radius:14px;padding:18px;margin-bottom:16px}
+        .reviewer-name{font-weight:bold;color:#14532d;margin-bottom:10px}
+        .comment-title{font-weight:bold;margin:14px 0 6px;color:#111827}
+        .comment-text{background:#f9fafb;border-left:4px solid #16a34a;border-radius:8px;padding:12px;white-space:pre-wrap;line-height:1.6}
+        .editor-comment{border-left-color:#2563eb}
+        .muted{color:#6b7280;font-style:italic}
         label{display:block;font-weight:bold;margin:18px 0 8px}
         select,input,textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:12px;font-size:15px}
         button{margin-top:22px;background:#16a34a;color:white;border:0;border-radius:10px;padding:13px 20px;font-weight:bold;cursor:pointer}
@@ -29,6 +35,37 @@
             <a href="{{ submission.full_paper_file.url }}" target="_blank">
                 Download current paper
             </a>
+        {% endif %}
+    </div>
+
+    <div class="box">
+        <h2 style="margin-top:0;color:#14532d;">Reviewer comments</h2>
+
+        {% if decision_reviews %}
+            {% for review in decision_reviews %}
+                <div class="review-box">
+                    <div class="reviewer-name">
+                        {{ review.reviewer.profile.full_name_with_title|default:review.reviewer.username }}
+                        — Round {{ review.review_round }}
+                    </div>
+
+                    <div class="comment-title">Reviewer comments to authors</div>
+                    {% if review.comments_for_authors %}
+                        <div class="comment-text">{{ review.comments_for_authors }}</div>
+                    {% else %}
+                        <div class="muted">No comments to authors were provided.</div>
+                    {% endif %}
+
+                    <div class="comment-title">Reviewer comments to editor</div>
+                    {% if review.comments_for_editors %}
+                        <div class="comment-text editor-comment">{{ review.comments_for_editors }}</div>
+                    {% else %}
+                        <div class="muted">No comments to editor were provided.</div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="muted">No reviewer comments have been submitted yet.</div>
         {% endif %}
     </div>
 

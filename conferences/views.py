@@ -55,81 +55,6 @@ from .email_automation import process_scheduled_review_emails, get_email_workflo
 from .utils import anonymize_docx
 
 
-def _absolute_site_url(request):
-    return request.build_absolute_uri('/').rstrip('/')
-
-
-def robots_txt(request):
-    site_url = _absolute_site_url(request)
-    content = f"""User-agent: *
-Allow: /
-Disallow: /admin/
-Disallow: /dashboard/
-Disallow: /judge-dashboard/
-Disallow: /layout-dashboard/
-Disallow: /my-reviews/
-Disallow: /my-submissions/
-Disallow: /login/
-Disallow: /register/
-
-Sitemap: {site_url}/sitemap.xml
-"""
-    return HttpResponse(content, content_type="text/plain")
-
-
-def sitemap_xml(request):
-    site_url = _absolute_site_url(request)
-    urls = [
-        {"loc": f"{site_url}/", "priority": "1.0", "changefreq": "weekly"},
-        {"loc": f"{site_url}/privacy/", "priority": "0.3", "changefreq": "yearly"},
-        {"loc": f"{site_url}/terms/", "priority": "0.3", "changefreq": "yearly"},
-    ]
-
-    for conference in Conference.objects.all().order_by("slug"):
-        updated = ""
-        if hasattr(conference, "end_date") and conference.end_date:
-            updated = conference.end_date.isoformat()
-
-        urls.extend([
-            {
-                "loc": f"{site_url}/conference/{conference.slug}/overview/",
-                "priority": "0.9",
-                "changefreq": "weekly",
-                "lastmod": updated,
-            },
-            {
-                "loc": f"{site_url}/conference/{conference.slug}/important-information/",
-                "priority": "0.7",
-                "changefreq": "weekly",
-                "lastmod": updated,
-            },
-            {
-                "loc": f"{site_url}/conference/{conference.slug}/topics/",
-                "priority": "0.7",
-                "changefreq": "weekly",
-                "lastmod": updated,
-            },
-        ])
-
-    xml_items = []
-    for item in urls:
-        lastmod = f"<lastmod>{item['lastmod']}</lastmod>" if item.get("lastmod") else ""
-        xml_items.append(
-            f"""  <url>
-    <loc>{item['loc']}</loc>
-    {lastmod}
-    <changefreq>{item['changefreq']}</changefreq>
-    <priority>{item['priority']}</priority>
-  </url>"""
-        )
-
-    content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    content += "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
-    content += "\n".join(xml_items)
-    content += "\n</urlset>\n"
-    return HttpResponse(content, content_type="application/xml")
-
-
 @login_required
 def send_test_email_template(request, template_id):
     template = get_object_or_404(EmailTemplate, id=template_id)
@@ -211,6 +136,26 @@ def review_invitation_response(request, assignment_id):
                 assignment.deadline_extension_requested = True
 
             assignment.save()
+
+            if assignment.deadline_extension_requested:
+                send_event_email(
+                    "review_deadline_extension_requested",
+                    submission,
+                    request=request,
+                    reviewer=request.user,
+                    assignment=assignment,
+                    extra={
+                        "requested_review_deadline": assignment.accepted_deadline.strftime("%d.%m.%Y.") if assignment.accepted_deadline else "",
+                    },
+                )
+
+            send_event_email(
+                "review_request_accepted",
+                submission,
+                request=request,
+                reviewer=request.user,
+                assignment=assignment,
+            )
 
             messages.success(
                 request,
@@ -420,6 +365,26 @@ def make_decision(request, submission_id):
     if not role:
         return redirect("/")
 
+    current_round = submission.revision_round or 0
+    decision_reviews = Review.objects.filter(
+        submission=submission,
+        review_round=current_round,
+    ).select_related("reviewer", "reviewer__profile").order_by(
+        "reviewer__first_name",
+        "reviewer__last_name",
+        "reviewer__username",
+    )
+
+    if not decision_reviews.exists():
+        decision_reviews = Review.objects.filter(
+            submission=submission,
+        ).select_related("reviewer", "reviewer__profile").order_by(
+            "review_round",
+            "reviewer__first_name",
+            "reviewer__last_name",
+            "reviewer__username",
+        )
+
     if request.method == "POST":
         form = JudgeDecisionForm(request.POST)
 
@@ -484,6 +449,7 @@ def make_decision(request, submission_id):
     return render(request, "conferences/make_decision.html", {
         "submission": submission,
         "form": form,
+        "decision_reviews": decision_reviews,
     })
 
 
@@ -872,11 +838,20 @@ def judge_dashboard(request):
     data = []
 
     for submission in submissions:
-        reviews = Review.objects.filter(submission=submission)
+        reviews = Review.objects.filter(submission=submission).select_related("reviewer", "reviewer__profile")
+        assignments = ReviewAssignment.objects.filter(
+            submission=submission,
+            role="content_reviewer",
+        ).select_related("reviewer", "reviewer__profile").order_by(
+            "reviewer__first_name",
+            "reviewer__last_name",
+            "reviewer__username",
+        )
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
         data.append({
             "submission": submission,
             "reviews": reviews,
+            "assignments": assignments,
             "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),

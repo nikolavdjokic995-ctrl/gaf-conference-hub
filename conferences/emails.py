@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment
+from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment, Review
 from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
 
 
@@ -158,6 +158,69 @@ def format_date(value):
         return str(value)
 
 
+
+
+def _reviewer_display_name(review):
+    return user_full_name(review.reviewer)
+
+
+def _collect_reviewer_comments(submission):
+    """Collect reviewer comments for the current content-review round."""
+    if not submission:
+        return {
+            "reviewer_comments": reviewer_comment_context["reviewer_comments"],
+        "reviewer_comments_to_authors": reviewer_comment_context["reviewer_comments_to_authors"],
+        "reviewer_comments_to_editors": reviewer_comment_context["reviewer_comments_to_editors"],
+            "reviewer_comments_to_authors": "",
+            "reviewer_comments_to_editors": "",
+        }
+
+    current_round = getattr(submission, "revision_round", 0) or 0
+
+    reviews = Review.objects.filter(
+        submission=submission,
+        review_round=current_round,
+    ).select_related("reviewer", "reviewer__profile").order_by(
+        "reviewer__first_name",
+        "reviewer__last_name",
+        "reviewer__username",
+    )
+
+    if not reviews.exists():
+        reviews = Review.objects.filter(
+            submission=submission,
+        ).select_related("reviewer", "reviewer__profile").order_by(
+            "review_round",
+            "reviewer__first_name",
+            "reviewer__last_name",
+            "reviewer__username",
+        )
+
+    author_blocks = []
+    editor_blocks = []
+
+    for review in reviews:
+        reviewer_name = _reviewer_display_name(review)
+
+        author_comment = (review.comments_for_authors or "").strip()
+        editor_comment = (review.comments_for_editors or "").strip()
+
+        if author_comment:
+            author_blocks.append(f"{reviewer_name}:\n{author_comment}")
+
+        if editor_comment:
+            editor_blocks.append(f"{reviewer_name}:\n{editor_comment}")
+
+    comments_to_authors = "\n\n".join(author_blocks) or "No reviewer comments to authors were provided."
+    comments_to_editors = "\n\n".join(editor_blocks) or "No reviewer comments to editor were provided."
+
+    return {
+        "reviewer_comments": comments_to_authors,
+        "reviewer_comments_to_authors": comments_to_authors,
+        "reviewer_comments_to_editors": comments_to_editors,
+    }
+
+
 def build_email_context(submission=None, reviewer=None, request=None, extra=None, assignment=None, conference=None):
     assignment = find_assignment(submission=submission, reviewer=reviewer, assignment=assignment)
     if assignment and not submission:
@@ -205,6 +268,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
 
     review_form_link = absolute_url(request, "review_submission", submission.id) if submission else ""
     invitation_link = absolute_url(request, "review_invitation_response", assignment.id) if assignment else ""
+    reviewer_comment_context = _collect_reviewer_comments(submission)
 
     if assignment and assignment.invitation_status == "pending":
         main_review_link = invitation_link
@@ -256,7 +320,9 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "date_agreed": format_date(assignment.accepted_at) if assignment and assignment.accepted_at else "",
         "editor_decision": submission.get_status_display() if submission else "",
         "editor_comments": submission.final_comment if submission else "",
-        "reviewer_comments": "",
+        "reviewer_comments": reviewer_comment_context["reviewer_comments"],
+        "reviewer_comments_to_authors": reviewer_comment_context["reviewer_comments_to_authors"],
+        "reviewer_comments_to_editors": reviewer_comment_context["reviewer_comments_to_editors"],
         "revision_deadline": format_date(getattr(submission, "author_revision_deadline", None)) if submission else "",
         "layout_deadline": "",
         "temporary_password": "",
@@ -292,7 +358,7 @@ def build_email_bodies(body):
 def recipients_for_template(template, submission=None, reviewer=None):
     recipients = []
 
-    if submission and template.event == "review_declined_judge":
+    if submission and template.event in ["review_declined_judge", "review_deadline_extension_requested"]:
         for email in ConferenceRole.objects.filter(
             conference=submission.conference,
             role__in=["judge", "manager"],
@@ -485,7 +551,9 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "date_agreed": "05.04.2026.",
             "editor_decision": "Minor revision",
             "editor_comments": "There are no comments.",
-            "reviewer_comments": "Reviewer comments will appear here.",
+            "reviewer_comments": "Reviewer comments to authors will appear here.",
+            "reviewer_comments_to_authors": "Reviewer comments to authors will appear here.",
+            "reviewer_comments_to_editors": "Reviewer comments to editor will appear here.",
             "revision_deadline": "01.05.2026.",
             "layout_deadline": "22.03.2026.",
             "temporary_password": "temporary-password",
