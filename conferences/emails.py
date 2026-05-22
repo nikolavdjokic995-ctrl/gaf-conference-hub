@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment, Review
+from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment
 from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
 
 
@@ -158,84 +158,6 @@ def format_date(value):
         return str(value)
 
 
-def format_reviewer_comments_for_authors(submission, review_round=None):
-    """Collect reviewer comments intended for authors for decision emails."""
-    if not submission:
-        return ""
-
-    reviews = Review.objects.filter(submission=submission).select_related(
-        "reviewer",
-        "reviewer__profile",
-    )
-
-    if review_round is not None:
-        round_reviews = reviews.filter(review_round=review_round)
-        if round_reviews.exists():
-            reviews = round_reviews
-
-    reviews = reviews.order_by(
-        "review_round",
-        "reviewer__first_name",
-        "reviewer__last_name",
-        "reviewer__username",
-    )
-
-    blocks = []
-    reviewer_index = 1
-
-    for review in reviews:
-        comment = (review.comments_for_authors or "").strip()
-        if not comment:
-            continue
-        reviewer_label = f"Reviewer {reviewer_index}"
-        blocks.append(
-            f"{reviewer_label} (Round {review.review_round}):
-{comment}"
-        )
-        reviewer_index += 1
-
-    return "\n\n".join(blocks)
-
-
-def format_reviewer_comments_for_editors(submission, review_round=None):
-    """Collect reviewer comments intended only for editors/judges."""
-    if not submission:
-        return ""
-
-    reviews = Review.objects.filter(submission=submission).select_related(
-        "reviewer",
-        "reviewer__profile",
-    )
-
-    if review_round is not None:
-        round_reviews = reviews.filter(review_round=review_round)
-        if round_reviews.exists():
-            reviews = round_reviews
-
-    reviews = reviews.order_by(
-        "review_round",
-        "reviewer__first_name",
-        "reviewer__last_name",
-        "reviewer__username",
-    )
-
-    blocks = []
-    reviewer_index = 1
-
-    for review in reviews:
-        comment = (review.comments_for_editors or "").strip()
-        if not comment:
-            continue
-        reviewer_label = f"Reviewer {reviewer_index}"
-        blocks.append(
-            f"{reviewer_label} (Round {review.review_round}):
-{comment}"
-        )
-        reviewer_index += 1
-
-    return "\n\n".join(blocks)
-
-
 def build_email_context(submission=None, reviewer=None, request=None, extra=None, assignment=None, conference=None):
     assignment = find_assignment(submission=submission, reviewer=reviewer, assignment=assignment)
     if assignment and not submission:
@@ -281,16 +203,6 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         base_date = assignment.assigned_at.date() if assignment and assignment.assigned_at else today
         review_days = str(max((proposed_deadline - base_date).days, 0))
 
-    reviewer_comment_round = getattr(submission, "revision_round", None) if submission else None
-    reviewer_comments_to_authors = format_reviewer_comments_for_authors(
-        submission,
-        review_round=reviewer_comment_round,
-    ) if submission else ""
-    reviewer_comments_to_editors = format_reviewer_comments_for_editors(
-        submission,
-        review_round=reviewer_comment_round,
-    ) if submission else ""
-
     review_form_link = absolute_url(request, "review_submission", submission.id) if submission else ""
     invitation_link = absolute_url(request, "review_invitation_response", assignment.id) if assignment else ""
 
@@ -318,7 +230,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "coauthor_emails": ", ".join(coauthor_emails),
         "all_authors": ", ".join(all_authors),
         "all_author_emails": ", ".join(all_author_emails),
-        "reviewer_name": "Reviewer",
+        "reviewer_name": user_full_name(reviewer) if reviewer else "",
         "reviewer_email": reviewer.email if reviewer else "",
         "revision_message": submission.judge_revision_message if submission else "",
         "layout_revision_message": submission.layout_revision_message if submission else "",
@@ -344,9 +256,7 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "date_agreed": format_date(assignment.accepted_at) if assignment and assignment.accepted_at else "",
         "editor_decision": submission.get_status_display() if submission else "",
         "editor_comments": submission.final_comment if submission else "",
-        "reviewer_comments": reviewer_comments_to_authors,
-        "reviewer_comments_to_authors": reviewer_comments_to_authors,
-        "reviewer_comments_to_editors": reviewer_comments_to_editors,
+        "reviewer_comments": "",
         "revision_deadline": format_date(getattr(submission, "author_revision_deadline", None)) if submission else "",
         "layout_deadline": "",
         "temporary_password": "",
@@ -549,7 +459,7 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "coauthor_emails": "coauthor1@example.com, coauthor2@example.com",
             "all_authors": "Example Author, Coauthor One, Coauthor Two",
             "all_author_emails": "author@example.com, coauthor1@example.com, coauthor2@example.com",
-            "reviewer_name": "Example Reviewer",
+            "reviewer_name": "Reviewer",
             "reviewer_email": "reviewer@example.com",
             "revision_message": "Please revise the paper according to the reviewer comments.",
             "layout_revision_message": "Please correct formatting according to the template.",
@@ -576,8 +486,6 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "editor_decision": "Minor revision",
             "editor_comments": "There are no comments.",
             "reviewer_comments": "Reviewer comments will appear here.",
-            "reviewer_comments_to_authors": "Reviewer comments to authors will appear here.",
-            "reviewer_comments_to_editors": "Reviewer comments to editor will appear here.",
             "revision_deadline": "01.05.2026.",
             "layout_deadline": "22.03.2026.",
             "temporary_password": "temporary-password",
