@@ -709,7 +709,9 @@ def review_submission(request, submission_id):
                 assigned_reviewers_count > 0
                 and completed_reviews_count >= assigned_reviewers_count
             ):
-                submission.status = "reviews_completed"
+                # All assigned reviewers have submitted their reviews.
+                # The paper is now ready for the Judge/Editor decision.
+                submission.status = "reviewed_by_reviewer"
                 submission.save(update_fields=["status", "updated_at"])
 
             messages.success(request, f"Review for round {current_round} saved successfully.")
@@ -1772,7 +1774,9 @@ def upload_revision(request, submission_id):
                         pass
                     submission.full_paper_file.save(filename, uploaded_file, save=False)
 
-                    submission.status = "layout_revision_submitted"
+                    # Author has submitted the corrected layout version.
+                    # It returns to the layout reviewer under the same "Paper accepted" stage.
+                    submission.status = "accepted_for_layout"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
                 submission.save()
@@ -2109,6 +2113,7 @@ def my_reviews(request):
         submission__status__in=[
             "submitted",
             "under_review",
+            "paper_revision_completed",
             "paper_revision_completed",
             "revision_required",
             "reviews_completed",
