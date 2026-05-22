@@ -695,34 +695,31 @@ def review_submission(request, submission_id):
                 reviewer=request.user,
             )
 
-            # Count only active reviewers.
-            # Reviewers who declined the invitation must not block the paper
-            # from moving to "reviewed_by_reviewer" after all active reviewers
-            # have submitted their reviews.
-            assigned_reviewers_count = ReviewAssignment.objects.filter(
+            active_assignments = ReviewAssignment.objects.filter(
                 submission=submission,
                 role="content_reviewer"
             ).exclude(
                 invitation_status="declined"
-            ).count()
+            )
+
+            assigned_reviewers_count = active_assignments.count()
+
+            active_reviewer_ids = active_assignments.values_list(
+                "reviewer_id",
+                flat=True
+            )
 
             completed_reviews_count = Review.objects.filter(
                 submission=submission,
-                review_round=current_round
-            ).filter(
-                reviewer__review_assignments__submission=submission,
-                reviewer__review_assignments__role="content_reviewer",
-            ).exclude(
-                reviewer__review_assignments__invitation_status="declined"
+                review_round=current_round,
+                reviewer_id__in=active_reviewer_ids
             ).values("reviewer").distinct().count()
 
             if (
                 assigned_reviewers_count > 0
                 and completed_reviews_count >= assigned_reviewers_count
             ):
-                # All assigned reviewers have submitted their reviews.
-                # The paper is now ready for the Judge/Editor decision.
-                submission.status = "reviewed_by_reviewer"
+                submission.status = "reviews_completed"
                 submission.save(update_fields=["status", "updated_at"])
 
             messages.success(request, f"Review for round {current_round} saved successfully.")
@@ -784,8 +781,6 @@ def send_revision_to_reviewers(request, submission_id):
     reviewer_count = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
-    ).exclude(
-        invitation_status="declined"
     ).count()
 
     if reviewer_count == 0:
@@ -795,32 +790,9 @@ def send_revision_to_reviewers(request, submission_id):
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
 
-    assignments = ReviewAssignment.objects.filter(
-        submission=submission,
-        role="content_reviewer"
-    ).exclude(
-        invitation_status="declined"
-    ).select_related("reviewer")
-
-    sent_recipients = []
-
-    for assignment in assignments:
-        sent_recipients.extend(
-            send_event_email(
-                "rereview_invitation",
-                submission,
-                request=request,
-                reviewer=assignment.reviewer,
-                assignment=assignment,
-                extra={
-                    "editor_comments": submission.judge_revision_message or submission.final_comment,
-                },
-            )
-        )
-
     messages.success(
         request,
-        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s). Email notifications sent: {len(sent_recipients)}."
+        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s)."
     )
     return redirect("submission_result", submission_id=submission.id)
 
@@ -880,8 +852,6 @@ def judge_dashboard(request):
         assignments = ReviewAssignment.objects.filter(
             submission=submission,
             role="content_reviewer",
-        ).exclude(
-            invitation_status="declined"
         ).select_related("reviewer", "reviewer__profile").order_by(
             "reviewer__first_name",
             "reviewer__last_name",
@@ -892,7 +862,7 @@ def judge_dashboard(request):
             "submission": submission,
             "reviews": reviews,
             "assignments": assignments,
-            "review_count": assignments.count(),
+            "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),
             "major_count": reviews.filter(overall_recommendation="major_revision").count(),
@@ -1791,9 +1761,7 @@ def upload_revision(request, submission_id):
                         pass
                     submission.full_paper_file.save(filename, uploaded_file, save=False)
 
-                    # Author has submitted the corrected layout version.
-                    # It returns to the layout reviewer under the same "Paper accepted" stage.
-                    submission.status = "accepted_for_layout"
+                    submission.status = "layout_revision_submitted"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
                 submission.save()
@@ -1805,6 +1773,20 @@ def upload_revision(request, submission_id):
 
             if submission.status == "paper_revision_completed":
                 send_event_email("revision_uploaded", submission, request=request)
+
+                assignments = ReviewAssignment.objects.filter(
+                    submission=submission,
+                    role="content_reviewer"
+                ).select_related("reviewer")
+
+                for assignment in assignments:
+                    send_event_email(
+                        "rereview_invitation",
+                        submission,
+                        request=request,
+                        reviewer=assignment.reviewer,
+                        assignment=assignment,
+                    )
 
             elif submission.status == "layout_revision_submitted":
                 send_event_email("layout_correction_submitted", submission, request=request)
