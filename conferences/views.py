@@ -55,6 +55,81 @@ from .email_automation import process_scheduled_review_emails, get_email_workflo
 from .utils import anonymize_docx
 
 
+def _absolute_site_url(request):
+    return request.build_absolute_uri('/').rstrip('/')
+
+
+def robots_txt(request):
+    site_url = _absolute_site_url(request)
+    content = f"""User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /judge-dashboard/
+Disallow: /layout-dashboard/
+Disallow: /my-reviews/
+Disallow: /my-submissions/
+Disallow: /login/
+Disallow: /register/
+
+Sitemap: {site_url}/sitemap.xml
+"""
+    return HttpResponse(content, content_type="text/plain")
+
+
+def sitemap_xml(request):
+    site_url = _absolute_site_url(request)
+    urls = [
+        {"loc": f"{site_url}/", "priority": "1.0", "changefreq": "weekly"},
+        {"loc": f"{site_url}/privacy/", "priority": "0.3", "changefreq": "yearly"},
+        {"loc": f"{site_url}/terms/", "priority": "0.3", "changefreq": "yearly"},
+    ]
+
+    for conference in Conference.objects.all().order_by("slug"):
+        updated = ""
+        if hasattr(conference, "end_date") and conference.end_date:
+            updated = conference.end_date.isoformat()
+
+        urls.extend([
+            {
+                "loc": f"{site_url}/conference/{conference.slug}/overview/",
+                "priority": "0.9",
+                "changefreq": "weekly",
+                "lastmod": updated,
+            },
+            {
+                "loc": f"{site_url}/conference/{conference.slug}/important-information/",
+                "priority": "0.7",
+                "changefreq": "weekly",
+                "lastmod": updated,
+            },
+            {
+                "loc": f"{site_url}/conference/{conference.slug}/topics/",
+                "priority": "0.7",
+                "changefreq": "weekly",
+                "lastmod": updated,
+            },
+        ])
+
+    xml_items = []
+    for item in urls:
+        lastmod = f"<lastmod>{item['lastmod']}</lastmod>" if item.get("lastmod") else ""
+        xml_items.append(
+            f"""  <url>
+    <loc>{item['loc']}</loc>
+    {lastmod}
+    <changefreq>{item['changefreq']}</changefreq>
+    <priority>{item['priority']}</priority>
+  </url>"""
+        )
+
+    content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    content += "<urlset xmlns=\"http://www.sitemaps.org/schemas/sitemap/0.9\">\n"
+    content += "\n".join(xml_items)
+    content += "\n</urlset>\n"
+    return HttpResponse(content, content_type="application/xml")
+
+
 @login_required
 def send_test_email_template(request, template_id):
     template = get_object_or_404(EmailTemplate, id=template_id)
@@ -1741,131 +1816,6 @@ def upload_revision(request, submission_id):
         "form": form,
     })
 
-def _split_submission_people_field(value):
-    return [
-        item.strip()
-        for item in (value or "").replace("\n", ";").split(";")
-        if item.strip()
-    ]
-
-
-
-def _country_full_name(value):
-    country = (value or "").strip()
-    if not country:
-        return ""
-
-    country_map = {
-        "RS": "Serbia",
-        "SRB": "Serbia",
-        "Serbia": "Serbia",
-        "BA": "Bosnia and Herzegovina",
-        "BIH": "Bosnia and Herzegovina",
-        "ME": "Montenegro",
-        "MNE": "Montenegro",
-        "MK": "North Macedonia",
-        "MKD": "North Macedonia",
-        "HR": "Croatia",
-        "HRV": "Croatia",
-        "SI": "Slovenia",
-        "SVN": "Slovenia",
-        "BG": "Bulgaria",
-        "BGR": "Bulgaria",
-        "RO": "Romania",
-        "ROU": "Romania",
-        "HU": "Hungary",
-        "HUN": "Hungary",
-        "AL": "Albania",
-        "ALB": "Albania",
-        "GR": "Greece",
-        "GRC": "Greece",
-        "IT": "Italy",
-        "ITA": "Italy",
-        "DE": "Germany",
-        "DEU": "Germany",
-        "AT": "Austria",
-        "AUT": "Austria",
-        "FR": "France",
-        "FRA": "France",
-        "ES": "Spain",
-        "ESP": "Spain",
-        "PT": "Portugal",
-        "PRT": "Portugal",
-        "NL": "Netherlands",
-        "NLD": "Netherlands",
-        "BE": "Belgium",
-        "BEL": "Belgium",
-        "CH": "Switzerland",
-        "CHE": "Switzerland",
-        "SE": "Sweden",
-        "SWE": "Sweden",
-        "NO": "Norway",
-        "NOR": "Norway",
-        "DK": "Denmark",
-        "DNK": "Denmark",
-        "FI": "Finland",
-        "FIN": "Finland",
-        "PL": "Poland",
-        "POL": "Poland",
-        "CZ": "Czech Republic",
-        "CZE": "Czech Republic",
-        "SK": "Slovakia",
-        "SVK": "Slovakia",
-        "TR": "Turkey",
-        "TUR": "Turkey",
-        "US": "United States",
-        "USA": "United States",
-        "UK": "United Kingdom",
-        "GB": "United Kingdom",
-        "GBR": "United Kingdom",
-    }
-
-    return country_map.get(country, country_map.get(country.upper(), country))
-
-
-def _attach_author_rows(submission):
-    first_author_display = f"{submission.first_author_title or ''} {submission.first_author or ''}".strip()
-
-    submission.first_author_details = {
-        "display_name": first_author_display or submission.first_author,
-        "email": submission.first_author_email or getattr(submission.author, "email", ""),
-        "affiliation": submission.first_author_affiliation or "",
-        "country": _country_full_name(submission.first_author_country),
-        "orcid": submission.first_author_orcid or "",
-    }
-
-    names = _split_submission_people_field(submission.coauthors)
-    titles = _split_submission_people_field(submission.coauthor_titles)
-    affiliations = _split_submission_people_field(submission.coauthor_affiliations)
-    countries = _split_submission_people_field(submission.coauthor_countries)
-    emails = _split_submission_people_field(submission.coauthor_emails)
-    orcids = _split_submission_people_field(submission.coauthor_orcids)
-
-    max_len = max(
-        len(names),
-        len(titles),
-        len(affiliations),
-        len(countries),
-        len(emails),
-        len(orcids),
-        0,
-    )
-
-    submission.coauthor_rows = []
-    for index in range(max_len):
-        name = names[index] if index < len(names) else ""
-        title = titles[index] if index < len(titles) else ""
-        submission.coauthor_rows.append({
-            "display_name": f"{title} {name}".strip() or name,
-            "email": emails[index] if index < len(emails) else "",
-            "affiliation": affiliations[index] if index < len(affiliations) else "",
-            "country": _country_full_name(countries[index] if index < len(countries) else ""),
-            "orcid": orcids[index] if index < len(orcids) else "",
-        })
-
-    return submission
-
-
 @login_required
 def layout_dashboard(request):
     layout_roles = ConferenceRole.objects.filter(
@@ -1903,12 +1853,6 @@ def layout_dashboard(request):
     ).prefetch_related(
         "reviews__reviewer"
     ).order_by("-updated_at")
-
-    for submission in submissions:
-        _attach_author_rows(submission)
-
-    for submission in accepted_publication_submissions:
-        _attach_author_rows(submission)
 
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,

@@ -15,6 +15,8 @@ ALLOWED_HOSTS = [
     "localhost",
 ]
 
+SITE_URL = os.getenv("SITE_URL", "https://gaf-conference-hub.onrender.com")
+
 
 INSTALLED_APPS = [
     "django.contrib.admin",

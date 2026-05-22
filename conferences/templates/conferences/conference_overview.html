@@ -5,7 +5,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ conference.plain_title }}</title>
+    <title>{{ conference.plain_title }} | Green Building 2026</title>
+    <meta name="description" content="{{ conference.description_en|striptags|truncatewords:28|default:'Green Building 2026 International Scientific Conference overview, submission information, topics and conference details.' }}">
+    <meta name="keywords" content="{{ conference.plain_title }}, Green Building 2026, international scientific conference, sustainability, civil engineering, architecture, paper submission, conference topics">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="{{ conference.plain_title }}">
+    <meta property="og:description" content="{{ conference.description_en|striptags|truncatewords:28|default:'Green Building 2026 International Scientific Conference.' }}">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
 
     <style>
 
