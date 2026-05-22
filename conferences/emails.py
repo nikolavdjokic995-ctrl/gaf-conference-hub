@@ -181,12 +181,24 @@ def format_reviewer_comments_for_authors(submission, review_round=None):
     )
 
     blocks = []
+    reviewer_index = 1
+
     for review in reviews:
         comment = (review.comments_for_authors or "").strip()
+
         if not comment:
             continue
-        reviewer_name = user_full_name(review.reviewer) or "Reviewer"
-        blocks.append(f"{reviewer_name} (Round {review.review_round}):\n{comment}")
+
+        # IMPORTANT:
+        # Reviewer identities must remain anonymous for authors.
+        # Authors will only see Reviewer 1, Reviewer 2, etc.
+        reviewer_label = f"Reviewer {reviewer_index}"
+
+        blocks.append(
+            f"{reviewer_label} (Round {review.review_round}):\n{comment}"
+        )
+
+        reviewer_index += 1
 
     return "\n\n".join(blocks)
 

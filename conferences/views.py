@@ -418,6 +418,19 @@ def make_decision(request, submission_id):
                 wants_final_notification="yes"
             ).select_related("reviewer")
 
+            # Send reviewers the EXACT final editor decision
+            # only if they requested final-decision notifications.
+            decision_text = submission.get_status_display()
+
+            if status == "revision_required":
+                decision_text = "Revision requested"
+            elif status == "accepted_for_layout":
+                decision_text = "Accepted for layout review"
+            elif status == "rejected":
+                decision_text = "Rejected"
+            elif status == "final_accepted":
+                decision_text = "Accepted for publication"
+
             for review in notify_reviewers:
                 send_event_email(
                     "reviewer_editor_decision",
@@ -425,7 +438,7 @@ def make_decision(request, submission_id):
                     request=request,
                     reviewer=review.reviewer,
                     extra={
-                        "editor_decision": submission.get_status_display(),
+                        "editor_decision": decision_text,
                         "editor_comments": submission.final_comment,
                     }
                 )
