@@ -55,9 +55,54 @@ from conferences.views import (
     reviewer_topics,
     email_health_dashboard,
     run_email_automation_now,
-    robots_txt,
-    sitemap_xml,
 )
+
+
+def robots_txt(request):
+    content = """User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /dashboard/
+Disallow: /judge-dashboard/
+Disallow: /layout-dashboard/
+Disallow: /my-reviews/
+Disallow: /my-submissions/
+Disallow: /login/
+Disallow: /register/
+
+Sitemap: https://gaf-conference-hub.onrender.com/sitemap.xml
+"""
+    return HttpResponse(content, content_type="text/plain")
+
+
+def sitemap_xml(request):
+    content = """<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://gaf-conference-hub.onrender.com/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>https://gaf-conference-hub.onrender.com/privacy/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://gaf-conference-hub.onrender.com/terms/</loc>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+  <url>
+    <loc>https://gaf-conference-hub.onrender.com/conference/green-building-2026/overview/</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+</urlset>
+"""
+    return HttpResponse(content, content_type="application/xml")
+
+
 
 urlpatterns = [
     path("admin/", admin.site.urls),
