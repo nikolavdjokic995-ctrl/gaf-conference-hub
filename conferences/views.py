@@ -137,26 +137,6 @@ def review_invitation_response(request, assignment_id):
 
             assignment.save()
 
-            if assignment.deadline_extension_requested:
-                send_event_email(
-                    "review_deadline_extension_requested",
-                    submission,
-                    request=request,
-                    reviewer=request.user,
-                    assignment=assignment,
-                    extra={
-                        "requested_review_deadline": assignment.accepted_deadline.strftime("%d.%m.%Y.") if assignment.accepted_deadline else "",
-                    },
-                )
-
-            send_event_email(
-                "review_request_accepted",
-                submission,
-                request=request,
-                reviewer=request.user,
-                assignment=assignment,
-            )
-
             messages.success(
                 request,
                 "Review invitation accepted successfully."
@@ -365,38 +345,18 @@ def make_decision(request, submission_id):
     if not role:
         return redirect("/")
 
-    current_round = submission.revision_round or 0
-    decision_reviews = Review.objects.filter(
-        submission=submission,
-        review_round=current_round,
-    ).select_related("reviewer", "reviewer__profile").order_by(
-        "reviewer__first_name",
-        "reviewer__last_name",
-        "reviewer__username",
-    )
-
-    if not decision_reviews.exists():
-        decision_reviews = Review.objects.filter(
-            submission=submission,
-        ).select_related("reviewer", "reviewer__profile").order_by(
-            "review_round",
-            "reviewer__first_name",
-            "reviewer__last_name",
-            "reviewer__username",
-        )
-
     if request.method == "POST":
         form = JudgeDecisionForm(request.POST)
 
         if form.is_valid():
             selected_status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
-            revision_deadline = form.cleaned_data["revision_deadline"]
+            revision_deadline = form.cleaned_data.get("revision_deadline")
 
             # In the Judge decision workflow, both minor and major revisions
             # mean that the AUTHOR must revise the manuscript.
             # Layout revision is handled later by the layout reviewer.
-            if selected_status in ["minor_revision", "major_revision", "revision_required"]:
+            if selected_status == "minor_revision":
                 status = "revision_required"
             else:
                 status = selected_status
@@ -407,47 +367,36 @@ def make_decision(request, submission_id):
             if status == "revision_required":
                 submission.judge_revision_message = comment
                 submission.author_revision_deadline = revision_deadline
-
-                if submission.revision_round is None:
-                    submission.revision_round = 1
-                else:
-                    submission.revision_round += 1
+                submission.revision_round += 1
 
             submission.save()
 
-            # Notify reviewers about the final editor/judge decision only if
-            # they explicitly requested final-decision notification in their review form.
-            notify_reviewers = Review.objects.filter(
-                submission=submission,
-                wants_final_notification="yes"
-            ).select_related("reviewer")
-
-            for review in notify_reviewers:
-                send_event_email(
-                    "reviewer_editor_decision",
-                    submission,
-                    request=request,
-                    reviewer=review.reviewer,
-                    extra={
-                        "editor_decision": submission.get_status_display(),
-                        "editor_comments": submission.final_comment,
-                    }
-                )
+            decision_email_extra = {
+                "editor_decision": submission.get_status_display(),
+                "editor_comments": submission.final_comment,
+            }
 
             if status == "revision_required":
                 send_event_email(
                     "review_completed_author",
                     submission,
                     request=request,
-                    extra={
-                        "editor_decision": "Revision requested",
-                        "editor_comments": comment,
-                    },
+                    extra=decision_email_extra,
                 )
             elif status == "accepted_for_layout":
-                send_event_email("accepted_for_layout", submission, request=request)
+                send_event_email(
+                    "accepted_for_layout",
+                    submission,
+                    request=request,
+                    extra=decision_email_extra,
+                )
             elif status == "rejected":
-                send_event_email("rejected", submission, request=request)
+                send_event_email(
+                    "rejected",
+                    submission,
+                    request=request,
+                    extra=decision_email_extra,
+                )
 
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
@@ -461,7 +410,6 @@ def make_decision(request, submission_id):
     return render(request, "conferences/make_decision.html", {
         "submission": submission,
         "form": form,
-        "decision_reviews": decision_reviews,
     })
 
 
@@ -707,24 +655,14 @@ def review_submission(request, submission_id):
                 reviewer=request.user,
             )
 
-            active_assignments = ReviewAssignment.objects.filter(
+            assigned_reviewers_count = ReviewAssignment.objects.filter(
                 submission=submission,
                 role="content_reviewer"
-            ).exclude(
-                invitation_status="declined"
-            )
-
-            assigned_reviewers_count = active_assignments.count()
-
-            active_reviewer_ids = active_assignments.values_list(
-                "reviewer_id",
-                flat=True
-            )
+            ).count()
 
             completed_reviews_count = Review.objects.filter(
                 submission=submission,
-                review_round=current_round,
-                reviewer_id__in=active_reviewer_ids
+                review_round=current_round
             ).values("reviewer").distinct().count()
 
             if (
@@ -860,20 +798,11 @@ def judge_dashboard(request):
     data = []
 
     for submission in submissions:
-        reviews = Review.objects.filter(submission=submission).select_related("reviewer", "reviewer__profile")
-        assignments = ReviewAssignment.objects.filter(
-            submission=submission,
-            role="content_reviewer",
-        ).select_related("reviewer", "reviewer__profile").order_by(
-            "reviewer__first_name",
-            "reviewer__last_name",
-            "reviewer__username",
-        )
+        reviews = Review.objects.filter(submission=submission)
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
         data.append({
             "submission": submission,
             "reviews": reviews,
-            "assignments": assignments,
             "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),
@@ -1773,7 +1702,7 @@ def upload_revision(request, submission_id):
                         pass
                     submission.full_paper_file.save(filename, uploaded_file, save=False)
 
-                    submission.status = "layout_revision_submitted"
+                    submission.status = "accepted_for_layout"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
 
                 submission.save()
@@ -1800,7 +1729,7 @@ def upload_revision(request, submission_id):
                         assignment=assignment,
                     )
 
-            elif submission.status == "layout_revision_submitted":
+            elif submission.status == "accepted_for_layout":
                 send_event_email("layout_correction_submitted", submission, request=request)
 
             messages.success(request, success_message)
@@ -1880,7 +1809,7 @@ def layout_decision(request, submission_id):
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
-            revision_deadline = form.cleaned_data["revision_deadline"]
+            revision_deadline = form.cleaned_data.get("revision_deadline")
 
             submission.status = status
             submission.final_comment = comment
@@ -1888,6 +1817,9 @@ def layout_decision(request, submission_id):
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
                 submission.layout_revision_round += 1
+
+                if revision_deadline and hasattr(submission, "layout_revision_deadline"):
+                    submission.layout_revision_deadline = revision_deadline
 
             submission.save()
 
