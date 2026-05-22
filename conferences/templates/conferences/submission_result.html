@@ -94,7 +94,7 @@
                 Download original paper
             </a>
         {% endif %}
-        {% if can_manage and submission.status == "revised_submitted" %}
+        {% if can_manage and submission.status == "paper_revision_completed" %}
             <form method="post"
                   action="{% url 'send_revision_to_reviewers' submission.id %}"
                   style="display:inline-block; margin-top:15px; margin-left:10px;">
