@@ -64,6 +64,14 @@ urlpatterns = [
     path("", home, name="home"),
     path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
+    path(
+        "google455867b1428963df.html",
+        lambda request: HttpResponse(
+            "google-site-verification: google455867b1428963df.html",
+            content_type="text/html"
+        ),
+        name="google_site_verification",
+    ),
 
     path("login/", auth_views.LoginView.as_view(
         template_name="conferences/login.html"
@@ -86,15 +94,6 @@ urlpatterns = [
         name="password_change_done",
     ),
     path("register/", register, name="register"),
-    urlpatterns += [
-    path(
-        "google455867b1428963df.html",
-        lambda request: HttpResponse(
-            "google-site-verification: google455867b1428963df.html",
-            content_type="text/html"
-        ),
-    ),
-]
     path("conference/<slug:slug>/settings/emails/health/", email_health_dashboard, name="email_health_dashboard"),
     path("conference/<slug:slug>/settings/emails/run-automation/", run_email_automation_now, name="run_email_automation_now"),
     path("dashboard/", manager_dashboard, name="dashboard"),
