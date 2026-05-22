@@ -218,31 +218,31 @@
                     {% endif %}
                 </div>
 
-                <h3>Reviewer feedback</h3>
+                {% if submission.status == "revision_required" or submission.status == "accepted_for_layout" or submission.status == "rejected" or submission.status == "final_accepted" or submission.status == "layout_revision_required" %}
 
-                {% for review in submission.reviews.all %}
-                    {% if review.comments_for_authors or review.commented_paper_file %}
-                        <div class="review-box">
-                            <p><strong>Reviewer {{ forloop.counter }}</strong></p>
+                    <h3>Reviewer feedback</h3>
 
-                            {% if review.get_overall_recommendation_display %}
-                                <p><strong>Recommendation:</strong> {{ review.get_overall_recommendation_display }}</p>
-                            {% endif %}
+                    {% for review in submission.reviews.all %}
+                        {% if review.comments_for_authors or review.commented_paper_file %}
+                            <div class="review-box">
+                                <p><strong>Reviewer {{ forloop.counter }}</strong></p>
 
-                            {% if review.comments_for_authors %}
-                                <p><strong>Comments for authors:</strong><br>{{ review.comments_for_authors|linebreaksbr }}</p>
-                            {% endif %}
+                                {% if review.comments_for_authors %}
+                                    <p><strong>Comments for authors:</strong><br>{{ review.comments_for_authors|linebreaksbr }}</p>
+                                {% endif %}
 
-                            {% if review.commented_paper_file %}
-                                <a class="btn btn-green" href="{{ review.commented_paper_file.url }}" target="_blank">
-                                    Download reviewer commented paper
-                                </a>
-                            {% endif %}
-                        </div>
-                    {% endif %}
-                {% empty %}
-                    <p class="muted">No reviewer feedback available yet.</p>
-                {% endfor %}
+                                {% if review.commented_paper_file %}
+                                    <a class="btn btn-green" href="{{ review.commented_paper_file.url }}" target="_blank">
+                                        Download reviewer commented paper
+                                    </a>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    {% empty %}
+                        <p class="muted">No reviewer feedback available yet.</p>
+                    {% endfor %}
+
+                {% endif %}
 
             </div>
 
