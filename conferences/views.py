@@ -50,56 +50,9 @@ from .forms import (
 )
 
 from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
-from .email_defaults import OFFICIAL_EMAIL_EVENTS, DEFAULT_EMAIL_TEMPLATES_2026
+from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
-
-
-def ensure_workflow_email_template(conference, event, *, send_to_author=None, send_to_coauthors=None, send_to_reviewer=None):
-    """Ensure a workflow email template exists and is enabled before an automatic send.
-
-    This keeps important workflow emails active even if the template was missing
-    from the database after earlier migrations or settings changes.
-    """
-    defaults = DEFAULT_EMAIL_TEMPLATES_2026.get(event, {})
-
-    template, created = EmailTemplate.objects.get_or_create(
-        conference=conference,
-        event=event,
-        defaults={
-            "enabled": True,
-            "subject": defaults.get("subject", ""),
-            "body": defaults.get("body", ""),
-            "send_to_author": defaults.get("send_to_author", False),
-            "send_to_coauthors": defaults.get("send_to_coauthors", False),
-            "send_to_reviewer": defaults.get("send_to_reviewer", False),
-            "send_to_managers": defaults.get("send_to_managers", False),
-            "send_to_layout_reviewers": defaults.get("send_to_layout_reviewers", False),
-        },
-    )
-
-    changed = False
-
-    if not template.enabled:
-        template.enabled = True
-        changed = True
-
-    if send_to_author is not None and template.send_to_author != send_to_author:
-        template.send_to_author = send_to_author
-        changed = True
-
-    if send_to_coauthors is not None and template.send_to_coauthors != send_to_coauthors:
-        template.send_to_coauthors = send_to_coauthors
-        changed = True
-
-    if send_to_reviewer is not None and template.send_to_reviewer != send_to_reviewer:
-        template.send_to_reviewer = send_to_reviewer
-        changed = True
-
-    if changed:
-        template.save(update_fields=["enabled", "send_to_author", "send_to_coauthors", "send_to_reviewer"])
-
-    return template
 
 
 @login_required
@@ -418,39 +371,12 @@ def make_decision(request, submission_id):
 
             submission.save()
 
-            decision_email_extra = {
-                "editor_decision": submission.get_status_display(),
-                "editor_comments": submission.final_comment,
-            }
-
             if status == "revision_required":
-                send_event_email(
-                    "review_completed_author",
-                    submission,
-                    request=request,
-                    extra=decision_email_extra,
-                )
+                send_event_email("review_completed_author", submission, request=request)
             elif status == "accepted_for_layout":
-                ensure_workflow_email_template(
-                    submission.conference,
-                    "accepted_for_layout",
-                    send_to_author=True,
-                    send_to_coauthors=True,
-                    send_to_reviewer=False,
-                )
-                send_event_email(
-                    "accepted_for_layout",
-                    submission,
-                    request=request,
-                    extra=decision_email_extra,
-                )
+                send_event_email("accepted_for_layout", submission, request=request)
             elif status == "rejected":
-                send_event_email(
-                    "rejected",
-                    submission,
-                    request=request,
-                    extra=decision_email_extra,
-                )
+                send_event_email("rejected", submission, request=request)
 
             messages.success(request, "Decision saved successfully.")
             return redirect("submission_result", submission_id=submission.id)
@@ -702,13 +628,6 @@ def review_submission(request, submission_id):
             review.review_round = current_round
             review.save()
 
-            send_event_email(
-                "review_received",
-                submission,
-                request=request,
-                reviewer=request.user,
-            )
-
             assigned_reviewers_count = ReviewAssignment.objects.filter(
                 submission=submission,
                 role="content_reviewer"
@@ -782,12 +701,10 @@ def send_revision_to_reviewers(request, submission_id):
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
-    assignments = ReviewAssignment.objects.filter(
+    reviewer_count = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
-    ).select_related("reviewer")
-
-    reviewer_count = assignments.count()
+    ).count()
 
     if reviewer_count == 0:
         messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
@@ -796,32 +713,9 @@ def send_revision_to_reviewers(request, submission_id):
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
 
-    ensure_workflow_email_template(
-        submission.conference,
-        "rereview_invitation",
-        send_to_author=False,
-        send_to_coauthors=False,
-        send_to_reviewer=True,
-    )
-
-    sent_recipients = []
-    for assignment in assignments:
-        sent_recipients.extend(
-            send_event_email(
-                "rereview_invitation",
-                submission,
-                request=request,
-                reviewer=assignment.reviewer,
-                assignment=assignment,
-                extra={
-                    "editor_comments": submission.judge_revision_message or submission.final_comment,
-                },
-            )
-        )
-
     messages.success(
         request,
-        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s). Email notifications sent: {len(sent_recipients)}."
+        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s)."
     )
     return redirect("submission_result", submission_id=submission.id)
 
@@ -878,19 +772,11 @@ def judge_dashboard(request):
 
     for submission in submissions:
         reviews = Review.objects.filter(submission=submission)
-
-        assignments = ReviewAssignment.objects.filter(
-            submission=submission,
-            role="content_reviewer"
-        ).select_related("reviewer")
-
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
-
         data.append({
             "submission": submission,
             "reviews": reviews,
-            "assignments": assignments,
-            "review_count": assignments.count(),
+            "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),
             "major_count": reviews.filter(overall_recommendation="major_revision").count(),
@@ -1800,9 +1686,21 @@ def upload_revision(request, submission_id):
                 return redirect("upload_revision", submission_id=submission.id)
 
             if submission.status == "paper_revision_completed":
-                # Only confirm receipt to authors here. Reviewers are notified later,
-                # when the judge explicitly clicks "Send revised paper to reviewers".
                 send_event_email("revision_uploaded", submission, request=request)
+
+                assignments = ReviewAssignment.objects.filter(
+                    submission=submission,
+                    role="content_reviewer"
+                ).select_related("reviewer")
+
+                for assignment in assignments:
+                    send_event_email(
+                        "rereview_invitation",
+                        submission,
+                        request=request,
+                        reviewer=assignment.reviewer,
+                        assignment=assignment,
+                    )
 
             elif submission.status == "layout_revision_submitted":
                 send_event_email("layout_correction_submitted", submission, request=request)
@@ -1816,6 +1714,174 @@ def upload_revision(request, submission_id):
         "submission": submission,
         "form": form,
     })
+
+def _split_submission_people_field(value):
+    """Split legacy multiline, semicolon or comma-separated submission fields."""
+    if not value:
+        return []
+    return [
+        item.strip()
+        for item in str(value).replace("\r", "\n").replace(";", "\n").replace(",", "\n").splitlines()
+        if item.strip()
+    ]
+
+
+def _country_full_name(value):
+    country = (value or "").strip()
+    if not country:
+        return ""
+
+    country_map = {
+        "RS": "Serbia",
+        "SRB": "Serbia",
+        "BA": "Bosnia and Herzegovina",
+        "BIH": "Bosnia and Herzegovina",
+        "ME": "Montenegro",
+        "MNE": "Montenegro",
+        "MK": "North Macedonia",
+        "MKD": "North Macedonia",
+        "HR": "Croatia",
+        "HRV": "Croatia",
+        "SI": "Slovenia",
+        "SVN": "Slovenia",
+        "BG": "Bulgaria",
+        "BGR": "Bulgaria",
+        "RO": "Romania",
+        "ROU": "Romania",
+        "HU": "Hungary",
+        "HUN": "Hungary",
+        "AL": "Albania",
+        "ALB": "Albania",
+        "GR": "Greece",
+        "GRC": "Greece",
+        "IT": "Italy",
+        "ITA": "Italy",
+        "DE": "Germany",
+        "DEU": "Germany",
+        "AT": "Austria",
+        "AUT": "Austria",
+        "FR": "France",
+        "FRA": "France",
+        "ES": "Spain",
+        "ESP": "Spain",
+        "PT": "Portugal",
+        "PRT": "Portugal",
+        "NL": "Netherlands",
+        "NLD": "Netherlands",
+        "BE": "Belgium",
+        "BEL": "Belgium",
+        "CH": "Switzerland",
+        "CHE": "Switzerland",
+        "SE": "Sweden",
+        "SWE": "Sweden",
+        "NO": "Norway",
+        "NOR": "Norway",
+        "DK": "Denmark",
+        "DNK": "Denmark",
+        "FI": "Finland",
+        "FIN": "Finland",
+        "PL": "Poland",
+        "POL": "Poland",
+        "CZ": "Czech Republic",
+        "CZE": "Czech Republic",
+        "SK": "Slovakia",
+        "SVK": "Slovakia",
+        "TR": "Turkey",
+        "TUR": "Turkey",
+        "US": "United States",
+        "USA": "United States",
+        "UK": "United Kingdom",
+        "GB": "United Kingdom",
+        "GBR": "United Kingdom",
+    }
+
+    return country_map.get(country, country_map.get(country.upper(), country))
+
+
+def _user_profile_value(user, attr):
+    profile = getattr(user, "profile", None)
+    return getattr(profile, attr, "") if profile else ""
+
+
+def _author_user_display_name(user):
+    if not user:
+        return ""
+
+    profile_name = _user_profile_value(user, "full_name_with_title")
+    if profile_name:
+        return profile_name
+
+    full_name = f"{user.first_name} {user.last_name}".strip()
+    return full_name or user.username
+
+
+def _attach_author_rows(submission):
+    """Prepare author/co-author data for the layout dashboard template."""
+    author_user = getattr(submission, "author", None)
+
+    raw_first_author = (getattr(submission, "first_author", "") or "").strip()
+    first_author_title = (getattr(submission, "first_author_title", "") or "").strip()
+
+    if raw_first_author:
+        first_author_display = f"{first_author_title} {raw_first_author}".strip()
+    else:
+        first_author_display = _author_user_display_name(author_user)
+
+    first_author_email = (
+        (getattr(submission, "first_author_email", "") or "").strip()
+        or (getattr(author_user, "email", "") or "").strip()
+    )
+
+    first_author_affiliation = (
+        (getattr(submission, "first_author_affiliation", "") or "").strip()
+        or _user_profile_value(author_user, "affiliation")
+    )
+
+    first_author_country = (
+        (getattr(submission, "first_author_country", "") or "").strip()
+        or _user_profile_value(author_user, "country")
+    )
+
+    submission.first_author_details = {
+        "display_name": first_author_display,
+        "email": first_author_email,
+        "affiliation": first_author_affiliation,
+        "country": _country_full_name(first_author_country),
+        "orcid": (getattr(submission, "first_author_orcid", "") or "").strip(),
+    }
+
+    names = _split_submission_people_field(getattr(submission, "coauthors", ""))
+    titles = _split_submission_people_field(getattr(submission, "coauthor_titles", ""))
+    affiliations = _split_submission_people_field(getattr(submission, "coauthor_affiliations", ""))
+    countries = _split_submission_people_field(getattr(submission, "coauthor_countries", ""))
+    emails = _split_submission_people_field(getattr(submission, "coauthor_emails", ""))
+    orcids = _split_submission_people_field(getattr(submission, "coauthor_orcids", ""))
+
+    max_len = max(
+        len(names),
+        len(titles),
+        len(affiliations),
+        len(countries),
+        len(emails),
+        len(orcids),
+        0,
+    )
+
+    submission.coauthor_rows = []
+    for index in range(max_len):
+        name = names[index] if index < len(names) else ""
+        title = titles[index] if index < len(titles) else ""
+        submission.coauthor_rows.append({
+            "display_name": f"{title} {name}".strip() or name,
+            "email": emails[index] if index < len(emails) else "",
+            "affiliation": affiliations[index] if index < len(affiliations) else "",
+            "country": _country_full_name(countries[index] if index < len(countries) else ""),
+            "orcid": orcids[index] if index < len(orcids) else "",
+        })
+
+    return submission
+
+
 
 @login_required
 def layout_dashboard(request):
@@ -1854,6 +1920,12 @@ def layout_dashboard(request):
     ).prefetch_related(
         "reviews__reviewer"
     ).order_by("-updated_at")
+
+    for submission in submissions:
+        _attach_author_rows(submission)
+
+    for submission in accepted_publication_submissions:
+        _attach_author_rows(submission)
 
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,
@@ -2128,6 +2200,8 @@ def my_reviews(request):
         submission__status__in=[
             "submitted",
             "under_review",
+            "paper_revision_completed",
+            "paper_revision_completed",
             "revision_required",
             "reviews_completed",
         ]
@@ -2150,6 +2224,7 @@ def reviewer_dashboard(request):
             "submitted",
             "under_review",
             "revised_submitted",
+            "paper_revision_completed",
             "revision_required",
             "reviews_completed",
         ]
