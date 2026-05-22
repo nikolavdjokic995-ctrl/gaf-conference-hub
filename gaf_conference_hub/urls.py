@@ -3,7 +3,7 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
-
+from django.http import HttpResponse
 from conferences.views import (
     home,
     register,
@@ -86,6 +86,15 @@ urlpatterns = [
         name="password_change_done",
     ),
     path("register/", register, name="register"),
+    urlpatterns += [
+    path(
+        "google455867b1428963df.html",
+        lambda request: HttpResponse(
+            "google-site-verification: google455867b1428963df.html",
+            content_type="text/html"
+        ),
+    ),
+]
     path("conference/<slug:slug>/settings/emails/health/", email_health_dashboard, name="email_health_dashboard"),
     path("conference/<slug:slug>/settings/emails/run-automation/", run_email_automation_now, name="run_email_automation_now"),
     path("dashboard/", manager_dashboard, name="dashboard"),
