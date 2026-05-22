@@ -216,39 +216,6 @@
                     <strong>Last updated:</strong> {{ submission.updated_at|date:"d.m.Y. H:i" }}
                 </div>
 
-                <div class="file-box" style="margin-top:20px;">
-                    <strong>Author submission details</strong>
-
-                    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:18px;">
-
-                        <div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:white;">
-                            <strong>First author</strong><br><br>
-
-                            <strong>Name:</strong> {{ submission.first_author|default:"-" }}<br>
-                            <strong>Affiliation:</strong> {{ submission.first_author_affiliation|default:"-" }}<br>
-                            <strong>Country:</strong> {{ submission.first_author_country|default:"-" }}<br>
-                            <strong>Email:</strong> {{ submission.first_author_email|default:"-" }}<br>
-                            <strong>ORCID:</strong> {{ submission.first_author_orcid|default:"-" }}
-                        </div>
-
-                        {% if submission.coauthors %}
-                            {% for coauthor in submission.coauthors_data %}
-                                <div style="border:1px solid #e5e7eb;border-radius:12px;padding:16px;background:white;">
-                                    <strong>Co-author {{ forloop.counter }}</strong><br><br>
-
-                                    <strong>Name:</strong> {{ coauthor.name|default:"-" }}<br>
-                                    <strong>Affiliation:</strong> {{ coauthor.affiliation|default:"-" }}<br>
-                                    <strong>Country:</strong> {{ coauthor.country|default:"-" }}<br>
-                                    <strong>Email:</strong> {{ coauthor.email|default:"-" }}<br>
-                                    <strong>ORCID:</strong> {{ coauthor.orcid|default:"-" }}
-                                </div>
-                            {% endfor %}
-                        {% endif %}
-                    </div>
-                </div>
-
-
-
                 <div class="file-box">
                     <strong>Files</strong><br>
 
@@ -351,12 +318,8 @@
                             <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">
                                 Download final file
                             </a>
-                        {% elif submission.full_paper_file %}
-                            <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
-                                Download current file
-                            </a>
                         {% else %}
-                            No file
+                            No final layout file uploaded
                         {% endif %}
                     </td>
                 </tr>
