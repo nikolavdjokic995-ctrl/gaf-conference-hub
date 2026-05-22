@@ -137,6 +137,26 @@ def review_invitation_response(request, assignment_id):
 
             assignment.save()
 
+            if assignment.deadline_extension_requested:
+                send_event_email(
+                    "review_deadline_extension_requested",
+                    submission,
+                    request=request,
+                    reviewer=request.user,
+                    assignment=assignment,
+                    extra={
+                        "requested_review_deadline": assignment.accepted_deadline.strftime("%d.%m.%Y.") if assignment.accepted_deadline else "",
+                    },
+                )
+
+            send_event_email(
+                "review_request_accepted",
+                submission,
+                request=request,
+                reviewer=request.user,
+                assignment=assignment,
+            )
+
             messages.success(
                 request,
                 "Review invitation accepted successfully."
@@ -345,6 +365,26 @@ def make_decision(request, submission_id):
     if not role:
         return redirect("/")
 
+    current_round = submission.revision_round or 0
+    decision_reviews = Review.objects.filter(
+        submission=submission,
+        review_round=current_round,
+    ).select_related("reviewer", "reviewer__profile").order_by(
+        "reviewer__first_name",
+        "reviewer__last_name",
+        "reviewer__username",
+    )
+
+    if not decision_reviews.exists():
+        decision_reviews = Review.objects.filter(
+            submission=submission,
+        ).select_related("reviewer", "reviewer__profile").order_by(
+            "review_round",
+            "reviewer__first_name",
+            "reviewer__last_name",
+            "reviewer__username",
+        )
+
     if request.method == "POST":
         form = JudgeDecisionForm(request.POST)
 
@@ -371,6 +411,25 @@ def make_decision(request, submission_id):
 
             submission.save()
 
+            # Notify reviewers about the final editor/judge decision only if
+            # they explicitly requested final-decision notification in their review form.
+            notify_reviewers = Review.objects.filter(
+                submission=submission,
+                wants_final_notification="yes"
+            ).select_related("reviewer")
+
+            for review in notify_reviewers:
+                send_event_email(
+                    "reviewer_editor_decision",
+                    submission,
+                    request=request,
+                    reviewer=review.reviewer,
+                    extra={
+                        "editor_decision": submission.get_status_display(),
+                        "editor_comments": submission.final_comment,
+                    }
+                )
+
             if status == "revision_required":
                 send_event_email("review_completed_author", submission, request=request)
             elif status == "accepted_for_layout":
@@ -390,6 +449,7 @@ def make_decision(request, submission_id):
     return render(request, "conferences/make_decision.html", {
         "submission": submission,
         "form": form,
+        "decision_reviews": decision_reviews,
     })
 
 
@@ -628,6 +688,13 @@ def review_submission(request, submission_id):
             review.review_round = current_round
             review.save()
 
+            send_event_email(
+                "review_received",
+                submission,
+                request=request,
+                reviewer=request.user,
+            )
+
             assigned_reviewers_count = ReviewAssignment.objects.filter(
                 submission=submission,
                 role="content_reviewer"
@@ -771,11 +838,20 @@ def judge_dashboard(request):
     data = []
 
     for submission in submissions:
-        reviews = Review.objects.filter(submission=submission)
+        reviews = Review.objects.filter(submission=submission).select_related("reviewer", "reviewer__profile")
+        assignments = ReviewAssignment.objects.filter(
+            submission=submission,
+            role="content_reviewer",
+        ).select_related("reviewer", "reviewer__profile").order_by(
+            "reviewer__first_name",
+            "reviewer__last_name",
+            "reviewer__username",
+        )
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
         data.append({
             "submission": submission,
             "reviews": reviews,
+            "assignments": assignments,
             "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),
@@ -1715,174 +1791,6 @@ def upload_revision(request, submission_id):
         "form": form,
     })
 
-def _split_submission_people_field(value):
-    """Split legacy multiline, semicolon or comma-separated submission fields."""
-    if not value:
-        return []
-    return [
-        item.strip()
-        for item in str(value).replace("\r", "\n").replace(";", "\n").replace(",", "\n").splitlines()
-        if item.strip()
-    ]
-
-
-def _country_full_name(value):
-    country = (value or "").strip()
-    if not country:
-        return ""
-
-    country_map = {
-        "RS": "Serbia",
-        "SRB": "Serbia",
-        "BA": "Bosnia and Herzegovina",
-        "BIH": "Bosnia and Herzegovina",
-        "ME": "Montenegro",
-        "MNE": "Montenegro",
-        "MK": "North Macedonia",
-        "MKD": "North Macedonia",
-        "HR": "Croatia",
-        "HRV": "Croatia",
-        "SI": "Slovenia",
-        "SVN": "Slovenia",
-        "BG": "Bulgaria",
-        "BGR": "Bulgaria",
-        "RO": "Romania",
-        "ROU": "Romania",
-        "HU": "Hungary",
-        "HUN": "Hungary",
-        "AL": "Albania",
-        "ALB": "Albania",
-        "GR": "Greece",
-        "GRC": "Greece",
-        "IT": "Italy",
-        "ITA": "Italy",
-        "DE": "Germany",
-        "DEU": "Germany",
-        "AT": "Austria",
-        "AUT": "Austria",
-        "FR": "France",
-        "FRA": "France",
-        "ES": "Spain",
-        "ESP": "Spain",
-        "PT": "Portugal",
-        "PRT": "Portugal",
-        "NL": "Netherlands",
-        "NLD": "Netherlands",
-        "BE": "Belgium",
-        "BEL": "Belgium",
-        "CH": "Switzerland",
-        "CHE": "Switzerland",
-        "SE": "Sweden",
-        "SWE": "Sweden",
-        "NO": "Norway",
-        "NOR": "Norway",
-        "DK": "Denmark",
-        "DNK": "Denmark",
-        "FI": "Finland",
-        "FIN": "Finland",
-        "PL": "Poland",
-        "POL": "Poland",
-        "CZ": "Czech Republic",
-        "CZE": "Czech Republic",
-        "SK": "Slovakia",
-        "SVK": "Slovakia",
-        "TR": "Turkey",
-        "TUR": "Turkey",
-        "US": "United States",
-        "USA": "United States",
-        "UK": "United Kingdom",
-        "GB": "United Kingdom",
-        "GBR": "United Kingdom",
-    }
-
-    return country_map.get(country, country_map.get(country.upper(), country))
-
-
-def _user_profile_value(user, attr):
-    profile = getattr(user, "profile", None)
-    return getattr(profile, attr, "") if profile else ""
-
-
-def _author_user_display_name(user):
-    if not user:
-        return ""
-
-    profile_name = _user_profile_value(user, "full_name_with_title")
-    if profile_name:
-        return profile_name
-
-    full_name = f"{user.first_name} {user.last_name}".strip()
-    return full_name or user.username
-
-
-def _attach_author_rows(submission):
-    """Prepare author/co-author data for the layout dashboard template."""
-    author_user = getattr(submission, "author", None)
-
-    raw_first_author = (getattr(submission, "first_author", "") or "").strip()
-    first_author_title = (getattr(submission, "first_author_title", "") or "").strip()
-
-    if raw_first_author:
-        first_author_display = f"{first_author_title} {raw_first_author}".strip()
-    else:
-        first_author_display = _author_user_display_name(author_user)
-
-    first_author_email = (
-        (getattr(submission, "first_author_email", "") or "").strip()
-        or (getattr(author_user, "email", "") or "").strip()
-    )
-
-    first_author_affiliation = (
-        (getattr(submission, "first_author_affiliation", "") or "").strip()
-        or _user_profile_value(author_user, "affiliation")
-    )
-
-    first_author_country = (
-        (getattr(submission, "first_author_country", "") or "").strip()
-        or _user_profile_value(author_user, "country")
-    )
-
-    submission.first_author_details = {
-        "display_name": first_author_display,
-        "email": first_author_email,
-        "affiliation": first_author_affiliation,
-        "country": _country_full_name(first_author_country),
-        "orcid": (getattr(submission, "first_author_orcid", "") or "").strip(),
-    }
-
-    names = _split_submission_people_field(getattr(submission, "coauthors", ""))
-    titles = _split_submission_people_field(getattr(submission, "coauthor_titles", ""))
-    affiliations = _split_submission_people_field(getattr(submission, "coauthor_affiliations", ""))
-    countries = _split_submission_people_field(getattr(submission, "coauthor_countries", ""))
-    emails = _split_submission_people_field(getattr(submission, "coauthor_emails", ""))
-    orcids = _split_submission_people_field(getattr(submission, "coauthor_orcids", ""))
-
-    max_len = max(
-        len(names),
-        len(titles),
-        len(affiliations),
-        len(countries),
-        len(emails),
-        len(orcids),
-        0,
-    )
-
-    submission.coauthor_rows = []
-    for index in range(max_len):
-        name = names[index] if index < len(names) else ""
-        title = titles[index] if index < len(titles) else ""
-        submission.coauthor_rows.append({
-            "display_name": f"{title} {name}".strip() or name,
-            "email": emails[index] if index < len(emails) else "",
-            "affiliation": affiliations[index] if index < len(affiliations) else "",
-            "country": _country_full_name(countries[index] if index < len(countries) else ""),
-            "orcid": orcids[index] if index < len(orcids) else "",
-        })
-
-    return submission
-
-
-
 @login_required
 def layout_dashboard(request):
     layout_roles = ConferenceRole.objects.filter(
@@ -1920,12 +1828,6 @@ def layout_dashboard(request):
     ).prefetch_related(
         "reviews__reviewer"
     ).order_by("-updated_at")
-
-    for submission in submissions:
-        _attach_author_rows(submission)
-
-    for submission in accepted_publication_submissions:
-        _attach_author_rows(submission)
 
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,

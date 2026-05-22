@@ -172,39 +172,6 @@
             flex-wrap:wrap;
             gap:12px;
         }
-
-
-        .author-details{
-            margin-top:18px;
-            padding:16px;
-            background:#f8fafc;
-            border:1px solid #e5e7eb;
-            border-radius:12px;
-        }
-
-        .author-details-title{
-            font-weight:bold;
-            color:#14532d;
-            margin-bottom:12px;
-        }
-
-        .author-grid{
-            display:grid;
-            grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));
-            gap:12px;
-        }
-
-        .author-card{
-            background:white;
-            border:1px solid #e5e7eb;
-            border-radius:10px;
-            padding:12px;
-            line-height:1.55;
-        }
-
-        .author-card strong{
-            color:#14532d;
-        }
     </style>
 </head>
 
@@ -224,6 +191,17 @@
                 <div class="title">{{ submission.title }}</div>
 
                 <div class="meta">
+                    <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
+                    <strong>First author:</strong> {{ submission.first_author }}<br>
+
+                    <strong>Topics:</strong>
+                    {% for topic in submission.topic_list %}
+                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
+                    {% empty %}
+                        No topic selected
+                    {% endfor %}
+                    <br>
+
                     <strong>Status:</strong>
                     {% if submission.status == "final_accepted" %}
                         <span class="badge badge-final">{{ submission.get_status_display }}</span>
@@ -236,33 +214,6 @@
 
                     <strong>Layout revision round:</strong> {{ submission.layout_revision_round }}<br>
                     <strong>Last updated:</strong> {{ submission.updated_at|date:"d.m.Y. H:i" }}
-                </div>
-
-                <div class="author-details">
-                    <div class="author-details-title">Author submission details</div>
-                    <div class="author-grid">
-                        <div class="author-card">
-                            <strong>First author</strong><br>
-                            <strong>Name:</strong> {{ submission.first_author_details.display_name|default:"-" }}<br>
-                            <strong>Affiliation:</strong> {{ submission.first_author_details.affiliation|default:"-" }}<br>
-                            <strong>Country:</strong> {{ submission.first_author_details.country|default:"-" }}<br>
-                            <strong>Email:</strong> {{ submission.first_author_details.email|default:"-" }}<br>
-                            <strong>ORCID:</strong> {{ submission.first_author_details.orcid|default:"-" }}
-                        </div>
-
-                        {% for coauthor in submission.coauthor_rows %}
-                            <div class="author-card">
-                                <strong>Co-author {{ forloop.counter }}</strong><br>
-                                <strong>Name:</strong> {{ coauthor.display_name|default:"-" }}<br>
-                                <strong>Affiliation:</strong> {{ coauthor.affiliation|default:"-" }}<br>
-                                <strong>Country:</strong> {{ coauthor.country|default:"-" }}<br>
-                                <strong>Email:</strong> {{ coauthor.email|default:"-" }}<br>
-                                <strong>ORCID:</strong> {{ coauthor.orcid|default:"-" }}
-                            </div>
-                        {% empty %}
-                            <div class="author-card">No co-authors entered.</div>
-                        {% endfor %}
-                    </div>
                 </div>
 
                 <div class="file-box">
@@ -343,13 +294,10 @@
                     </td>
 
                     <td>
-                        <strong>{{ submission.first_author_details.display_name|default:submission.first_author }}</strong>
-                        <div class="small">
-                            {{ submission.first_author_details.affiliation|default:"" }}{% if submission.first_author_details.country %}, {{ submission.first_author_details.country }}{% endif %}
-                        </div>
-                        {% for coauthor in submission.coauthor_rows %}
-                            <div class="small">{{ coauthor.display_name }}{% if coauthor.affiliation %}, {{ coauthor.affiliation }}{% endif %}{% if coauthor.country %}, {{ coauthor.country }}{% endif %}</div>
-                        {% endfor %}
+                        <strong>{{ submission.first_author }}</strong>
+                        {% if submission.coauthors %}
+                            <div class="small">{{ submission.coauthors|linebreaksbr }}</div>
+                        {% endif %}
                     </td>
 
                     <td>
