@@ -31,11 +31,6 @@
         <strong>Author:</strong> {{ submission.first_author }}<br>
         <strong>Current status:</strong> {{ submission.get_status_display }}<br>
 
-        {% if submission.full_paper_file %}
-            <a href="{{ submission.full_paper_file.url }}" target="_blank">
-                Download current paper
-            </a>
-        {% endif %}
     </div>
 
     <div class="box">
