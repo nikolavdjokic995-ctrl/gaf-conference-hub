@@ -800,9 +800,18 @@ def judge_dashboard(request):
     for submission in submissions:
         reviews = Review.objects.filter(submission=submission)
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
+        assignments = ReviewAssignment.objects.filter(
+            submission=submission,
+            role="content_reviewer"
+        ).select_related(
+            "reviewer",
+            "reviewer__profile"
+        )
+
         data.append({
             "submission": submission,
             "reviews": reviews,
+            "assignments": assignments,
             "review_count": reviews.count(),
             "accept_count": reviews.filter(overall_recommendation="accept").count(),
             "minor_count": reviews.filter(overall_recommendation="minor_revision").count(),
