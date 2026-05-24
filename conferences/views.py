@@ -153,6 +153,38 @@ def review_invitation_response(request, assignment_id):
             assignment.decline_reason = request.POST.get("decline_reason", "")
             assignment.save()
 
+            # Declined reviewers remain visible in Judge Dashboard,
+            # but they must not block the workflow. If all non-declined
+            # reviewers have already submitted reviews for the current round,
+            # mark the paper as ready for Judge decision.
+            current_round = submission.revision_round or 0
+
+            active_assignments = ReviewAssignment.objects.filter(
+                submission=submission,
+                role="content_reviewer",
+            ).exclude(
+                invitation_status="declined",
+            )
+
+            active_reviewer_ids = active_assignments.values_list(
+                "reviewer_id",
+                flat=True,
+            )
+
+            completed_active_reviews_count = Review.objects.filter(
+                submission=submission,
+                review_round=current_round,
+                reviewer_id__in=active_reviewer_ids,
+            ).values("reviewer").distinct().count()
+
+            if (
+                submission.status == "under_review"
+                and active_assignments.count() > 0
+                and completed_active_reviews_count >= active_assignments.count()
+            ):
+                submission.status = "reviewed_by_reviewer"
+                submission.save(update_fields=["status", "updated_at"])
+
             decline_extra = {
                 "decline_reason": assignment.decline_reason,
             }
@@ -655,21 +687,31 @@ def review_submission(request, submission_id):
                 reviewer=request.user,
             )
 
-            assigned_reviewers_count = ReviewAssignment.objects.filter(
+            active_assignments = ReviewAssignment.objects.filter(
                 submission=submission,
-                role="content_reviewer"
-            ).count()
+                role="content_reviewer",
+            ).exclude(
+                invitation_status="declined",
+            )
+
+            active_reviewer_ids = active_assignments.values_list(
+                "reviewer_id",
+                flat=True,
+            )
+
+            assigned_reviewers_count = active_assignments.count()
 
             completed_reviews_count = Review.objects.filter(
                 submission=submission,
-                review_round=current_round
+                review_round=current_round,
+                reviewer_id__in=active_reviewer_ids,
             ).values("reviewer").distinct().count()
 
             if (
                 assigned_reviewers_count > 0
                 and completed_reviews_count >= assigned_reviewers_count
             ):
-                submission.status = "reviews_completed"
+                submission.status = "reviewed_by_reviewer"
                 submission.save(update_fields=["status", "updated_at"])
 
             messages.success(request, f"Review for round {current_round} saved successfully.")
@@ -799,7 +841,7 @@ def judge_dashboard(request):
 
     for submission in submissions:
         reviews = Review.objects.filter(submission=submission)
-        avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
+
         assignments = ReviewAssignment.objects.filter(
             submission=submission,
             role="content_reviewer"
@@ -807,6 +849,35 @@ def judge_dashboard(request):
             "reviewer",
             "reviewer__profile"
         )
+
+        # Auto-sync existing and new papers on dashboard load:
+        # declined reviewers stay visible, but are not counted as pending.
+        current_round = submission.revision_round or 0
+
+        active_assignments = assignments.exclude(
+            invitation_status="declined"
+        )
+
+        active_reviewer_ids = active_assignments.values_list(
+            "reviewer_id",
+            flat=True
+        )
+
+        completed_active_reviews_count = Review.objects.filter(
+            submission=submission,
+            review_round=current_round,
+            reviewer_id__in=active_reviewer_ids
+        ).values("reviewer").distinct().count()
+
+        if (
+            submission.status == "under_review"
+            and active_assignments.count() > 0
+            and completed_active_reviews_count >= active_assignments.count()
+        ):
+            submission.status = "reviewed_by_reviewer"
+            submission.save(update_fields=["status", "updated_at"])
+
+        avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
 
         data.append({
             "submission": submission,
