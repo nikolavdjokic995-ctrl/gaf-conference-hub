@@ -14,6 +14,7 @@ from django.contrib.auth.models import User
 from django.db.models import Q
 from django.contrib import messages
 from django.utils import timezone
+from django.urls import reverse
 from pathlib import Path
 from datetime import datetime
 
@@ -410,12 +411,30 @@ def make_decision(request, submission_id):
                 "rejected": "Reject",
             }
 
+            editor_comments_for_email = submission.final_comment or ""
+
+            if status == "revision_required":
+                my_submissions_link = request.build_absolute_uri(
+                    reverse("my_submissions")
+                )
+
+                revision_notice = (
+                    "\n\nPlease upload your revised manuscript through "
+                    f"My submissions: {my_submissions_link}"
+                )
+
+                editor_comments_for_email = (
+                    editor_comments_for_email + revision_notice
+                    if editor_comments_for_email
+                    else revision_notice.strip()
+                )
+
             decision_email_extra = {
                 "editor_decision": editor_decision_labels.get(
                     selected_status,
                     submission.get_status_display()
                 ),
-                "editor_comments": submission.final_comment,
+                "editor_comments": editor_comments_for_email,
             }
 
             if status == "revision_required":
