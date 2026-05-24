@@ -403,8 +403,18 @@ def make_decision(request, submission_id):
 
             submission.save()
 
+            editor_decision_labels = {
+                "accepted_for_layout": "Accept in present form",
+                "minor_revision": "Accept after minor revision",
+                "revision_required": "Reconsider after major revision",
+                "rejected": "Reject",
+            }
+
             decision_email_extra = {
-                "editor_decision": submission.get_status_display(),
+                "editor_decision": editor_decision_labels.get(
+                    selected_status,
+                    submission.get_status_display()
+                ),
                 "editor_comments": submission.final_comment,
             }
 
@@ -427,6 +437,33 @@ def make_decision(request, submission_id):
                     "rejected",
                     submission,
                     request=request,
+                    extra=decision_email_extra,
+                )
+
+            # Email 11: notify only reviewers who explicitly selected
+            # "yes" for final editor-decision notification in their review.
+            notified_reviewer_ids = set()
+            reviewer_notification_reviews = Review.objects.filter(
+                submission=submission,
+                wants_final_notification="yes",
+            ).select_related(
+                "reviewer"
+            ).order_by(
+                "reviewer_id",
+                "-review_round",
+            )
+
+            for notification_review in reviewer_notification_reviews:
+                if notification_review.reviewer_id in notified_reviewer_ids:
+                    continue
+
+                notified_reviewer_ids.add(notification_review.reviewer_id)
+
+                send_event_email(
+                    "reviewer_editor_decision",
+                    submission,
+                    request=request,
+                    reviewer=notification_review.reviewer,
                     extra=decision_email_extra,
                 )
 
