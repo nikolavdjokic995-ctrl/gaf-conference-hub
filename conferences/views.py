@@ -1990,6 +1990,12 @@ def layout_dashboard(request):
             if x.strip()
         ]
 
+        coauthor_countries = [
+            x.strip()
+            for x in (submission.coauthor_countries or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
         coauthor_orcids = [
             x.strip()
             for x in (submission.coauthor_orcids or "").replace("\n", ";").split(";")
@@ -2007,6 +2013,7 @@ def layout_dashboard(request):
                 "name": name,
                 "title": coauthor_titles[i] if i < len(coauthor_titles) else "",
                 "affiliation": coauthor_affiliations[i] if i < len(coauthor_affiliations) else "",
+                "country": coauthor_countries[i] if i < len(coauthor_countries) else "",
                 "orcid": coauthor_orcids[i] if i < len(coauthor_orcids) else "",
                 "email": coauthor_emails[i] if i < len(coauthor_emails) else "",
             })

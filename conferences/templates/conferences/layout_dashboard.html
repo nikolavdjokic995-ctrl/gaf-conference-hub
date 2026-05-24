@@ -249,7 +249,12 @@
                                 <strong>Affiliation:</strong>
                                 {{ submission.first_author_affiliation|default:"-" }}
                             </div>
-
+                            
+                            <div class="small">
+                                <strong>Country:</strong>
+                                {{ submission.first_author_country|default:"-" }}
+                            </div>
+ 
                             <div class="small">
                                 <strong>Email:</strong>
                                 {{ submission.first_author_email|default:"-" }}
@@ -273,6 +278,11 @@
                                 <div class="small">
                                     <strong>Affiliation:</strong>
                                     {{ coauthor.affiliation|default:"-" }}
+                                </div>
+
+                                <div class="small">
+                                    <strong>Country:</strong>
+                                    {{ submission.first_author_country|default:"-" }}
                                 </div>
 
                                 <div class="small">
