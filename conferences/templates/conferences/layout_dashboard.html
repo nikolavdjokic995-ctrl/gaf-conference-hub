@@ -252,7 +252,7 @@
                             
                             <div class="small">
                                 <strong>Country:</strong>
-                                {{ submission.first_author_country|default:"-" }}
+                                {{ coauthor.country|default:"-" }}
                             </div>
  
                             <div class="small">
@@ -282,7 +282,7 @@
 
                                 <div class="small">
                                     <strong>Country:</strong>
-                                    {{ submission.first_author_country|default:"-" }}
+                                    {{ coauthor.country|default:"-" }}
                                 </div>
 
                                 <div class="small">
@@ -359,6 +359,7 @@
                 <th>Accepted date</th>
                 <th>Reviewers</th>
                 <th>Final file</th>
+                <th>Actions</th>
             </tr>
 
             {% for submission in accepted_publication_submissions %}
@@ -398,6 +399,12 @@
                         {% else %}
                             No final layout file uploaded
                         {% endif %}
+                    </td>
+
+                    <td>
+                        <a class="btn" href="{% url 'layout_decision' submission.id %}">
+                            Edit / upload final file
+                        </a>
                     </td>
                 </tr>
             {% endfor %}

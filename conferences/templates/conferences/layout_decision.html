@@ -19,7 +19,18 @@
                 Download full author version for publication/layout
             </a>
         {% endif %}
+
+        {% if submission.final_publication_file %}
+            <br>
+            <a href="{{ submission.final_publication_file.url }}" target="_blank">
+                Download currently uploaded final print-ready file
+            </a>
+        {% endif %}
     </div>
+
+    <p style="color:#555;margin-top:-8px;">
+        You can upload a new final print-ready file here. If a final file already exists, the new upload will replace it.
+    </p>
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}

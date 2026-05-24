@@ -2037,20 +2037,38 @@ def layout_decision(request, submission_id):
     if not can_layout_review:
         return redirect("/")
 
-    if submission.status not in ["accepted_for_layout", "layout_revision_submitted", "layout_revision_required"]:
-        messages.error(request, "This submission is not currently in layout review.")
+    if submission.status not in ["accepted_for_layout", "layout_revision_submitted", "layout_revision_required", "final_accepted"]:
+        messages.error(request, "This submission is not currently available for layout review or final file editing.")
         return redirect("layout_dashboard")
 
     if request.method == "POST":
-        form = LayoutDecisionForm(request.POST)
+        form = LayoutDecisionForm(request.POST, request.FILES)
 
         if form.is_valid():
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
             revision_deadline = form.cleaned_data.get("revision_deadline")
+            final_publication_file = form.cleaned_data.get("final_publication_file")
+
+            previous_status = submission.status
 
             submission.status = status
             submission.final_comment = comment
+
+            if final_publication_file:
+                extension = Path(final_publication_file.name).suffix.lower()
+                filename = f"{submission.paper_code}-final-publication{extension}"
+
+                try:
+                    final_publication_file.seek(0)
+                except Exception:
+                    pass
+
+                submission.final_publication_file.save(
+                    filename,
+                    final_publication_file,
+                    save=False,
+                )
 
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
@@ -2063,10 +2081,14 @@ def layout_decision(request, submission_id):
 
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
-            elif status == "final_accepted":
+            elif status == "final_accepted" and previous_status != "final_accepted":
                 send_event_email("manuscript_accepted", submission, request=request)
 
-            messages.success(request, "Layout decision saved successfully.")
+            if final_publication_file:
+                messages.success(request, "Layout decision saved and final print-ready file uploaded successfully.")
+            else:
+                messages.success(request, "Layout decision saved successfully.")
+
             return redirect("layout_dashboard")
     else:
         form = LayoutDecisionForm(initial={
