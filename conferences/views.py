@@ -2172,8 +2172,6 @@ def register(request):
         "form": form
     })
 
-
-
 @login_required
 def download_review_paper(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
@@ -2188,15 +2186,13 @@ def download_review_paper(request, submission_id):
         messages.error(request, "You do not have permission to download this review file.")
         return redirect("my_reviews")
 
-    if submission.anonymized_paper_file:
-        return redirect(submission.anonymized_paper_file.url)
-
     if not submission.full_paper_file:
         messages.error(request, "No paper file is available for this submission.")
         return redirect("my_reviews")
 
     extension = Path(submission.full_paper_file.name).suffix.lower()
 
+    # For non-DOCX files just return current uploaded paper
     if extension != ".docx":
         return redirect(submission.full_paper_file.url)
 
@@ -2204,38 +2200,57 @@ def download_review_paper(request, submission_id):
     anonymized_path = None
 
     try:
+        # ALWAYS use current full_paper_file
         if hasattr(submission.full_paper_file, "path"):
             source_path = submission.full_paper_file.path
         else:
             with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
                 source_path = source_tmp.name
-            urllib.request.urlretrieve(submission.full_paper_file.url, source_path)
+
+            urllib.request.urlretrieve(
+                submission.full_paper_file.url,
+                source_path
+            )
 
         with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as anonymized_tmp:
             anonymized_path = anonymized_tmp.name
 
         anonymize_docx(source_path, anonymized_path)
 
+        # overwrite anonymized reviewer file with CURRENT revision
         with open(anonymized_path, "rb") as anonymized_file:
             submission.anonymized_paper_file.save(
-                f"{submission.paper_code}.docx",
+                f"{submission.paper_code}-review-round-{submission.revision_round}.docx",
                 File(anonymized_file),
                 save=False,
             )
+
         submission.save(update_fields=["anonymized_paper_file", "updated_at"])
 
         return redirect(submission.anonymized_paper_file.url)
 
     except Exception as e:
         print("Reviewer paper download/anonymization error:", e)
-        messages.error(request, "Could not prepare the anonymized reviewer file. Please contact the conference manager.")
+
+        messages.error(
+            request,
+            "Could not prepare the anonymized reviewer file. Please contact the conference manager."
+        )
+
         return redirect("my_reviews")
 
     finally:
-        if source_path and os.path.exists(source_path) and source_path != getattr(submission.full_paper_file, "path", None):
+        if (
+            source_path
+            and os.path.exists(source_path)
+            and source_path != getattr(submission.full_paper_file, "path", None)
+        ):
             os.remove(source_path)
+
         if anonymized_path and os.path.exists(anonymized_path):
             os.remove(anonymized_path)
+
+
 
 @login_required
 def my_reviews(request):
