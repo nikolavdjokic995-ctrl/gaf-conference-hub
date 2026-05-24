@@ -1969,6 +1969,48 @@ def layout_dashboard(request):
         "reviews__reviewer"
     ).order_by("-updated_at")
 
+    for submission in submissions:
+        submission.coauthor_rows = []
+
+        coauthor_names = [
+            x.strip()
+            for x in (submission.coauthors or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        coauthor_titles = [
+            x.strip()
+            for x in (submission.coauthor_titles or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        coauthor_affiliations = [
+            x.strip()
+            for x in (submission.coauthor_affiliations or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        coauthor_orcids = [
+            x.strip()
+            for x in (submission.coauthor_orcids or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        coauthor_emails = [
+            x.strip()
+            for x in (submission.coauthor_emails or "").replace("\n", ";").split(";")
+            if x.strip()
+        ]
+
+        for i, name in enumerate(coauthor_names):
+            submission.coauthor_rows.append({
+                "name": name,
+                "title": coauthor_titles[i] if i < len(coauthor_titles) else "",
+                "affiliation": coauthor_affiliations[i] if i < len(coauthor_affiliations) else "",
+                "orcid": coauthor_orcids[i] if i < len(coauthor_orcids) else "",
+                "email": coauthor_emails[i] if i < len(coauthor_emails) else "",
+            })
+
     return render(request, "conferences/layout_dashboard.html", {
         "submissions": submissions,
         "accepted_publication_submissions": accepted_publication_submissions,

@@ -121,6 +121,34 @@
             margin-top:16px;
         }
 
+        .author-section{
+            margin-top:18px;
+            background:#f8fafc;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:14px;
+        }
+
+        .author-grid{
+            display:grid;
+            grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+            gap:12px;
+            margin-top:12px;
+        }
+
+        .author-card{
+            background:white;
+            border:1px solid #e5e7eb;
+            border-radius:12px;
+            padding:14px;
+        }
+
+        .author-card-title{
+            font-weight:bold;
+            color:#14532d;
+            margin-bottom:8px;
+        }
+
         table{
             width:100%;
             table-layout:auto;
@@ -191,17 +219,6 @@
                 <div class="title">{{ submission.title }}</div>
 
                 <div class="meta">
-                    <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
-                    <strong>First author:</strong> {{ submission.first_author }}<br>
-
-                    <strong>Topics:</strong>
-                    {% for topic in submission.topic_list %}
-                        {{ topic.code }} — {{ topic.title }}{% if not forloop.last %}<br>{% endif %}
-                    {% empty %}
-                        No topic selected
-                    {% endfor %}
-                    <br>
-
                     <strong>Status:</strong>
                     {% if submission.status == "final_accepted" %}
                         <span class="badge badge-final">{{ submission.get_status_display }}</span>
@@ -216,14 +233,68 @@
                     <strong>Last updated:</strong> {{ submission.updated_at|date:"d.m.Y. H:i" }}
                 </div>
 
+                <div class="author-section">
+                    <strong>Author submission details</strong>
+
+                    <div class="author-grid">
+                        <div class="author-card">
+                            <div class="author-card-title">First author</div>
+
+                            <div class="small">
+                                <strong>Name:</strong>
+                                {{ submission.first_author_title }} {{ submission.first_author }}
+                            </div>
+
+                            <div class="small">
+                                <strong>Affiliation:</strong>
+                                {{ submission.first_author_affiliation|default:"-" }}
+                            </div>
+
+                            <div class="small">
+                                <strong>Email:</strong>
+                                {{ submission.first_author_email|default:"-" }}
+                            </div>
+
+                            <div class="small">
+                                <strong>ORCID:</strong>
+                                {{ submission.first_author_orcid|default:"-" }}
+                            </div>
+                        </div>
+
+                        {% for coauthor in submission.coauthor_rows %}
+                            <div class="author-card">
+                                <div class="author-card-title">Co-author {{ forloop.counter }}</div>
+
+                                <div class="small">
+                                    <strong>Name:</strong>
+                                    {{ coauthor.title }} {{ coauthor.name }}
+                                </div>
+
+                                <div class="small">
+                                    <strong>Affiliation:</strong>
+                                    {{ coauthor.affiliation|default:"-" }}
+                                </div>
+
+                                <div class="small">
+                                    <strong>Email:</strong>
+                                    {{ coauthor.email|default:"-" }}
+                                </div>
+
+                                <div class="small">
+                                    <strong>ORCID:</strong>
+                                    {{ coauthor.orcid|default:"-" }}
+                                </div>
+                            </div>
+                        {% empty %}
+                            <div class="author-card">
+                                <div class="small">No co-authors entered.</div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
                 <div class="file-box">
                     <strong>Files</strong><br>
-
-                    {% if submission.layout_revised_paper_file %}
-                        <a class="btn btn-outline" href="{{ submission.layout_revised_paper_file.url }}" target="_blank">
-                            Download author corrected layout version
-                        </a>
-                    {% endif %}
 
                     {% if submission.original_submission_file %}
                         <a class="btn btn-outline" href="{{ submission.original_submission_file.url }}" target="_blank">
@@ -235,11 +306,7 @@
                         </a>
                     {% endif %}
 
-                    {% if submission.layout_revised_paper_file %}
-                        <a class="btn btn-outline" href="{{ submission.layout_revised_paper_file.url }}" target="_blank">
-                            Download latest revised paper version
-                        </a>
-                    {% elif submission.full_paper_file %}
+                    {% if submission.full_paper_file %}
                         <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
                             Download latest/current paper version
                         </a>
