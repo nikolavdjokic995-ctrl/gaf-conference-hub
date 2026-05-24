@@ -467,6 +467,18 @@ def make_decision(request, submission_id):
                 "reviewer_comments": reviewer_comments_for_authors,
             }
 
+            # Separate context for Email 11 — reviewer notification.
+            # Reviewers should receive only the editor's final decision information,
+            # not author-only revision upload instructions or My submissions link.
+            reviewer_decision_email_extra = {
+                "editor_decision": editor_decision_labels.get(
+                    selected_status,
+                    submission.get_status_display()
+                ),
+                "editor_comments": submission.final_comment or "",
+                "reviewer_comments": "",
+            }
+
             if status == "revision_required":
                 send_event_email(
                     "review_completed_author",
@@ -513,7 +525,7 @@ def make_decision(request, submission_id):
                     submission,
                     request=request,
                     reviewer=notification_review.reviewer,
-                    extra=decision_email_extra,
+                    extra=reviewer_decision_email_extra,
                 )
 
             messages.success(request, "Decision saved successfully.")
