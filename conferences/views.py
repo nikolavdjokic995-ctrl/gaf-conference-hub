@@ -429,12 +429,42 @@ def make_decision(request, submission_id):
                     else revision_notice.strip()
                 )
 
+            decision_reviews_for_email = Review.objects.filter(
+                submission=submission
+            ).select_related(
+                "reviewer",
+                "reviewer__profile"
+            ).order_by(
+                "review_round",
+                "reviewer_id"
+            )
+
+            reviewer_author_comment_lines = []
+            visible_reviewer_number = 1
+
+            for review_for_email in decision_reviews_for_email:
+                comment_for_author = (review_for_email.comments_for_authors or "").strip()
+
+                if not comment_for_author:
+                    continue
+
+                reviewer_author_comment_lines.append(
+                    f"Reviewer {visible_reviewer_number} (Round {review_for_email.review_round}):\n"
+                    f"{comment_for_author}"
+                )
+                visible_reviewer_number += 1
+
+            reviewer_comments_for_authors = "\n\n".join(
+                reviewer_author_comment_lines
+            )
+
             decision_email_extra = {
                 "editor_decision": editor_decision_labels.get(
                     selected_status,
                     submission.get_status_display()
                 ),
                 "editor_comments": editor_comments_for_email,
+                "reviewer_comments": reviewer_comments_for_authors,
             }
 
             if status == "revision_required":
@@ -495,9 +525,20 @@ def make_decision(request, submission_id):
             "revision_deadline": submission.author_revision_deadline,
         })
 
+    decision_reviews = Review.objects.filter(
+        submission=submission
+    ).select_related(
+        "reviewer",
+        "reviewer__profile"
+    ).order_by(
+        "review_round",
+        "reviewer_id"
+    )
+
     return render(request, "conferences/make_decision.html", {
         "submission": submission,
         "form": form,
+        "decision_reviews": decision_reviews,
     })
 
 
