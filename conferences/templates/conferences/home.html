@@ -238,8 +238,8 @@
                     Welcome, <strong>{{ user.profile.full_name_with_title }}</strong>
                 </span>
 
-                <a href="{% url 'password_change' %}" class="btn secondary" style="margin-right:8px;">
-                    Change password
+                <a href="{% url 'account_settings' %}" class="btn secondary" style="margin-right:8px;">
+                    Account settings
                 </a>
 
                 <form method="post" action="/logout/" style="display:inline;">

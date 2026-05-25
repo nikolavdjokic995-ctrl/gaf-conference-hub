@@ -56,7 +56,6 @@ from conferences.views import (
     reviewer_topics,
     email_health_dashboard,
     run_email_automation_now,
-    
 )
 
 urlpatterns = [
