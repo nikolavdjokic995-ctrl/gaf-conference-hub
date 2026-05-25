@@ -4,6 +4,11 @@ from django.contrib.auth.models import User
 from django_countries.fields import CountryField
 from django_countries.widgets import CountrySelectWidget
 
+import os
+import tempfile
+from django.core.files import File
+from .utils import sanitize_docx_metadata
+
 from .models import (
     Submission,
     Review,
@@ -515,6 +520,42 @@ class ReviewForm(forms.ModelForm):
 
         if commit:
             review.save()
+
+            uploaded_review_file = review.commented_paper_file
+
+            if (
+                uploaded_review_file
+                and str(uploaded_review_file.name).lower().endswith(".docx")
+            ):
+                source_tmp_path = None
+                clean_tmp_path = None
+
+                try:
+                    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
+                        for chunk in uploaded_review_file.chunks():
+                            source_tmp.write(chunk)
+                        source_tmp_path = source_tmp.name
+
+                    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as clean_tmp:
+                        clean_tmp_path = clean_tmp.name
+
+                    sanitize_docx_metadata(source_tmp_path, clean_tmp_path)
+
+                    with open(clean_tmp_path, "rb") as clean_file:
+                        review.commented_paper_file.save(
+                            os.path.basename(review.commented_paper_file.name),
+                            File(clean_file),
+                            save=False
+                        )
+
+                    review.save(update_fields=["commented_paper_file"])
+
+                finally:
+                    if source_tmp_path and os.path.exists(source_tmp_path):
+                        os.remove(source_tmp_path)
+
+                    if clean_tmp_path and os.path.exists(clean_tmp_path):
+                        os.remove(clean_tmp_path)
 
         return review
 

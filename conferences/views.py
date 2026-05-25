@@ -53,7 +53,7 @@ from .forms import (
 from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
-from .utils import anonymize_docx
+from .utils import anonymize_docx, sanitize_docx_metadata
 
 
 @login_required
@@ -1865,17 +1865,54 @@ def upload_revision(request, submission_id):
                     next_round = submission.revision_round or 1
                     filename = f"{submission.paper_code}-r{next_round}{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.revised_paper_file.save(filename, uploaded_file, save=False)
+                    if extension == ".docx":
+                        source_tmp_path = None
+                        clean_tmp_path = None
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(filename, uploaded_file, save=False)
+                        try:
+                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
+                                for chunk in uploaded_file.chunks():
+                                    source_tmp.write(chunk)
+                                source_tmp_path = source_tmp.name
+
+                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as clean_tmp:
+                                clean_tmp_path = clean_tmp.name
+
+                            sanitize_docx_metadata(source_tmp_path, clean_tmp_path)
+
+                            with open(clean_tmp_path, "rb") as clean_file:
+                                submission.revised_paper_file.save(
+                                    filename,
+                                    File(clean_file),
+                                    save=False
+                                )
+
+                            with open(clean_tmp_path, "rb") as clean_file:
+                                submission.full_paper_file.save(
+                                    filename,
+                                    File(clean_file),
+                                    save=False
+                                )
+
+                        finally:
+                            if source_tmp_path and os.path.exists(source_tmp_path):
+                                os.remove(source_tmp_path)
+
+                            if clean_tmp_path and os.path.exists(clean_tmp_path):
+                                os.remove(clean_tmp_path)
+
+                    else:
+                        try:
+                            uploaded_file.seek(0)
+                        except Exception:
+                            pass
+                        submission.revised_paper_file.save(filename, uploaded_file, save=False)
+
+                        try:
+                            uploaded_file.seek(0)
+                        except Exception:
+                            pass
+                        submission.full_paper_file.save(filename, uploaded_file, save=False)
 
                     submission.status = "paper_revision_completed"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
@@ -1884,17 +1921,54 @@ def upload_revision(request, submission_id):
                     next_round = submission.layout_revision_round or 1
                     filename = f"{submission.paper_code}-layout-r{next_round}{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
+                    if extension == ".docx":
+                        source_tmp_path = None
+                        clean_tmp_path = None
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(filename, uploaded_file, save=False)
+                        try:
+                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
+                                for chunk in uploaded_file.chunks():
+                                    source_tmp.write(chunk)
+                                source_tmp_path = source_tmp.name
+
+                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as clean_tmp:
+                                clean_tmp_path = clean_tmp.name
+
+                            sanitize_docx_metadata(source_tmp_path, clean_tmp_path)
+
+                            with open(clean_tmp_path, "rb") as clean_file:
+                                submission.layout_revised_paper_file.save(
+                                    filename,
+                                    File(clean_file),
+                                    save=False
+                                )
+
+                            with open(clean_tmp_path, "rb") as clean_file:
+                                submission.full_paper_file.save(
+                                    filename,
+                                    File(clean_file),
+                                    save=False
+                                )
+
+                        finally:
+                            if source_tmp_path and os.path.exists(source_tmp_path):
+                                os.remove(source_tmp_path)
+
+                            if clean_tmp_path and os.path.exists(clean_tmp_path):
+                                os.remove(clean_tmp_path)
+
+                    else:
+                        try:
+                            uploaded_file.seek(0)
+                        except Exception:
+                            pass
+                        submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
+
+                        try:
+                            uploaded_file.seek(0)
+                        except Exception:
+                            pass
+                        submission.full_paper_file.save(filename, uploaded_file, save=False)
 
                     submission.status = "accepted_for_layout"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
