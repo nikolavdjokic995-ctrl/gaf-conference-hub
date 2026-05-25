@@ -196,45 +196,6 @@ def _looks_like_author_line(text):
     return False
 
 
-
-def sanitize_docx_metadata(source_path, target_path):
-    """
-    Remove Word metadata/reviewer identity information without changing
-    the visible document content.
-    """
-
-    doc = Document(source_path)
-
-    props = doc.core_properties
-
-    replacement_values = {
-        "author": "Anonymous",
-        "last_modified_by": "Anonymous",
-        "comments": "",
-        "title": "",
-        "subject": "",
-        "category": "",
-        "keywords": "",
-    }
-
-    for field, value in replacement_values.items():
-        try:
-            setattr(props, field, value)
-        except Exception:
-            pass
-
-    temp_docx = target_path + ".tmp.docx"
-
-    doc.save(temp_docx)
-
-    _remove_revision_authors(temp_docx, target_path)
-
-    try:
-        os.remove(temp_docx)
-    except OSError:
-        pass
-
-
 def anonymize_docx(source_path, target_path):
     """
     Very conservative blind-review anonymization.

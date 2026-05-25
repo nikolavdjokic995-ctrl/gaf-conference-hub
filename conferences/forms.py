@@ -4,11 +4,6 @@ from django.contrib.auth.models import User
 from django_countries.fields import CountryField
 from django_countries.widgets import CountrySelectWidget
 
-import os
-import tempfile
-from django.core.files import File
-from .utils import sanitize_docx_metadata
-
 from .models import (
     Submission,
     Review,
@@ -521,42 +516,6 @@ class ReviewForm(forms.ModelForm):
         if commit:
             review.save()
 
-            uploaded_review_file = review.commented_paper_file
-
-            if (
-                uploaded_review_file
-                and str(uploaded_review_file.name).lower().endswith(".docx")
-            ):
-                source_tmp_path = None
-                clean_tmp_path = None
-
-                try:
-                    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
-                        for chunk in uploaded_review_file.chunks():
-                            source_tmp.write(chunk)
-                        source_tmp_path = source_tmp.name
-
-                    with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as clean_tmp:
-                        clean_tmp_path = clean_tmp.name
-
-                    sanitize_docx_metadata(source_tmp_path, clean_tmp_path)
-
-                    with open(clean_tmp_path, "rb") as clean_file:
-                        review.commented_paper_file.save(
-                            os.path.basename(review.commented_paper_file.name),
-                            File(clean_file),
-                            save=False
-                        )
-
-                    review.save(update_fields=["commented_paper_file"])
-
-                finally:
-                    if source_tmp_path and os.path.exists(source_tmp_path):
-                        os.remove(source_tmp_path)
-
-                    if clean_tmp_path and os.path.exists(clean_tmp_path):
-                        os.remove(clean_tmp_path)
-
         return review
 
 
@@ -879,14 +838,6 @@ class JudgeDecisionForm(forms.Form):
         label="Decision"
     )
 
-    article_type = forms.ChoiceField(
-        choices=Submission._meta.get_field("article_type").choices or [
-            ("research", "Research paper"),
-            ("review", "Review paper"),
-        ],
-        label="Article type"
-    )
-
     comment = forms.CharField(
         label="Decision message / instructions for author",
         widget=forms.Textarea(attrs={
@@ -960,8 +911,33 @@ class LayoutDecisionForm(forms.Form):
     final_publication_file = forms.FileField(
         label="Upload final print-ready paper",
         required=False,
-        help_text="Optional. Upload the final version prepared for publication/printing."
+        help_text="Optional. Upload or replace the final version prepared for publication/printing. Accepted formats: PDF, DOC, DOCX."
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["final_publication_file"].widget.attrs.update({
+            "accept": ".pdf,.doc,.docx",
+        })
+
+    def clean_final_publication_file(self):
+        file = self.cleaned_data.get("final_publication_file")
+
+        if file:
+            allowed_extensions = [".pdf", ".doc", ".docx"]
+            file_name = file.name.lower()
+
+            if not any(file_name.endswith(ext) for ext in allowed_extensions):
+                raise forms.ValidationError(
+                    "Please upload the final print-ready paper as PDF, DOC, or DOCX."
+                )
+
+            if file.size > MAX_PAPER_UPLOAD_BYTES:
+                raise forms.ValidationError(
+                    f"The final print-ready paper file must be smaller than {MAX_PAPER_UPLOAD_MB} MB."
+                )
+
+        return file
 class ConferenceFooterForm(forms.ModelForm):
 
     class Meta:

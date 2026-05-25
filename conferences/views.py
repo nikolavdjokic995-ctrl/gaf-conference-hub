@@ -53,7 +53,7 @@ from .forms import (
 from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
-from .utils import anonymize_docx, sanitize_docx_metadata
+from .utils import anonymize_docx
 
 
 @login_required
@@ -383,7 +383,6 @@ def make_decision(request, submission_id):
 
         if form.is_valid():
             selected_status = form.cleaned_data["status"]
-            selected_article_type = form.cleaned_data.get("article_type")
             comment = form.cleaned_data["comment"]
             revision_deadline = form.cleaned_data.get("revision_deadline")
 
@@ -397,9 +396,6 @@ def make_decision(request, submission_id):
 
             submission.status = status
             submission.final_comment = comment
-
-            if selected_article_type:
-                submission.article_type = selected_article_type
 
             if status == "revision_required":
                 submission.judge_revision_message = comment
@@ -537,7 +533,6 @@ def make_decision(request, submission_id):
     else:
         form = JudgeDecisionForm(initial={
             "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "rejected"] else "accepted_for_layout",
-            "article_type": submission.article_type,
             "comment": submission.final_comment,
             "revision_deadline": submission.author_revision_deadline,
         })
@@ -884,17 +879,30 @@ def send_revision_to_reviewers(request, submission_id):
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
-    reviewer_count = ReviewAssignment.objects.filter(
+    assignments = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
-    ).count()
+    ).exclude(
+        invitation_status="declined"
+    ).select_related("reviewer")
+
+    reviewer_count = assignments.count()
 
     if reviewer_count == 0:
-        messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
+        messages.error(request, "No active content reviewers are assigned to this submission. Assign reviewers first.")
         return redirect("submission_result", submission_id=submission.id)
 
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
+
+    for assignment in assignments:
+        send_event_email(
+            "rereview_invitation",
+            submission,
+            request=request,
+            reviewer=assignment.reviewer,
+            assignment=assignment,
+        )
 
     messages.success(
         request,
@@ -1865,54 +1873,17 @@ def upload_revision(request, submission_id):
                     next_round = submission.revision_round or 1
                     filename = f"{submission.paper_code}-r{next_round}{extension}"
 
-                    if extension == ".docx":
-                        source_tmp_path = None
-                        clean_tmp_path = None
+                    try:
+                        uploaded_file.seek(0)
+                    except Exception:
+                        pass
+                    submission.revised_paper_file.save(filename, uploaded_file, save=False)
 
-                        try:
-                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
-                                for chunk in uploaded_file.chunks():
-                                    source_tmp.write(chunk)
-                                source_tmp_path = source_tmp.name
-
-                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as clean_tmp:
-                                clean_tmp_path = clean_tmp.name
-
-                            sanitize_docx_metadata(source_tmp_path, clean_tmp_path)
-
-                            with open(clean_tmp_path, "rb") as clean_file:
-                                submission.revised_paper_file.save(
-                                    filename,
-                                    File(clean_file),
-                                    save=False
-                                )
-
-                            with open(clean_tmp_path, "rb") as clean_file:
-                                submission.full_paper_file.save(
-                                    filename,
-                                    File(clean_file),
-                                    save=False
-                                )
-
-                        finally:
-                            if source_tmp_path and os.path.exists(source_tmp_path):
-                                os.remove(source_tmp_path)
-
-                            if clean_tmp_path and os.path.exists(clean_tmp_path):
-                                os.remove(clean_tmp_path)
-
-                    else:
-                        try:
-                            uploaded_file.seek(0)
-                        except Exception:
-                            pass
-                        submission.revised_paper_file.save(filename, uploaded_file, save=False)
-
-                        try:
-                            uploaded_file.seek(0)
-                        except Exception:
-                            pass
-                        submission.full_paper_file.save(filename, uploaded_file, save=False)
+                    try:
+                        uploaded_file.seek(0)
+                    except Exception:
+                        pass
+                    submission.full_paper_file.save(filename, uploaded_file, save=False)
 
                     submission.status = "paper_revision_completed"
                     success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
@@ -1921,54 +1892,17 @@ def upload_revision(request, submission_id):
                     next_round = submission.layout_revision_round or 1
                     filename = f"{submission.paper_code}-layout-r{next_round}{extension}"
 
-                    if extension == ".docx":
-                        source_tmp_path = None
-                        clean_tmp_path = None
+                    try:
+                        uploaded_file.seek(0)
+                    except Exception:
+                        pass
+                    submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
 
-                        try:
-                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as source_tmp:
-                                for chunk in uploaded_file.chunks():
-                                    source_tmp.write(chunk)
-                                source_tmp_path = source_tmp.name
-
-                            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as clean_tmp:
-                                clean_tmp_path = clean_tmp.name
-
-                            sanitize_docx_metadata(source_tmp_path, clean_tmp_path)
-
-                            with open(clean_tmp_path, "rb") as clean_file:
-                                submission.layout_revised_paper_file.save(
-                                    filename,
-                                    File(clean_file),
-                                    save=False
-                                )
-
-                            with open(clean_tmp_path, "rb") as clean_file:
-                                submission.full_paper_file.save(
-                                    filename,
-                                    File(clean_file),
-                                    save=False
-                                )
-
-                        finally:
-                            if source_tmp_path and os.path.exists(source_tmp_path):
-                                os.remove(source_tmp_path)
-
-                            if clean_tmp_path and os.path.exists(clean_tmp_path):
-                                os.remove(clean_tmp_path)
-
-                    else:
-                        try:
-                            uploaded_file.seek(0)
-                        except Exception:
-                            pass
-                        submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
-
-                        try:
-                            uploaded_file.seek(0)
-                        except Exception:
-                            pass
-                        submission.full_paper_file.save(filename, uploaded_file, save=False)
+                    try:
+                        uploaded_file.seek(0)
+                    except Exception:
+                        pass
+                    submission.full_paper_file.save(filename, uploaded_file, save=False)
 
                     submission.status = "accepted_for_layout"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
@@ -1981,21 +1915,10 @@ def upload_revision(request, submission_id):
                 return redirect("upload_revision", submission_id=submission.id)
 
             if submission.status == "paper_revision_completed":
+                # Notify judge/manager that the author uploaded a revised paper.
+                # Do NOT notify reviewers here. Reviewers receive the re-review
+                # invitation only after the judge clicks the Send button.
                 send_event_email("revision_uploaded", submission, request=request)
-
-                assignments = ReviewAssignment.objects.filter(
-                    submission=submission,
-                    role="content_reviewer"
-                ).select_related("reviewer")
-
-                for assignment in assignments:
-                    send_event_email(
-                        "rereview_invitation",
-                        submission,
-                        request=request,
-                        reviewer=assignment.reviewer,
-                        assignment=assignment,
-                    )
 
             elif submission.status == "accepted_for_layout":
                 send_event_email("layout_correction_submitted", submission, request=request)
@@ -2161,7 +2084,51 @@ def layout_decision(request, submission_id):
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted" and previous_status != "final_accepted":
-                send_event_email("manuscript_accepted", submission, request=request)
+
+                decision_reviews_for_email = Review.objects.filter(
+                    submission=submission
+                ).select_related(
+                    "reviewer",
+                    "reviewer__profile"
+                ).order_by(
+                    "review_round",
+                    "reviewer_id"
+                )
+
+                reviewer_author_comment_lines = []
+                visible_reviewer_number = 1
+
+                for review_for_email in decision_reviews_for_email:
+                    comment_for_author = (
+                        review_for_email.comments_for_authors or ""
+                    ).strip()
+
+                    if not comment_for_author:
+                        continue
+
+                    reviewer_author_comment_lines.append(
+                        f"Reviewer {visible_reviewer_number} "
+                        f"(Round {review_for_email.review_round}):\n"
+                        f"{comment_for_author}"
+                    )
+
+                    visible_reviewer_number += 1
+
+                reviewer_comments_for_authors = "\n\n".join(
+                    reviewer_author_comment_lines
+                )
+
+                manuscript_accept_extra = {
+                    "editor_comments": submission.final_comment or "",
+                    "reviewer_comments": reviewer_comments_for_authors,
+                }
+
+                send_event_email(
+                    "manuscript_accepted",
+                    submission,
+                    request=request,
+                    extra=manuscript_accept_extra,
+                )
 
             if final_publication_file:
                 messages.success(request, "Layout decision saved and final print-ready file uploaded successfully.")
