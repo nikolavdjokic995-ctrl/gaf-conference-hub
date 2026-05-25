@@ -838,6 +838,14 @@ class JudgeDecisionForm(forms.Form):
         label="Decision"
     )
 
+    article_type = forms.ChoiceField(
+        choices=Submission._meta.get_field("article_type").choices or [
+            ("research", "Research paper"),
+            ("review", "Review paper"),
+        ],
+        label="Article type"
+    )
+
     comment = forms.CharField(
         label="Decision message / instructions for author",
         widget=forms.Textarea(attrs={
@@ -911,33 +919,8 @@ class LayoutDecisionForm(forms.Form):
     final_publication_file = forms.FileField(
         label="Upload final print-ready paper",
         required=False,
-        help_text="Optional. Upload or replace the final version prepared for publication/printing. Accepted formats: PDF, DOC, DOCX."
+        help_text="Optional. Upload the final version prepared for publication/printing."
     )
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["final_publication_file"].widget.attrs.update({
-            "accept": ".pdf,.doc,.docx",
-        })
-
-    def clean_final_publication_file(self):
-        file = self.cleaned_data.get("final_publication_file")
-
-        if file:
-            allowed_extensions = [".pdf", ".doc", ".docx"]
-            file_name = file.name.lower()
-
-            if not any(file_name.endswith(ext) for ext in allowed_extensions):
-                raise forms.ValidationError(
-                    "Please upload the final print-ready paper as PDF, DOC, or DOCX."
-                )
-
-            if file.size > MAX_PAPER_UPLOAD_BYTES:
-                raise forms.ValidationError(
-                    f"The final print-ready paper file must be smaller than {MAX_PAPER_UPLOAD_MB} MB."
-                )
-
-        return file
 class ConferenceFooterForm(forms.ModelForm):
 
     class Meta:

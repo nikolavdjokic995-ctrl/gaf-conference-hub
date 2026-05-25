@@ -383,6 +383,7 @@ def make_decision(request, submission_id):
 
         if form.is_valid():
             selected_status = form.cleaned_data["status"]
+            selected_article_type = form.cleaned_data.get("article_type")
             comment = form.cleaned_data["comment"]
             revision_deadline = form.cleaned_data.get("revision_deadline")
 
@@ -396,6 +397,9 @@ def make_decision(request, submission_id):
 
             submission.status = status
             submission.final_comment = comment
+
+            if selected_article_type:
+                submission.article_type = selected_article_type
 
             if status == "revision_required":
                 submission.judge_revision_message = comment
@@ -533,6 +537,7 @@ def make_decision(request, submission_id):
     else:
         form = JudgeDecisionForm(initial={
             "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "rejected"] else "accepted_for_layout",
+            "article_type": submission.article_type,
             "comment": submission.final_comment,
             "revision_deadline": submission.author_revision_deadline,
         })
@@ -879,30 +884,17 @@ def send_revision_to_reviewers(request, submission_id):
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
-    assignments = ReviewAssignment.objects.filter(
+    reviewer_count = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
-    ).exclude(
-        invitation_status="declined"
-    ).select_related("reviewer")
-
-    reviewer_count = assignments.count()
+    ).count()
 
     if reviewer_count == 0:
-        messages.error(request, "No active content reviewers are assigned to this submission. Assign reviewers first.")
+        messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
         return redirect("submission_result", submission_id=submission.id)
 
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
-
-    for assignment in assignments:
-        send_event_email(
-            "rereview_invitation",
-            submission,
-            request=request,
-            reviewer=assignment.reviewer,
-            assignment=assignment,
-        )
 
     messages.success(
         request,
@@ -1915,10 +1907,21 @@ def upload_revision(request, submission_id):
                 return redirect("upload_revision", submission_id=submission.id)
 
             if submission.status == "paper_revision_completed":
-                # Notify judge/manager that the author uploaded a revised paper.
-                # Do NOT notify reviewers here. Reviewers receive the re-review
-                # invitation only after the judge clicks the Send button.
                 send_event_email("revision_uploaded", submission, request=request)
+
+                assignments = ReviewAssignment.objects.filter(
+                    submission=submission,
+                    role="content_reviewer"
+                ).select_related("reviewer")
+
+                for assignment in assignments:
+                    send_event_email(
+                        "rereview_invitation",
+                        submission,
+                        request=request,
+                        reviewer=assignment.reviewer,
+                        assignment=assignment,
+                    )
 
             elif submission.status == "accepted_for_layout":
                 send_event_email("layout_correction_submitted", submission, request=request)
@@ -2084,51 +2087,7 @@ def layout_decision(request, submission_id):
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted" and previous_status != "final_accepted":
-
-                decision_reviews_for_email = Review.objects.filter(
-                    submission=submission
-                ).select_related(
-                    "reviewer",
-                    "reviewer__profile"
-                ).order_by(
-                    "review_round",
-                    "reviewer_id"
-                )
-
-                reviewer_author_comment_lines = []
-                visible_reviewer_number = 1
-
-                for review_for_email in decision_reviews_for_email:
-                    comment_for_author = (
-                        review_for_email.comments_for_authors or ""
-                    ).strip()
-
-                    if not comment_for_author:
-                        continue
-
-                    reviewer_author_comment_lines.append(
-                        f"Reviewer {visible_reviewer_number} "
-                        f"(Round {review_for_email.review_round}):\n"
-                        f"{comment_for_author}"
-                    )
-
-                    visible_reviewer_number += 1
-
-                reviewer_comments_for_authors = "\n\n".join(
-                    reviewer_author_comment_lines
-                )
-
-                manuscript_accept_extra = {
-                    "editor_comments": submission.final_comment or "",
-                    "reviewer_comments": reviewer_comments_for_authors,
-                }
-
-                send_event_email(
-                    "manuscript_accepted",
-                    submission,
-                    request=request,
-                    extra=manuscript_accept_extra,
-                )
+                send_event_email("manuscript_accepted", submission, request=request)
 
             if final_publication_file:
                 messages.success(request, "Layout decision saved and final print-ready file uploaded successfully.")

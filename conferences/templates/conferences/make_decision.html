@@ -8,21 +8,10 @@
         .container{max-width:900px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}
         h1{color:#14532d;margin-top:0}
         .box{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:24px;line-height:1.7}
-        .review-box{background:#ffffff;border:1px solid #d1d5db;border-radius:14px;padding:18px;margin-bottom:16px}
-        .reviewer-name{font-weight:bold;color:#14532d;margin-bottom:10px}
-        .comment-title{font-weight:bold;margin:14px 0 6px;color:#111827}
-        .comment-text{background:#f9fafb;border-left:4px solid #16a34a;border-radius:8px;padding:12px;white-space:pre-wrap;line-height:1.6}
-        .editor-comment{border-left-color:#2563eb}
-        .muted{color:#6b7280;font-style:italic}
         label{display:block;font-weight:bold;margin:18px 0 8px}
         select,input,textarea{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:12px;font-size:15px}
         button{margin-top:22px;background:#16a34a;color:white;border:0;border-radius:10px;padding:13px 20px;font-weight:bold;cursor:pointer}
         .back{display:inline-block;margin-top:18px;color:#2563eb;text-decoration:none;font-weight:bold}
-
-        .status{display:inline-block;padding:7px 12px;border-radius:999px;font-size:13px;font-weight:bold;background:#fef3c7;color:#92400e}
-        .status-good{background:#dcfce7;color:#166534}
-        .status-revision{background:#dbeafe;color:#1d4ed8}
-        .status-bad{background:#fee2e2;color:#991b1b}
     </style>
 </head>
 <body>
@@ -34,60 +23,12 @@
     <div class="box">
         <strong>Paper:</strong> {{ submission.title }}<br>
         <strong>Author:</strong> {{ submission.first_author }}<br>
-        <strong>Current status:</strong>
-        {% if submission.status == "final_accepted" %}
-            <span class="status status-good">Accepted for publication</span>
-        {% elif submission.status == "accepted_for_layout" %}
-            <span class="status status-good">Paper accepted</span>
-        {% elif submission.status == "reviewed_by_reviewer" or submission.status == "reviews_completed" %}
-            <span class="status status-good">Reviews completed</span>
-        {% elif submission.status == "layout_revision_required" %}
-            <span class="status status-revision">Layout revision requested</span>
-        {% elif submission.status == "revision_required" %}
-            <span class="status status-revision">Revision requested</span>
-        {% elif submission.status == "paper_revision_completed" %}
-            <span class="status status-revision">Paper revision completed</span>
-        {% elif submission.status == "revised_submitted" %}
-            <span class="status status-revision">Paper revision completed</span>
-        {% elif submission.status == "layout_revision_submitted" %}
-            <span class="status status-good">Paper accepted</span>
-        {% elif submission.status == "rejected" %}
-            <span class="status status-bad">Rejected</span>
-        {% else %}
-            <span class="status">{{ submission.get_status_display }}</span>
-        {% endif %}
-        <br>
+        <strong>Current status:</strong> {{ submission.get_status_display }}<br>
 
-    </div>
-
-    <div class="box">
-        <h2 style="margin-top:0;color:#14532d;">Reviewer comments</h2>
-
-        {% if decision_reviews %}
-            {% for review in decision_reviews %}
-                <div class="review-box">
-                    <div class="reviewer-name">
-                        {{ review.reviewer.profile.full_name_with_title|default:review.reviewer.username }}
-                        — Round {{ review.review_round }}
-                    </div>
-
-                    <div class="comment-title">Reviewer comments to authors</div>
-                    {% if review.comments_for_authors %}
-                        <div class="comment-text">{{ review.comments_for_authors }}</div>
-                    {% else %}
-                        <div class="muted">No comments to authors were provided.</div>
-                    {% endif %}
-
-                    <div class="comment-title">Reviewer comments to editor</div>
-                    {% if review.comments_for_editors %}
-                        <div class="comment-text editor-comment">{{ review.comments_for_editors }}</div>
-                    {% else %}
-                        <div class="muted">No comments to editor were provided.</div>
-                    {% endif %}
-                </div>
-            {% endfor %}
-        {% else %}
-            <div class="muted">No reviewer comments have been submitted yet.</div>
+        {% if submission.full_paper_file %}
+            <a href="{{ submission.full_paper_file.url }}" target="_blank">
+                Download current paper
+            </a>
         {% endif %}
     </div>
 
@@ -96,6 +37,9 @@
 
         <label>{{ form.status.label }}</label>
         {{ form.status }}
+
+        <label>{{ form.article_type.label }}</label>
+        {{ form.article_type }}
 
         <label>{{ form.comment.label }}</label>
         {{ form.comment }}
