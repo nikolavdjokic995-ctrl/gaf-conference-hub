@@ -879,17 +879,30 @@ def send_revision_to_reviewers(request, submission_id):
         messages.error(request, "This submission does not have a revised paper waiting for content review.")
         return redirect("submission_result", submission_id=submission.id)
 
-    reviewer_count = ReviewAssignment.objects.filter(
+    assignments = ReviewAssignment.objects.filter(
         submission=submission,
         role="content_reviewer"
-    ).count()
+    ).exclude(
+        invitation_status="declined"
+    ).select_related("reviewer")
+
+    reviewer_count = assignments.count()
 
     if reviewer_count == 0:
-        messages.error(request, "No content reviewers are assigned to this submission. Assign reviewers first.")
+        messages.error(request, "No active content reviewers are assigned to this submission. Assign reviewers first.")
         return redirect("submission_result", submission_id=submission.id)
 
     submission.status = "under_review"
     submission.save(update_fields=["status", "updated_at"])
+
+    for assignment in assignments:
+        send_event_email(
+            "rereview_invitation",
+            submission,
+            request=request,
+            reviewer=assignment.reviewer,
+            assignment=assignment,
+        )
 
     messages.success(
         request,
@@ -1902,21 +1915,10 @@ def upload_revision(request, submission_id):
                 return redirect("upload_revision", submission_id=submission.id)
 
             if submission.status == "paper_revision_completed":
+                # Notify judge/manager that the author uploaded a revised paper.
+                # Do NOT notify reviewers here. Reviewers receive the re-review
+                # invitation only after the judge clicks the Send button.
                 send_event_email("revision_uploaded", submission, request=request)
-
-                assignments = ReviewAssignment.objects.filter(
-                    submission=submission,
-                    role="content_reviewer"
-                ).select_related("reviewer")
-
-                for assignment in assignments:
-                    send_event_email(
-                        "rereview_invitation",
-                        submission,
-                        request=request,
-                        reviewer=assignment.reviewer,
-                        assignment=assignment,
-                    )
 
             elif submission.status == "accepted_for_layout":
                 send_event_email("layout_correction_submitted", submission, request=request)
