@@ -13,6 +13,7 @@ from .models import (
     ConferenceTopic,
     EmailTemplate,
     ConferenceFooterPartner,
+    UserProfile,
 )
 
 
@@ -65,6 +66,91 @@ class RegisterForm(UserCreationForm):
             "password1",
             "password2",
         ]
+
+
+
+
+class AccountSettingsForm(forms.Form):
+    title = forms.ChoiceField(
+        choices=TITLE_CHOICES,
+        required=False,
+        label="Title"
+    )
+
+    first_name = forms.CharField(
+        max_length=100,
+        required=True,
+        label="First name"
+    )
+
+    last_name = forms.CharField(
+        max_length=100,
+        required=True,
+        label="Last name"
+    )
+
+    email = forms.EmailField(
+        required=True,
+        label="Email"
+    )
+
+    affiliation = forms.CharField(
+        max_length=255,
+        required=True,
+        label="Affiliation"
+    )
+
+    country = CountryField(blank_label="Select country").formfield(
+        required=True,
+        widget=CountrySelectWidget(),
+        label="Country"
+    )
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop("user", None)
+        super().__init__(*args, **kwargs)
+
+        if self.user:
+            profile = getattr(self.user, "profile", None)
+
+            self.fields["first_name"].initial = self.user.first_name
+            self.fields["last_name"].initial = self.user.last_name
+            self.fields["email"].initial = self.user.email
+
+            if profile:
+                self.fields["title"].initial = profile.title
+                self.fields["affiliation"].initial = profile.affiliation
+                self.fields["country"].initial = profile.country
+
+    def clean_email(self):
+        email = self.cleaned_data.get("email", "").strip()
+
+        existing = User.objects.filter(email__iexact=email)
+
+        if self.user:
+            existing = existing.exclude(id=self.user.id)
+
+        if existing.exists():
+            raise forms.ValidationError("This email address is already used by another account.")
+
+        return email
+
+    def save(self):
+        if not self.user:
+            return None
+
+        self.user.first_name = self.cleaned_data["first_name"]
+        self.user.last_name = self.cleaned_data["last_name"]
+        self.user.email = self.cleaned_data["email"]
+        self.user.save(update_fields=["first_name", "last_name", "email"])
+
+        profile, created = UserProfile.objects.get_or_create(user=self.user)
+        profile.title = self.cleaned_data["title"]
+        profile.affiliation = self.cleaned_data["affiliation"]
+        profile.country = self.cleaned_data["country"]
+        profile.save(update_fields=["title", "affiliation", "country"])
+
+        return self.user
 
 
 class SubmissionForm(forms.ModelForm):

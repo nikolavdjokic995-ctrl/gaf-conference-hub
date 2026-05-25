@@ -7,6 +7,7 @@ from django.http import HttpResponse
 from conferences.views import (
     home,
     register,
+    account_settings,
     conference_overview,
     edit_conference_overview,
     conference_settings,

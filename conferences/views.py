@@ -41,6 +41,7 @@ from .forms import (
     ConferenceSidebarCardForm,
     ConferenceTopicForm,
     RegisterForm,
+    AccountSettingsForm,
     JudgeDecisionForm,
     RevisionUploadForm,
     LayoutDecisionForm,
@@ -2270,6 +2271,23 @@ def delete_footer_partner(request, partner_id):
         "partner": partner,
     })
 
+
+
+@login_required
+def account_settings(request):
+    if request.method == "POST":
+        form = AccountSettingsForm(request.POST, user=request.user)
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Your account information has been updated successfully.")
+            return redirect("account_settings")
+    else:
+        form = AccountSettingsForm(user=request.user)
+
+    return render(request, "conferences/account_settings.html", {
+        "form": form,
+    })
 
 def register(request):
     if request.method == "POST":
