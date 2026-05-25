@@ -4,117 +4,24 @@
     <meta charset="UTF-8">
     <title>Account settings | GAF Conference Hub</title>
     <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #f3f7f5;
-            color: #102018;
-        }
-        .topbar {
-            background: #0f5b2f;
-            color: white;
-            padding: 22px 40px;
-            font-size: 24px;
-            font-weight: 700;
-        }
-        .wrap {
-            max-width: 760px;
-            margin: 48px auto;
-            background: white;
-            border-radius: 18px;
-            padding: 34px 38px;
-            box-shadow: 0 14px 34px rgba(0, 0, 0, .08);
-            border: 1px solid #dcebe2;
-        }
-        h1 {
-            color: #0f5b2f;
-            margin: 0 0 8px;
-            font-size: 28px;
-        }
-        .hint {
-            color: #65756b;
-            margin-bottom: 26px;
-            line-height: 1.6;
-        }
-        .messages {
-            margin: 0 0 20px;
-            padding: 0;
-            list-style: none;
-        }
-        .messages li {
-            background: #dcfce7;
-            color: #166534;
-            border: 1px solid #bbf7d0;
-            border-radius: 10px;
-            padding: 12px 14px;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 18px;
-        }
-        label {
-            display: block;
-            margin: 0 0 6px;
-            font-weight: 700;
-            color: #0f5b2f;
-        }
-        input, select {
-            width: 100%;
-            box-sizing: border-box;
-            padding: 12px 14px;
-            border: 1px solid #cfded5;
-            border-radius: 10px;
-            font-size: 15px;
-            background: white;
-        }
-        .field {
-            margin-bottom: 18px;
-        }
-        .errorlist {
-            color: #b42318;
-            background: #fff1f0;
-            border: 1px solid #ffd0cc;
-            border-radius: 10px;
-            padding: 10px 14px;
-            list-style-position: inside;
-            margin: 8px 0 0;
-        }
-        .actions {
-            margin-top: 28px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: center;
-        }
-        button, .btn {
-            border: 0;
-            border-radius: 10px;
-            padding: 12px 18px;
-            font-weight: 700;
-            text-decoration: none;
-            cursor: pointer;
-            display: inline-block;
-        }
-        button {
-            background: #16a34a;
-            color: white;
-        }
-        .btn {
-            background: #eef6f1;
-            color: #0f5b2f;
-        }
-        .btn-dark {
-            background: #14532d;
-            color: white;
-        }
-        .section {
-            margin-top: 30px;
-            padding-top: 22px;
-            border-top: 1px solid #dcebe2;
-        }
+        body { margin: 0; font-family: Arial, sans-serif; background: #f3f7f5; color: #102018; }
+        .topbar { background: #0f5b2f; color: white; padding: 22px 40px; font-size: 24px; font-weight: 700; }
+        .wrap { max-width: 760px; margin: 48px auto; background: white; border-radius: 18px; padding: 34px 38px; box-shadow: 0 14px 34px rgba(0,0,0,.08); border: 1px solid #dcebe2; }
+        h1 { color: #0f5b2f; margin: 0 0 8px; font-size: 28px; }
+        .hint { color: #65756b; margin-bottom: 26px; line-height: 1.6; }
+        .messages { margin: 0 0 20px; padding: 0; list-style: none; }
+        .messages li { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; font-weight: 700; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 18px; }
+        label { display: block; margin: 0 0 6px; font-weight: 700; color: #0f5b2f; }
+        input, select { width: 100%; box-sizing: border-box; padding: 12px 14px; border: 1px solid #cfded5; border-radius: 10px; font-size: 15px; background: white; }
+        .field { margin-bottom: 18px; }
+        .errorlist { color: #b42318; background: #fff1f0; border: 1px solid #ffd0cc; border-radius: 10px; padding: 10px 14px; list-style-position: inside; margin: 8px 0 0; }
+        .actions { margin-top: 28px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+        button, .btn { border: 0; border-radius: 10px; padding: 12px 18px; font-weight: 700; text-decoration: none; cursor: pointer; display: inline-block; }
+        button { background: #16a34a; color: white; }
+        .btn { background: #eef6f1; color: #0f5b2f; }
+        .btn-dark { background: #14532d; color: white; }
+        .section { margin-top: 30px; padding-top: 22px; border-top: 1px solid #dcebe2; }
     </style>
 </head>
 <body>
@@ -122,9 +29,7 @@
 
     <main class="wrap">
         <h1>Account settings</h1>
-        <p class="hint">
-            Update the information you entered during registration. These details are used for your conference profile and platform communication.
-        </p>
+        <p class="hint">Update your registration information and account details.</p>
 
         {% if messages %}
             <ul class="messages">
@@ -156,7 +61,7 @@
 
         <div class="section">
             <h2 style="color:#0f5b2f;margin:0 0 8px;">Password</h2>
-            <p class="hint" style="margin-bottom:14px;">You can also update your password separately.</p>
+            <p class="hint" style="margin-bottom:14px;">Change your password separately.</p>
             <a class="btn btn-dark" href="{% url 'password_change' %}">Change password</a>
         </div>
     </main>
