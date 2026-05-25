@@ -429,8 +429,11 @@ def make_decision(request, submission_id):
                     else revision_notice.strip()
                 )
 
+            current_email_review_round = submission.revision_round or 0
+
             decision_reviews_for_email = Review.objects.filter(
-                submission=submission
+                submission=submission,
+                review_round=current_email_review_round,
             ).select_related(
                 "reviewer",
                 "reviewer__profile"
@@ -2085,8 +2088,11 @@ def layout_decision(request, submission_id):
                 send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted" and previous_status != "final_accepted":
 
+                current_email_review_round = submission.revision_round or 0
+
                 decision_reviews_for_email = Review.objects.filter(
-                    submission=submission
+                    submission=submission,
+                    review_round=current_email_review_round,
                 ).select_related(
                     "reviewer",
                     "reviewer__profile"
