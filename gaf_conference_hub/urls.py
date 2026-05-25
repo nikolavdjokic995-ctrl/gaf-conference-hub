@@ -56,14 +56,12 @@ from conferences.views import (
     reviewer_topics,
     email_health_dashboard,
     run_email_automation_now,
-    robots_txt,
     sitemap_xml,
 )
 
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("", home, name="home"),
-    path("robots.txt", robots_txt, name="robots_txt"),
     path("sitemap.xml", sitemap_xml, name="sitemap_xml"),
     path(
         "google455867b1428963df.html",
