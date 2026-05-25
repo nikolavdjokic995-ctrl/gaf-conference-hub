@@ -2084,7 +2084,51 @@ def layout_decision(request, submission_id):
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
             elif status == "final_accepted" and previous_status != "final_accepted":
-                send_event_email("manuscript_accepted", submission, request=request)
+
+                decision_reviews_for_email = Review.objects.filter(
+                    submission=submission
+                ).select_related(
+                    "reviewer",
+                    "reviewer__profile"
+                ).order_by(
+                    "review_round",
+                    "reviewer_id"
+                )
+
+                reviewer_author_comment_lines = []
+                visible_reviewer_number = 1
+
+                for review_for_email in decision_reviews_for_email:
+                    comment_for_author = (
+                        review_for_email.comments_for_authors or ""
+                    ).strip()
+
+                    if not comment_for_author:
+                        continue
+
+                    reviewer_author_comment_lines.append(
+                        f"Reviewer {visible_reviewer_number} "
+                        f"(Round {review_for_email.review_round}):\n"
+                        f"{comment_for_author}"
+                    )
+
+                    visible_reviewer_number += 1
+
+                reviewer_comments_for_authors = "\n\n".join(
+                    reviewer_author_comment_lines
+                )
+
+                manuscript_accept_extra = {
+                    "editor_comments": submission.final_comment or "",
+                    "reviewer_comments": reviewer_comments_for_authors,
+                }
+
+                send_event_email(
+                    "manuscript_accepted",
+                    submission,
+                    request=request,
+                    extra=manuscript_accept_extra,
+                )
 
             if final_publication_file:
                 messages.success(request, "Layout decision saved and final print-ready file uploaded successfully.")
