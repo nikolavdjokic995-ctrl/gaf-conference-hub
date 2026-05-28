@@ -527,6 +527,13 @@
                         {{ form.article_type.errors }}
                         <div class="help">Select whether the submission is a research paper or a review paper.</div>
                     </div>
+
+                    <div class="field">
+                        <label>{{ form.is_student_paper.label }}</label>
+                        {{ form.is_student_paper }}
+                        {{ form.is_student_paper.errors }}
+                        <div class="help">Select Yes if this manuscript is submitted for the PhD/student session.</div>
+                    </div>
                 </section>
 
                 <section class="form-step" data-step="2">

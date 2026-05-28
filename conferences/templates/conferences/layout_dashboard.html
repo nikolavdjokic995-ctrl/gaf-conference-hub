@@ -193,6 +193,8 @@
                 <div class="meta">
                     <strong>Conference:</strong> {{ submission.conference.plain_title }}<br>
                     <strong>First author:</strong> {{ submission.first_author }}<br>
+                    <strong>Article type:</strong> {{ submission.get_article_type_display|default:submission.article_type }}<br>
+                    <strong>Student paper:</strong> {% if submission.is_student_paper %}Yes{% else %}No{% endif %}<br>
 
                     <strong>Topics:</strong>
                     {% for topic in submission.topic_list %}
@@ -279,6 +281,7 @@
                 <th>Paper ID</th>
                 <th>Title</th>
                 <th>Article type</th>
+                <th>Student paper</th>
                 <th>Authors</th>
                 <th>Accepted date</th>
                 <th>Reviewers</th>
@@ -296,6 +299,10 @@
 
                     <td>
                         {{ submission.get_article_type_display|default:submission.article_type }}
+                    </td>
+
+                    <td>
+                        {% if submission.is_student_paper %}Yes{% else %}No{% endif %}
                     </td>
 
                     <td>

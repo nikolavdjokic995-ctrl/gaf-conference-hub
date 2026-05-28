@@ -217,6 +217,14 @@ class SubmissionForm(forms.ModelForm):
         required=True,
         label="I confirm that the submission information is accurate and that I have permission to submit this manuscript on behalf of all listed authors."
     )
+    is_student_paper = forms.TypedChoiceField(
+        choices=((False, "No"), (True, "Yes")),
+        coerce=lambda value: value in (True, "True", "true", "1", "yes", "Yes"),
+        empty_value=False,
+        initial=False,
+        widget=forms.RadioSelect,
+        label="Student paper"
+    )
 
     class Meta:
         model = Submission
@@ -225,6 +233,7 @@ class SubmissionForm(forms.ModelForm):
             "abstract",
             "keywords",
             "article_type",
+            "is_student_paper",
             "first_author_title",
             "first_author",
             "first_author_email",
@@ -249,6 +258,7 @@ class SubmissionForm(forms.ModelForm):
             "abstract": "Abstract",
             "keywords": "Keywords",
             "article_type": "Article type",
+            "is_student_paper": "Student paper",
             "first_author_title": "First author title",
             "first_author": "First author (First Name Last Name)",
             "first_author_email": "First author email",
