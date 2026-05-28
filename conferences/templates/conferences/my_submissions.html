@@ -186,16 +186,9 @@
                     <p><strong>Layout revision round:</strong> {{ submission.layout_revision_round }}</p>
                 </div>
 
-                {% if submission.final_comment %}
+                {% if submission.judge_revision_message %}
                     <div class="info-box">
-                        <h3 style="margin-top:0;">Latest editor decision / comments</h3>
-                        <p>{{ submission.final_comment|linebreaksbr }}</p>
-                    </div>
-                {% endif %}
-
-                {% if submission.status == "revision_required" and submission.judge_revision_message %}
-                    <div class="info-box">
-                        <h3 style="margin-top:0;">Revision instructions</h3>
+                        <h3 style="margin-top:0;">Judge message for revision</h3>
                         <p>{{ submission.judge_revision_message|linebreaksbr }}</p>
                     </div>
                 {% endif %}
@@ -229,7 +222,7 @@
 
                     <h3>Reviewer feedback</h3>
 
-                    {% for review in submission.reviews.all %}
+                    {% for review in submission.visible_author_reviews %}
                         {% if review.comments_for_authors or review.commented_paper_file %}
                             <div class="review-box">
                                 <p><strong>Reviewer {{ forloop.counter }}</strong></p>

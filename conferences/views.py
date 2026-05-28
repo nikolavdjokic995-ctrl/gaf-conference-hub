@@ -1694,6 +1694,26 @@ def my_submissions(request):
                 "country": country,
             })
 
+        # Show author feedback only from the content review round that
+        # belongs to the latest editor decision. When a revision is requested,
+        # revision_round is already increased for the NEXT cycle, so the
+        # relevant feedback is from the previous round. For accept/reject/layout
+        # decisions, the relevant feedback is from the current revision_round.
+        if submission.status == "revision_required":
+            feedback_round = max((submission.revision_round or 0) - 1, 0)
+        else:
+            feedback_round = submission.revision_round or 0
+
+        submission.visible_author_reviews = Review.objects.filter(
+            submission=submission,
+            review_round=feedback_round,
+        ).select_related(
+            "reviewer",
+            "reviewer__profile",
+        ).order_by(
+            "reviewer_id",
+        )
+
     return render(request, "conferences/my_submissions.html", {
         "submissions": submissions
     })
