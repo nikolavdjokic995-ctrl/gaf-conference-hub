@@ -218,6 +218,36 @@
                     <strong>Last updated:</strong> {{ submission.updated_at|date:"d.m.Y. H:i" }}
                 </div>
 
+
+
+                <div class="file-box">
+                    <strong>Author details</strong><br>
+
+                    <p>
+                        <strong>First author:</strong><br>
+                        {{ submission.first_author_title }} {{ submission.first_author }}<br>
+                        {% if submission.first_author_affiliation %}<span class="small"><strong>Affiliation:</strong> {{ submission.first_author_affiliation }}</span><br>{% endif %}
+                        {% if submission.first_author_country %}<span class="small"><strong>Country:</strong> {{ submission.first_author_country }}</span><br>{% endif %}
+                        {% if submission.first_author_email %}<span class="small"><strong>Email:</strong> {{ submission.first_author_email }}</span><br>{% endif %}
+                        {% if submission.first_author_orcid %}<span class="small"><strong>ORCID:</strong> {{ submission.first_author_orcid }}</span>{% endif %}
+                    </p>
+
+                    {% if submission.coauthor_rows %}
+                        <p><strong>Co-authors:</strong></p>
+                        {% for coauthor in submission.coauthor_rows %}
+                            <div class="review-box">
+                                <strong>{{ coauthor.title }} {{ coauthor.name }}</strong><br>
+                                {% if coauthor.affiliation %}<span class="small"><strong>Affiliation:</strong> {{ coauthor.affiliation }}</span><br>{% endif %}
+                                {% if coauthor.country %}<span class="small"><strong>Country:</strong> {{ coauthor.country }}</span><br>{% endif %}
+                                {% if coauthor.email %}<span class="small"><strong>Email:</strong> {{ coauthor.email }}</span><br>{% endif %}
+                                {% if coauthor.orcid %}<span class="small"><strong>ORCID:</strong> {{ coauthor.orcid }}</span>{% endif %}
+                            </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="small">No co-authors listed.</p>
+                    {% endif %}
+                </div>
+
                 <div class="file-box">
                     <strong>Files</strong><br>
 
