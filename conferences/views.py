@@ -398,6 +398,12 @@ def make_decision(request, submission_id):
             submission.status = status
             submission.final_comment = comment
 
+            # Keep the review round that the editor is deciding on.
+            # If the decision is revision_required, revision_round is increased
+            # below for the NEXT review cycle, so email comments must still be
+            # collected from this saved decision_review_round.
+            decision_review_round = submission.revision_round or 0
+
             if status == "revision_required":
                 submission.judge_revision_message = comment
                 submission.author_revision_deadline = revision_deadline
@@ -430,13 +436,15 @@ def make_decision(request, submission_id):
                     else revision_notice.strip()
                 )
 
+            # Email comments must come only from the review round that has
+            # just been evaluated by the editor, not from older rounds.
             decision_reviews_for_email = Review.objects.filter(
-                submission=submission
+                submission=submission,
+                review_round=decision_review_round,
             ).select_related(
                 "reviewer",
                 "reviewer__profile"
             ).order_by(
-                "review_round",
                 "reviewer_id"
             )
 
@@ -450,7 +458,7 @@ def make_decision(request, submission_id):
                     continue
 
                 reviewer_author_comment_lines.append(
-                    f"Reviewer {visible_reviewer_number} (Round {review_for_email.review_round}):\n"
+                    f"Reviewer {visible_reviewer_number}:\n"
                     f"{comment_for_author}"
                 )
                 visible_reviewer_number += 1
@@ -469,15 +477,16 @@ def make_decision(request, submission_id):
             }
 
             # Separate context for Email 11 — reviewer notification.
-            # Reviewers should receive only the editor's final decision information,
-            # not author-only revision upload instructions or My submissions link.
+            # Reviewers receive the editor decision, editor comments and all
+            # anonymous reviewer comments from the current decision round only.
+            # They do not receive author-only revision upload instructions.
             reviewer_decision_email_extra = {
                 "editor_decision": editor_decision_labels.get(
                     selected_status,
                     submission.get_status_display()
                 ),
                 "editor_comments": submission.final_comment or "",
-                "reviewer_comments": "",
+                "reviewer_comments": reviewer_comments_for_authors,
             }
 
             if status == "revision_required":
@@ -507,12 +516,12 @@ def make_decision(request, submission_id):
             notified_reviewer_ids = set()
             reviewer_notification_reviews = Review.objects.filter(
                 submission=submission,
+                review_round=decision_review_round,
                 wants_final_notification="yes",
             ).select_related(
                 "reviewer"
             ).order_by(
                 "reviewer_id",
-                "-review_round",
             )
 
             for notification_review in reviewer_notification_reviews:
