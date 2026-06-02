@@ -291,6 +291,27 @@ def build_email_bodies(body):
     return plain_body, html_body
 
 
+
+def get_platform_from_email():
+    """Return the public verified sender used for outgoing conference emails.
+
+    Brevo SMTP login is not the same as the visible From address.
+    This helper prevents the old Brevo/Gmail sender from being used accidentally.
+    """
+    configured = (getattr(settings, "DEFAULT_FROM_EMAIL", "") or "").strip()
+
+    if (
+        not configured
+        or "brevosend.com" in configured.lower()
+        or "greenbuildingconference2026" in configured.lower()
+    ):
+        return "Green Building Conference <greenbuilding.conference@gaf.ni.ac.rs>"
+
+    if configured.lower() == "greenbuilding.conference@gaf.ni.ac.rs":
+        return "Green Building Conference <greenbuilding.conference@gaf.ni.ac.rs>"
+
+    return configured
+
 def recipients_for_template(template, submission=None, reviewer=None):
     recipients = []
 
@@ -404,7 +425,7 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
         return []
 
     sent = []
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "greenbuilding.conference@gaf.ni.ac.rs")
+    from_email = get_platform_from_email()
     plain_body, html_body = build_email_bodies(body)
 
     for recipient in recipients:
@@ -538,7 +559,7 @@ def send_test_template_email(template, recipient, request=None):
         email_message = EmailMultiAlternatives(
             subject,
             plain_body,
-            getattr(settings, "DEFAULT_FROM_EMAIL", "greenbuilding.conference@gaf.ni.ac.rs"),
+            get_platform_from_email(),
             [recipient],
         )
         email_message.attach_alternative(html_body, "text/html")
@@ -637,7 +658,7 @@ def send_conference_role_email(event, conference, user, request=None, extra=None
         email_message = EmailMultiAlternatives(
             subject,
             plain_body,
-            getattr(settings, "DEFAULT_FROM_EMAIL", "greenbuilding.conference@gaf.ni.ac.rs"),
+            get_platform_from_email(),
             [recipient],
         )
         email_message.attach_alternative(html_body, "text/html")
