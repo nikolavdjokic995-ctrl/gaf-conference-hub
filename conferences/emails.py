@@ -404,7 +404,7 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
         return []
 
     sent = []
-    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", None)
+    from_email = getattr(settings, "DEFAULT_FROM_EMAIL", "greenbuilding.conference@gaf.ni.ac.rs")
     plain_body, html_body = build_email_bodies(body)
 
     for recipient in recipients:
@@ -538,7 +538,7 @@ def send_test_template_email(template, recipient, request=None):
         email_message = EmailMultiAlternatives(
             subject,
             plain_body,
-            getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            getattr(settings, "DEFAULT_FROM_EMAIL", "greenbuilding.conference@gaf.ni.ac.rs"),
             [recipient],
         )
         email_message.attach_alternative(html_body, "text/html")
@@ -637,7 +637,7 @@ def send_conference_role_email(event, conference, user, request=None, extra=None
         email_message = EmailMultiAlternatives(
             subject,
             plain_body,
-            getattr(settings, "DEFAULT_FROM_EMAIL", None),
+            getattr(settings, "DEFAULT_FROM_EMAIL", "greenbuilding.conference@gaf.ni.ac.rs"),
             [recipient],
         )
         email_message.attach_alternative(html_body, "text/html")
