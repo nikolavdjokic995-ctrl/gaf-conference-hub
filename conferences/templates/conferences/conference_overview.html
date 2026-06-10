@@ -520,38 +520,43 @@
         }
 
         .deadline-notice{
-            display:flex;
-            align-items:center;
-            gap:16px;
-            max-width:1050px;
-            margin:0 auto 18px;
-            padding:16px 22px;
-            border-radius:20px;
-            background:linear-gradient(135deg,#065f46 0%,#047857 100%);
-            color:#ffffff;
-            box-shadow:0 14px 34px rgba(6,95,70,0.24);
-            border:1px solid rgba(255,255,255,0.16);
-        }
+        position:relative;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:16px;
+        max-width:1050px;
+        margin:0 auto 18px;
+        padding:16px 22px;
+        border-radius:20px;
+        background:linear-gradient(135deg,#065f46 0%,#047857 100%);
+        color:#ffffff;
+        box-shadow:0 14px 34px rgba(6,95,70,0.24);
+        border:1px solid rgba(255,255,255,0.16);
+    }
 
         .deadline-notice-icon{
-            width:44px;
-            height:44px;
-            min-width:44px;
-            border-radius:999px;
-            display:flex;
-            align-items:center;
-            justify-content:center;
-            background:rgba(255,255,255,0.14);
-            border:1px solid rgba(255,255,255,0.34);
-            font-size:22px;
-        }
+        position:absolute;
+        left:22px;
+        width:44px;
+        height:44px;
+        min-width:44px;
+        border-radius:999px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        background:rgba(255,255,255,0.14);
+        border:1px solid rgba(255,255,255,0.34);
+        font-size:22px;
+    }
 
         .deadline-notice-text{
-            flex:1;
-            font-size:18px;
-            line-height:1.45;
-            font-weight:700;
-        }
+        flex:1;
+        font-size:18px;
+        line-height:1.45;
+        font-weight:700;
+        text-align:center;
+    }
 
         .deadline-notice-text strong{
             font-weight:950;
@@ -869,7 +874,25 @@
             }
         }
 
-    </style>
+    
+    /* deadline-notice mobile-center-fix */
+    @media(max-width:700px){
+        .deadline-notice{
+            padding:16px 18px;
+            flex-direction:column;
+            gap:10px;
+        }
+
+        .deadline-notice-icon{
+            position:static;
+        }
+
+        .deadline-notice-text{
+            text-align:center;
+        }
+    }
+
+</style>
 
 
 <style>
