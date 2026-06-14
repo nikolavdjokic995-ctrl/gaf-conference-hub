@@ -57,6 +57,89 @@ from .email_automation import process_scheduled_review_emails, get_email_workflo
 from .utils import anonymize_docx
 
 
+REQUIRED_ACCEPTED_CONTENT_REVIEWERS = 2
+CONTENT_REVIEW_START_STATUSES = {
+    "submitted",
+    "reviewer_acceptance_pending",
+    "under_review",
+}
+
+
+def accepted_content_reviewer_count(submission):
+    return ReviewAssignment.objects.filter(
+        submission=submission,
+        role="content_reviewer",
+        invitation_status="accepted",
+    ).values("reviewer_id").distinct().count()
+
+
+def sync_content_review_start_status(submission):
+    """Keep the paper before content review until at least two reviewers accept."""
+    if submission.status not in CONTENT_REVIEW_START_STATUSES:
+        return False
+
+    assignments = ReviewAssignment.objects.filter(
+        submission=submission,
+        role="content_reviewer",
+    )
+
+    if not assignments.exists():
+        return False
+
+    accepted_count = assignments.filter(
+        invitation_status="accepted",
+    ).values("reviewer_id").distinct().count()
+
+    next_status = (
+        "under_review"
+        if accepted_count >= REQUIRED_ACCEPTED_CONTENT_REVIEWERS
+        else "reviewer_acceptance_pending"
+    )
+
+    if submission.status == next_status:
+        return False
+
+    submission.status = next_status
+    submission.save(update_fields=["status", "updated_at"])
+    return next_status == "under_review"
+
+
+def mark_content_review_completed_if_ready(submission):
+    current_round = submission.revision_round or 0
+
+    accepted_assignments = ReviewAssignment.objects.filter(
+        submission=submission,
+        role="content_reviewer",
+        invitation_status="accepted",
+    )
+
+    accepted_reviewer_ids = accepted_assignments.values_list(
+        "reviewer_id",
+        flat=True,
+    )
+
+    accepted_reviewers_count = accepted_assignments.values(
+        "reviewer_id"
+    ).distinct().count()
+
+    completed_reviews_count = Review.objects.filter(
+        submission=submission,
+        review_round=current_round,
+        reviewer_id__in=accepted_reviewer_ids,
+    ).values("reviewer").distinct().count()
+
+    if (
+        submission.status == "under_review"
+        and accepted_reviewers_count >= REQUIRED_ACCEPTED_CONTENT_REVIEWERS
+        and completed_reviews_count >= accepted_reviewers_count
+    ):
+        submission.status = "reviewed_by_reviewer"
+        submission.save(update_fields=["status", "updated_at"])
+        return True
+
+    return False
+
+
 @login_required
 def send_test_email_template(request, template_id):
     template = get_object_or_404(EmailTemplate, id=template_id)
@@ -139,6 +222,13 @@ def review_invitation_response(request, assignment_id):
 
             assignment.save()
 
+            if sync_content_review_start_status(submission):
+                send_event_email(
+                    "review_initiated",
+                    submission,
+                    request=request,
+                )
+
             messages.success(
                 request,
                 "Review invitation accepted successfully."
@@ -156,36 +246,9 @@ def review_invitation_response(request, assignment_id):
             assignment.save()
 
             # Declined reviewers remain visible in Judge Dashboard,
-            # but they must not block the workflow. If all non-declined
-            # reviewers have already submitted reviews for the current round,
-            # mark the paper as ready for Judge decision.
-            current_round = submission.revision_round or 0
-
-            active_assignments = ReviewAssignment.objects.filter(
-                submission=submission,
-                role="content_reviewer",
-            ).exclude(
-                invitation_status="declined",
-            )
-
-            active_reviewer_ids = active_assignments.values_list(
-                "reviewer_id",
-                flat=True,
-            )
-
-            completed_active_reviews_count = Review.objects.filter(
-                submission=submission,
-                review_round=current_round,
-                reviewer_id__in=active_reviewer_ids,
-            ).values("reviewer").distinct().count()
-
-            if (
-                submission.status == "under_review"
-                and active_assignments.count() > 0
-                and completed_active_reviews_count >= active_assignments.count()
-            ):
-                submission.status = "reviewed_by_reviewer"
-                submission.save(update_fields=["status", "updated_at"])
+            # but only accepted reviewers count toward the active review workflow.
+            sync_content_review_start_status(submission)
+            mark_content_review_completed_if_ready(submission)
 
             decline_extra = {
                 "decline_reason": assignment.decline_reason,
@@ -645,12 +708,6 @@ def assign_papers(request, slug, submission_id=None):
                 reviewer=reviewer_role.user,
             )
 
-            send_event_email(
-                "review_initiated",
-                submission,
-                request=request,
-            )
-
             messages.success(request, "Reviewer assigned successfully.")
         else:
             messages.info(
@@ -658,8 +715,12 @@ def assign_papers(request, slug, submission_id=None):
                 "This reviewer was already assigned. The invitation status was reset to pending."
             )
 
-        submission.status = "under_review"
-        submission.save(update_fields=["status", "updated_at"])
+        if sync_content_review_start_status(submission):
+            send_event_email(
+                "review_initiated",
+                submission,
+                request=request,
+            )
 
         return redirect(f"/conference/{conference.slug}/assign/{submission.id}/")
 
@@ -769,14 +830,24 @@ def assign_papers(request, slug, submission_id=None):
 def review_submission(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
 
-    assigned = ReviewAssignment.objects.filter(
+    assignment = ReviewAssignment.objects.filter(
         submission=submission,
         reviewer=request.user,
         role="content_reviewer"
-    ).exists()
+    ).first()
 
-    if not assigned:
+    if not assignment:
         return redirect("/")
+
+    if assignment.invitation_status != "accepted":
+        messages.info(
+            request,
+            "Please accept the review invitation before opening the review form."
+        )
+        return redirect(
+            "review_invitation_response",
+            assignment_id=assignment.id
+        )
 
     current_round = submission.revision_round or 0
 
@@ -806,32 +877,7 @@ def review_submission(request, submission_id):
                 reviewer=request.user,
             )
 
-            active_assignments = ReviewAssignment.objects.filter(
-                submission=submission,
-                role="content_reviewer",
-            ).exclude(
-                invitation_status="declined",
-            )
-
-            active_reviewer_ids = active_assignments.values_list(
-                "reviewer_id",
-                flat=True,
-            )
-
-            assigned_reviewers_count = active_assignments.count()
-
-            completed_reviews_count = Review.objects.filter(
-                submission=submission,
-                review_round=current_round,
-                reviewer_id__in=active_reviewer_ids,
-            ).values("reviewer").distinct().count()
-
-            if (
-                assigned_reviewers_count > 0
-                and completed_reviews_count >= assigned_reviewers_count
-            ):
-                submission.status = "reviewed_by_reviewer"
-                submission.save(update_fields=["status", "updated_at"])
+            mark_content_review_completed_if_ready(submission)
 
             messages.success(request, f"Review for round {current_round} saved successfully.")
             return redirect("/my-reviews/")
@@ -891,15 +937,17 @@ def send_revision_to_reviewers(request, submission_id):
 
     assignments = ReviewAssignment.objects.filter(
         submission=submission,
-        role="content_reviewer"
-    ).exclude(
-        invitation_status="declined"
+        role="content_reviewer",
+        invitation_status="accepted",
     ).select_related("reviewer")
 
-    reviewer_count = assignments.count()
+    reviewer_count = assignments.values("reviewer_id").distinct().count()
 
-    if reviewer_count == 0:
-        messages.error(request, "No active content reviewers are assigned to this submission. Assign reviewers first.")
+    if reviewer_count < REQUIRED_ACCEPTED_CONTENT_REVIEWERS:
+        messages.error(
+            request,
+            "At least two content reviewers must accept the review invitation before content review can start."
+        )
         return redirect("submission_result", submission_id=submission.id)
 
     submission.status = "under_review"
@@ -964,6 +1012,13 @@ def judge_dashboard(request):
 
     conferences = [role.conference for role in judge_roles]
 
+    base_submissions = Submission.objects.filter(conference__in=conferences)
+
+    # Keep status filters accurate even before the page is rendered.
+    for submission in base_submissions:
+        sync_content_review_start_status(submission)
+        mark_content_review_completed_if_ready(submission)
+
     submissions = Submission.objects.filter(conference__in=conferences)
 
     if selected_status != "all":
@@ -982,32 +1037,17 @@ def judge_dashboard(request):
             "reviewer__profile"
         )
 
-        # Auto-sync existing and new papers on dashboard load:
-        # declined reviewers stay visible, but are not counted as pending.
-        current_round = submission.revision_round or 0
+        accepted_reviewer_count = assignments.filter(
+            invitation_status="accepted"
+        ).values("reviewer_id").distinct().count()
 
-        active_assignments = assignments.exclude(
+        pending_reviewer_count = assignments.filter(
+            invitation_status="pending"
+        ).values("reviewer_id").distinct().count()
+
+        declined_reviewer_count = assignments.filter(
             invitation_status="declined"
-        )
-
-        active_reviewer_ids = active_assignments.values_list(
-            "reviewer_id",
-            flat=True
-        )
-
-        completed_active_reviews_count = Review.objects.filter(
-            submission=submission,
-            review_round=current_round,
-            reviewer_id__in=active_reviewer_ids
-        ).values("reviewer").distinct().count()
-
-        if (
-            submission.status == "under_review"
-            and active_assignments.count() > 0
-            and completed_active_reviews_count >= active_assignments.count()
-        ):
-            submission.status = "reviewed_by_reviewer"
-            submission.save(update_fields=["status", "updated_at"])
+        ).values("reviewer_id").distinct().count()
 
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
 
@@ -1022,6 +1062,10 @@ def judge_dashboard(request):
             "reject_count": reviews.filter(overall_recommendation="reject").count(),
             "status": submission.status,
             "status_display": submission.get_status_display(),
+            "accepted_reviewer_count": accepted_reviewer_count,
+            "pending_reviewer_count": pending_reviewer_count,
+            "declined_reviewer_count": declined_reviewer_count,
+            "required_reviewer_count": REQUIRED_ACCEPTED_CONTENT_REVIEWERS,
             "avg_score": avg_auto_score,
         })
 
@@ -1789,18 +1833,16 @@ def conference_submissions(request, slug):
                 request=request,
                 reviewer=reviewer_role.user,
             )
+            messages.success(request, "Reviewer assigned successfully.")
+        else:
+            messages.info(request, "This reviewer is already assigned to this paper.")
 
+        if sync_content_review_start_status(submission):
             send_event_email(
                 "review_initiated",
                 submission,
                 request=request,
             )
-            messages.success(request, "Reviewer assigned successfully.")
-        else:
-            messages.info(request, "This reviewer is already assigned to this paper.")
-
-        submission.status = "under_review"
-        submission.save(update_fields=["status", "updated_at"])
 
         return redirect(
             "conference_submissions",
@@ -2423,6 +2465,7 @@ def my_reviews(request):
         role="content_reviewer",
         submission__status__in=[
             "submitted",
+            "reviewer_acceptance_pending",
             "under_review",
             "paper_revision_completed",
             "paper_revision_completed",
@@ -2446,6 +2489,7 @@ def reviewer_dashboard(request):
         role="content_reviewer",
         submission__status__in=[
             "submitted",
+            "reviewer_acceptance_pending",
             "under_review",
             "revised_submitted",
             "paper_revision_completed",

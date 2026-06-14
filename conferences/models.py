@@ -196,6 +196,7 @@ class Submission(models.Model):
 
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
+        ("reviewer_acceptance_pending", "Reviewer acceptance pending"),
         ("under_review", "Under content review"),
         ("reviews_completed", "Content review completed"),
         ("reviewed_by_reviewer", "Reviewed by reviewer"),
