@@ -16,7 +16,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.urls import reverse
 from pathlib import Path
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from .models import (
     Conference,
@@ -58,11 +58,36 @@ from .utils import anonymize_docx
 
 
 REQUIRED_ACCEPTED_CONTENT_REVIEWERS = 2
+REVIEWER_DEADLINE_EXTENSION_DAYS = 5
 CONTENT_REVIEW_START_STATUSES = {
     "submitted",
     "reviewer_acceptance_pending",
     "under_review",
 }
+
+
+def get_reviewer_deadline_bounds(assignment):
+    """Return the deadline set for the reviewer and the latest allowed requested deadline."""
+    base_deadline = assignment.proposed_deadline or assignment.submission.conference.review_deadline
+
+    if not base_deadline:
+        return None, None
+
+    return base_deadline, base_deadline + timedelta(days=REVIEWER_DEADLINE_EXTENSION_DAYS)
+
+
+def parse_proposed_review_deadline(raw_deadline, conference):
+    """Use the judge-selected deadline, or the conference review deadline as a fallback."""
+    if raw_deadline:
+        try:
+            return datetime.strptime(raw_deadline, "%Y-%m-%d").date(), None
+        except ValueError:
+            return None, "Invalid proposed review deadline format."
+
+    if conference.review_deadline:
+        return conference.review_deadline, None
+
+    return None, "Please set a proposed review deadline before assigning a reviewer."
 
 
 def accepted_content_reviewer_count(submission):
@@ -175,18 +200,19 @@ def review_invitation_response(request, assignment_id):
 
     submission = assignment.submission
     conference = submission.conference
+    base_review_deadline, max_requested_deadline = get_reviewer_deadline_bounds(assignment)
 
     if request.method == "POST":
         action = request.POST.get("action")
 
         if action == "accept":
-            deadline_choice = request.POST.get("deadline_choice")
+            deadline_choice = request.POST.get("deadline_choice", "proposed")
 
             assignment.invitation_status = "accepted"
             assignment.accepted_at = timezone.now()
 
             if deadline_choice == "proposed":
-                assignment.accepted_deadline = assignment.proposed_deadline
+                assignment.accepted_deadline = base_review_deadline
                 assignment.deadline_extension_requested = False
 
             elif deadline_choice == "custom":
@@ -211,6 +237,30 @@ def review_invitation_response(request, assignment_id):
                     messages.error(
                         request,
                         "Invalid requested deadline format."
+                    )
+                    return redirect(
+                        "review_invitation_response",
+                        assignment_id=assignment.id
+                    )
+
+                if base_review_deadline and parsed_date < base_review_deadline:
+                    messages.error(
+                        request,
+                        "Requested deadline cannot be earlier than the deadline set for this review."
+                    )
+                    return redirect(
+                        "review_invitation_response",
+                        assignment_id=assignment.id
+                    )
+
+                if max_requested_deadline and parsed_date > max_requested_deadline:
+                    messages.error(
+                        request,
+                        (
+                            "Reviewers may move the review deadline by a maximum of "
+                            f"{REVIEWER_DEADLINE_EXTENSION_DAYS} days. "
+                            f"Please select a date no later than {max_requested_deadline.strftime('%d.%m.%Y.')}"
+                        )
                     )
                     return redirect(
                         "review_invitation_response",
@@ -286,6 +336,9 @@ def review_invitation_response(request, assignment_id):
             "assignment": assignment,
             "submission": submission,
             "conference": conference,
+            "base_review_deadline": base_review_deadline,
+            "max_requested_deadline": max_requested_deadline,
+            "reviewer_deadline_extension_days": REVIEWER_DEADLINE_EXTENSION_DAYS,
         }
     )
 
@@ -656,11 +709,18 @@ def assign_papers(request, slug, submission_id=None):
     if request.method == "POST":
         posted_submission_id = request.POST.get("submission_id") or submission_id
         reviewer_role_id = request.POST.get("reviewer_role_id")
-        proposed_deadline = request.POST.get("proposed_deadline")
+        proposed_deadline, deadline_error = parse_proposed_review_deadline(
+            request.POST.get("proposed_deadline"),
+            conference,
+        )
 
         if not posted_submission_id:
             messages.error(request, "No paper was selected for reviewer assignment.")
             return redirect("conference_submissions", slug=conference.slug)
+
+        if deadline_error:
+            messages.error(request, deadline_error)
+            return redirect(f"/conference/{conference.slug}/assign/{posted_submission_id}/")
 
         if not reviewer_role_id:
             messages.error(request, "Please select a reviewer before assigning.")
@@ -777,6 +837,7 @@ def assign_papers(request, slug, submission_id=None):
             "suggested_reviewers": suggested_reviewers,
             "all_reviewers": reviewers,
             "assignments": submission.review_assignments.all(),
+            "reviewer_deadline_extension_days": REVIEWER_DEADLINE_EXTENSION_DAYS,
         })
 
     submission_data = []
@@ -824,6 +885,7 @@ def assign_papers(request, slug, submission_id=None):
     return render(request, "conferences/assign_papers.html", {
         "conference": conference,
         "submission_data": submission_data,
+        "reviewer_deadline_extension_days": REVIEWER_DEADLINE_EXTENSION_DAYS,
     })
 
 @login_required
@@ -1792,7 +1854,17 @@ def conference_submissions(request, slug):
     if request.method == "POST":
         submission_id = request.POST.get("submission_id")
         reviewer_role_id = request.POST.get("reviewer_role_id")
-        proposed_deadline = request.POST.get("proposed_deadline")
+        proposed_deadline, deadline_error = parse_proposed_review_deadline(
+            request.POST.get("proposed_deadline"),
+            conference,
+        )
+
+        if deadline_error:
+            messages.error(request, deadline_error)
+            return redirect(
+                "conference_submissions",
+                slug=conference.slug
+            )
 
         submission = get_object_or_404(
             Submission,

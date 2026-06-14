@@ -19,6 +19,8 @@
         .decline { background:#dc2626; }
         .radio-row { margin:10px 0; color:#334155; }
         .help { color:#64748b; font-size:13px; line-height:1.5; }
+        .message { padding:12px 14px; border-radius:12px; margin-bottom:14px; font-weight:700; background:#fef2f2; color:#991b1b; border:1px solid #fecaca; }
+        .deadline-note { background:#fffbeb; border:1px solid #fde68a; color:#92400e; border-radius:12px; padding:12px 14px; margin:14px 0; font-size:14px; line-height:1.5; font-weight:bold; }
         @media(max-width:800px){ .actions{grid-template-columns:1fr;} }
     </style>
 </head>
@@ -27,14 +29,20 @@
 <div class="container">
     <h1>Review invitation</h1>
 
+    {% if messages %}
+        {% for message in messages %}
+            <div class="message">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
     <div class="paper">
         <h2>{{ submission.title }}</h2>
         <div class="meta">
             <strong>Paper ID:</strong> {{ submission.paper_code }}<br>
             <strong>Conference:</strong> {{ submission.conference.plain_title|default:"Green Building 2026" }}<br>
             <strong>Article type:</strong> {{ submission.get_article_type_display }}<br>
-            <strong>Proposed deadline:</strong>
-            {% if assignment.proposed_deadline %}{{ assignment.proposed_deadline|date:"d.m.Y." }}{% else %}Not defined{% endif %}<br>
+            <strong>Review deadline set for this invitation:</strong>
+            {% if base_review_deadline %}{{ base_review_deadline|date:"d.m.Y." }}{% else %}Not defined{% endif %}<br>
             <strong>Abstract:</strong><br>
             {{ submission.abstract }}
         </div>
@@ -46,8 +54,8 @@
             <strong>Your review deadline:</strong>
             {% if assignment.accepted_deadline %}
                 {{ assignment.accepted_deadline|date:"d.m.Y." }}
-            {% elif assignment.proposed_deadline %}
-                {{ assignment.proposed_deadline|date:"d.m.Y." }}
+            {% elif base_review_deadline %}
+                {{ base_review_deadline|date:"d.m.Y." }}
             {% else %}
                 Not defined
             {% endif %}
@@ -70,7 +78,7 @@
                         <label style="font-weight:normal;color:#334155;">
                             <input type="radio" name="deadline_choice" value="proposed" checked>
                             I accept the proposed deadline
-                            {% if assignment.proposed_deadline %}({{ assignment.proposed_deadline|date:"d.m.Y." }}){% endif %}
+                            {% if base_review_deadline %}({{ base_review_deadline|date:"d.m.Y." }}){% endif %}
                         </label>
                     </div>
 
@@ -78,12 +86,17 @@
                         <label style="font-weight:normal;color:#334155;">
                             <input type="radio" name="deadline_choice" value="custom">
                             I would like to request a different deadline
+                            {% if max_requested_deadline %}(up to {{ max_requested_deadline|date:"d.m.Y." }}){% endif %}
                         </label>
                     </div>
 
                     <label>Requested deadline</label>
-                    <input type="date" name="requested_deadline">
-                    <div class="help">Use this only if you need more time than the proposed deadline.</div>
+                    <input type="date" name="requested_deadline"{% if base_review_deadline %} min="{{ base_review_deadline|date:'Y-m-d' }}"{% endif %}{% if max_requested_deadline %} max="{{ max_requested_deadline|date:'Y-m-d' }}"{% endif %}>
+                    {% if base_review_deadline and max_requested_deadline %}
+                        <div class="deadline-note">You can move the review deadline by a maximum of {{ reviewer_deadline_extension_days }} days, from {{ base_review_deadline|date:"d.m.Y." }} to {{ max_requested_deadline|date:"d.m.Y." }}.</div>
+                    {% else %}
+                        <div class="deadline-note">No review deadline has been defined for this invitation. Please contact the judge if you need clarification.</div>
+                    {% endif %}
 
                     <button class="btn accept" type="submit">Accept review</button>
                 </form>

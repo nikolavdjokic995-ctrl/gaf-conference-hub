@@ -25,6 +25,7 @@
         select, input[type="date"] { flex: 1; min-width: 240px; padding: 13px 14px; border-radius: 10px; border: 1px solid #d1d5db; font-size: 15px; background: white; }
         button { background: #16a34a; color: white; border: none; padding: 13px 20px; border-radius: 10px; cursor: pointer; font-weight: bold; font-size: 15px; }
         button:hover { background: #15803d; }
+        .deadline-help { flex-basis: 100%; color: #92400e; background: #fffbeb; border: 1px solid #fde68a; border-radius: 10px; padding: 9px 11px; font-size: 13px; font-weight: 700; line-height: 1.4; }
         .back-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
         .back-link { display: inline-block; color: #2563eb; font-weight: bold; text-decoration: none; }
         .message { padding: 12px 14px; border-radius: 12px; margin-bottom: 14px; font-weight: 700; background: #ecfdf5; color: #14532d; border: 1px solid #bbf7d0; }
@@ -141,7 +142,8 @@
                             </option>
                         {% endfor %}
                     </select>
-                    <input type="date" name="proposed_deadline">
+                    <input type="date" name="proposed_deadline" value="{% if conference.review_deadline %}{{ conference.review_deadline|date:'Y-m-d' }}{% endif %}" required>
+                    <div class="deadline-help">Reviewers may request a different deadline, but only up to {{ reviewer_deadline_extension_days }} days after the deadline you set here.</div>
                     <button type="submit">Send invitation</button>
                 </form>
             {% else %}
@@ -168,7 +170,8 @@
                             </option>
                         {% endfor %}
                     </select>
-                    <input type="date" name="proposed_deadline">
+                    <input type="date" name="proposed_deadline" value="{% if conference.review_deadline %}{{ conference.review_deadline|date:'Y-m-d' }}{% endif %}" required>
+                    <div class="deadline-help">Reviewers may request a different deadline, but only up to {{ reviewer_deadline_extension_days }} days after the deadline you set here.</div>
                     <button type="submit">Assign</button>
                 </form>
             {% else %}
@@ -216,7 +219,8 @@
                                 </option>
                             {% endfor %}
                         </select>
-                        <input type="date" name="proposed_deadline">
+                        <input type="date" name="proposed_deadline" value="{% if conference.review_deadline %}{{ conference.review_deadline|date:'Y-m-d' }}{% endif %}" required>
+                        <div class="deadline-help">Reviewers may request a different deadline, but only up to {{ reviewer_deadline_extension_days }} days after the deadline you set here.</div>
                         <button type="submit">Assign</button>
                     </form>
                 </div>
