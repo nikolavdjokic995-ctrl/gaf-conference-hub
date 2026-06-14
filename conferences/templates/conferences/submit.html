@@ -258,6 +258,46 @@
             line-height: 1.45;
         }
 
+        .template-warning {
+            display: grid;
+            grid-template-columns: 42px 1fr;
+            gap: 14px;
+            align-items: flex-start;
+            background: #fff7ed;
+            border: 1px solid #fdba74;
+            border-left: 5px solid #f97316;
+            border-radius: 14px;
+            padding: 16px 18px;
+            margin-bottom: 20px;
+            color: #7c2d12;
+            box-shadow: 0 10px 24px rgba(251, 146, 60, 0.12);
+        }
+
+        .template-warning-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background: #ffedd5;
+            font-size: 24px;
+        }
+
+        .template-warning strong {
+            display: block;
+            color: #9a3412;
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .template-warning p {
+            margin: 0;
+            color: #7c2d12;
+            font-size: 14px;
+            line-height: 1.45;
+        }
+
         .upload-box {
             border: 2px dashed var(--green);
             border-radius: 18px;
@@ -650,6 +690,14 @@
                     <h2 class="section-title">
                         <span>☁️</span> SECTION 4: Upload Files
                     </h2>
+
+                    <div class="template-warning" role="alert">
+                        <div class="template-warning-icon">⚠️</div>
+                        <div>
+                            <strong>Important template requirement</strong>
+                            <p>All manuscripts uploaded here must be prepared using the official conference paper template. Files that do not follow the template may be returned for correction before review.</p>
+                        </div>
+                    </div>
 
                     <div class="upload-box">
                         <div class="upload-icon">☁️</div>
