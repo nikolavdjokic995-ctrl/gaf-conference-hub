@@ -43,7 +43,7 @@
 <div class="container">
     <div class="header-card">
         <h1>Assign reviewers</h1>
-        <p class="subtitle">Assign content reviewers to this paper.</p>
+        <p class="subtitle">Assign content reviewers to this paper. Reviewer lists show how many papers each reviewer has already been assigned in this conference.</p>
     </div>
 
     {% if messages %}
@@ -133,7 +133,7 @@
                         <option value="">Select reviewer</option>
                         {% for reviewer_role in suggested_reviewers %}
                             <option value="{{ reviewer_role.id }}">
-                                {{ reviewer_role.user.profile.full_name_with_title }} — Topics:
+                                {{ reviewer_role.user.profile.full_name_with_title }} — Assigned papers in this conference: {{ reviewer_role.assigned_papers_count|default:0 }} — Topics:
                                 {% for topic in reviewer_role.topics.all %}
                                     {{ topic.code }}{% if not forloop.last %}, {% endif %}
                                 {% empty %}
@@ -161,7 +161,7 @@
                         <option value="">Select reviewer</option>
                         {% for reviewer_role in all_reviewers %}
                             <option value="{{ reviewer_role.id }}">
-                                {{ reviewer_role.user.profile.full_name_with_title }} — Topics:
+                                {{ reviewer_role.user.profile.full_name_with_title }} — Assigned papers in this conference: {{ reviewer_role.assigned_papers_count|default:0 }} — Topics:
                                 {% for topic in reviewer_role.topics.all %}
                                     {{ topic.code }}{% if not forloop.last %}, {% endif %}
                                 {% empty %}
@@ -210,7 +210,7 @@
                             <option value="">Select reviewer</option>
                             {% for reviewer_role in item.all_reviewers %}
                                 <option value="{{ reviewer_role.id }}">
-                                    {{ reviewer_role.user.profile.full_name_with_title }} — Topics:
+                                    {{ reviewer_role.user.profile.full_name_with_title }} — Assigned papers in this conference: {{ reviewer_role.assigned_papers_count|default:0 }} — Topics:
                                     {% for topic in reviewer_role.topics.all %}
                                         {{ topic.code }}{% if not forloop.last %}, {% endif %}
                                     {% empty %}

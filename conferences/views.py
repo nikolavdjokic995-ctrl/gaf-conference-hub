@@ -7,7 +7,7 @@ from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
-from django.db.models import Avg
+from django.db.models import Avg, Count
 from django.core.mail import send_mail
 from django.contrib.auth import login
 from django.contrib.auth.models import User
@@ -700,6 +700,15 @@ def assign_papers(request, slug, submission_id=None):
         "user"
     ).prefetch_related(
         "topics"
+    ).annotate(
+        assigned_papers_count=Count(
+            "user__review_assignments__submission",
+            filter=Q(
+                user__review_assignments__submission__conference=conference,
+                user__review_assignments__role="content_reviewer",
+            ),
+            distinct=True,
+        )
     ).order_by(
         "user__first_name",
         "user__last_name",
