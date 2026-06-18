@@ -6,8 +6,20 @@ from .models import Conference, EmailLog, EmailTemplate, Review, ReviewAssignmen
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .emails import send_event_email
 
+ACTIVE_CONTENT_REVIEW_STATUS = "under_review"
+REMINDER_OFFSET_DAYS = 2
+
 
 def _review_exists_for_assignment(assignment):
+    """Return True when this reviewer has already completed the active round.
+
+    Important: reminders must be tied to an *active* content-review cycle.
+    After a judge requests author revision, ``submission.revision_round`` is
+    increased for the next cycle even though that next review has not started
+    yet. Without the status check in the query below, old accepted assignments
+    can look unfinished and receive overdue reminders even after the reviewer
+    completed the previous round on time.
+    """
     submission = assignment.submission
     current_round = submission.revision_round or 0
     return Review.objects.filter(
@@ -17,8 +29,12 @@ def _review_exists_for_assignment(assignment):
     ).exists()
 
 
+def _review_deadline_for_assignment(assignment):
+    return assignment.final_deadline()
+
+
 def _deadline_context(assignment, request=None):
-    deadline = assignment.accepted_deadline or assignment.proposed_deadline
+    deadline = _review_deadline_for_assignment(assignment)
     today = timezone.now().date()
     days_left = ""
     if deadline:
@@ -29,28 +45,38 @@ def _deadline_context(assignment, request=None):
         "proposed_review_deadline": assignment.proposed_deadline.strftime("%d.%m.%Y.") if assignment.proposed_deadline else "",
         "review_deadline_days": days_left,
         "review_days": days_left,
+        "days_until_due": days_left,
     }
+
+
+def _active_review_assignments(conference=None):
+    assignments = ReviewAssignment.objects.filter(
+        role="content_reviewer",
+        invitation_status="accepted",
+        submission__status=ACTIVE_CONTENT_REVIEW_STATUS,
+    ).select_related("submission", "submission__conference", "reviewer")
+
+    if conference is not None:
+        assignments = assignments.filter(submission__conference=conference)
+
+    return assignments
 
 
 def process_scheduled_review_emails(conference=None, request=None):
     """
     Sends time-based review emails. Safe to run repeatedly.
 
-    - review_due_soon: 2 days before accepted/proposed deadline
-    - review_overdue: after deadline has passed
+    - review_due_soon: 2 days before the active review deadline
+    - review_overdue: 2 or more days after the active review deadline
 
-    It uses ReviewAssignment flags to prevent duplicate sending.
+    Completed reviews and submissions that are not currently under content
+    review are skipped. This prevents stale reminders after a reviewer has
+    already submitted the review or after the manuscript moved to author
+    revision / decision stages.
     """
     today = timezone.now().date()
-    target_due_date = today + timedelta(days=2)
-
-    assignments = ReviewAssignment.objects.filter(
-        role="content_reviewer",
-        invitation_status="accepted",
-    ).select_related("submission", "submission__conference", "reviewer")
-
-    if conference is not None:
-        assignments = assignments.filter(submission__conference=conference)
+    due_soon_date = today + timedelta(days=REMINDER_OFFSET_DAYS)
+    overdue_threshold_date = today - timedelta(days=REMINDER_OFFSET_DAYS)
 
     result = {
         "due_soon_sent": 0,
@@ -58,8 +84,8 @@ def process_scheduled_review_emails(conference=None, request=None):
         "skipped": 0,
     }
 
-    for assignment in assignments:
-        deadline = assignment.accepted_deadline or assignment.proposed_deadline
+    for assignment in _active_review_assignments(conference=conference):
+        deadline = _review_deadline_for_assignment(assignment)
         if not deadline:
             result["skipped"] += 1
             continue
@@ -70,12 +96,13 @@ def process_scheduled_review_emails(conference=None, request=None):
 
         extra = _deadline_context(assignment, request=request)
 
-        if deadline == target_due_date and not getattr(assignment, "due_soon_reminder_sent", False):
+        if deadline == due_soon_date and not getattr(assignment, "due_soon_reminder_sent", False):
             sent = send_event_email(
                 "review_due_soon",
                 assignment.submission,
                 request=request,
                 reviewer=assignment.reviewer,
+                assignment=assignment,
                 extra=extra,
             )
             if sent:
@@ -85,12 +112,13 @@ def process_scheduled_review_emails(conference=None, request=None):
             else:
                 result["skipped"] += 1
 
-        if deadline < today and not getattr(assignment, "overdue_reminder_sent", False):
+        if deadline <= overdue_threshold_date and not getattr(assignment, "overdue_reminder_sent", False):
             sent = send_event_email(
                 "review_overdue",
                 assignment.submission,
                 request=request,
                 reviewer=assignment.reviewer,
+                assignment=assignment,
                 extra=extra,
             )
             if sent:
@@ -105,24 +133,19 @@ def process_scheduled_review_emails(conference=None, request=None):
 
 def get_email_workflow_status(conference):
     today = timezone.now().date()
-    due_date = today + timedelta(days=2)
-
-    assignments = ReviewAssignment.objects.filter(
-        submission__conference=conference,
-        role="content_reviewer",
-        invitation_status="accepted",
-    ).select_related("submission", "reviewer")
+    due_soon_date = today + timedelta(days=REMINDER_OFFSET_DAYS)
+    overdue_threshold_date = today - timedelta(days=REMINDER_OFFSET_DAYS)
 
     due_soon_pending = []
     overdue_pending = []
 
-    for assignment in assignments:
-        deadline = assignment.accepted_deadline or assignment.proposed_deadline
+    for assignment in _active_review_assignments(conference=conference):
+        deadline = _review_deadline_for_assignment(assignment)
         if not deadline or _review_exists_for_assignment(assignment):
             continue
-        if deadline == due_date and not getattr(assignment, "due_soon_reminder_sent", False):
+        if deadline == due_soon_date and not getattr(assignment, "due_soon_reminder_sent", False):
             due_soon_pending.append(assignment)
-        if deadline < today and not getattr(assignment, "overdue_reminder_sent", False):
+        if deadline <= overdue_threshold_date and not getattr(assignment, "overdue_reminder_sent", False):
             overdue_pending.append(assignment)
 
     existing_events = set(

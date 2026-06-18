@@ -767,6 +767,8 @@ def assign_papers(request, slug, submission_id=None):
             assignment.accepted_at = None
             assignment.declined_at = None
             assignment.decline_reason = ""
+            assignment.due_soon_reminder_sent = False
+            assignment.overdue_reminder_sent = False
             assignment.save()
 
         if created:
@@ -1905,6 +1907,8 @@ def conference_submissions(request, slug):
             assignment.accepted_at = None
             assignment.declined_at = None
             assignment.decline_reason = ""
+            assignment.due_soon_reminder_sent = False
+            assignment.overdue_reminder_sent = False
             assignment.save()
 
         if created:
