@@ -8,6 +8,7 @@ from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
+from django.db import transaction
 from django.core.mail import send_mail
 from django.contrib.auth import login
 from django.contrib.auth.models import User
@@ -1325,51 +1326,90 @@ def submit_paper(request, slug):
             uploaded_file = request.FILES.get("full_paper_file")
             source_path = None
             anonymized_path = None
+            submission = None
 
             try:
-                submission = form.save(commit=False)
-                
-                submission.conference = conference
-                submission.author = request.user
-                submission.first_author_title = form.cleaned_data.get("first_author_title")
-                submission.coauthor_titles = form.cleaned_data.get("coauthor_titles", "")
-                if hasattr(submission, "submitted_by"):
-                    submission.submitted_by = request.user
+                submitted_title = (form.cleaned_data.get("title") or "").strip()
+                submitted_first_author_email = (
+                    form.cleaned_data.get("first_author_email") or ""
+                ).strip()
+                duplicate_cutoff = timezone.now() - timedelta(minutes=10)
 
-                submission.status = "submitted"
+                # Protect against accidental double-clicks / repeated browser POSTs.
+                # The conference row is locked while we check and create the new
+                # submission, so two near-simultaneous requests cannot both create
+                # the same paper for the same author.
+                with transaction.atomic():
+                    locked_conference = Conference.objects.select_for_update().get(
+                        pk=conference.pk
+                    )
 
-                # Prevent Django from uploading the raw form file before we generate
-                # the paper code and final file names.
-                submission.full_paper_file = None
-                submission.original_submission_file = None
-                submission.anonymized_paper_file = None
+                    recent_duplicate = (
+                        Submission.objects
+                        .filter(
+                            conference=locked_conference,
+                            author=request.user,
+                            title__iexact=submitted_title,
+                            first_author_email__iexact=submitted_first_author_email,
+                            created_at__gte=duplicate_cutoff,
+                        )
+                        .order_by("-created_at")
+                        .first()
+                    )
 
-                conference_code = conference.slug.replace("-", "").upper()[:6]
+                    if recent_duplicate:
+                        messages.info(
+                            request,
+                            "This paper appears to have already been submitted. "
+                            "Please check My submissions before trying again."
+                        )
+                        return redirect("my_submissions")
 
-                last_submission = (
-                    Submission.objects
-                    .filter(conference=conference)
-                    .exclude(paper_code="")
-                    .order_by("-id")
-                    .first()
-                )
+                    submission = form.save(commit=False)
 
-                next_number = 1
+                    submission.conference = locked_conference
+                    submission.author = request.user
+                    submission.first_author_title = form.cleaned_data.get("first_author_title")
+                    submission.coauthor_titles = form.cleaned_data.get("coauthor_titles", "")
+                    if hasattr(submission, "submitted_by"):
+                        submission.submitted_by = request.user
 
-                if last_submission and last_submission.paper_code:
-                    try:
-                        next_number = int(last_submission.paper_code.split("-")[-1]) + 1
-                    except Exception:
-                        next_number = Submission.objects.filter(conference=conference).count() + 1
+                    submission.status = "submitted"
 
-                while True:
-                    generated_code = f"{conference_code}-{next_number:03d}"
-                    if not Submission.objects.filter(paper_code=generated_code).exists():
-                        break
-                    next_number += 1
+                    # Prevent Django from uploading the raw form file before we generate
+                    # the paper code and final file names.
+                    submission.full_paper_file = None
+                    submission.original_submission_file = None
+                    submission.anonymized_paper_file = None
 
-                submission.paper_code = generated_code
-                submission.save()
+                    conference_code = locked_conference.slug.replace("-", "").upper()[:6]
+
+                    last_submission = (
+                        Submission.objects
+                        .filter(conference=locked_conference)
+                        .exclude(paper_code="")
+                        .order_by("-id")
+                        .first()
+                    )
+
+                    next_number = 1
+
+                    if last_submission and last_submission.paper_code:
+                        try:
+                            next_number = int(last_submission.paper_code.split("-")[-1]) + 1
+                        except Exception:
+                            next_number = Submission.objects.filter(
+                                conference=locked_conference
+                            ).count() + 1
+
+                    while True:
+                        generated_code = f"{conference_code}-{next_number:03d}"
+                        if not Submission.objects.filter(paper_code=generated_code).exists():
+                            break
+                        next_number += 1
+
+                    submission.paper_code = generated_code
+                    submission.save()
 
                 if uploaded_file:
                     extension = Path(uploaded_file.name).suffix.lower()
@@ -1434,6 +1474,12 @@ def submit_paper(request, slug):
                 return redirect("my_submissions")
 
             except Exception as e:
+                # If the database row was created but file processing failed before
+                # the file fields were saved, remove the incomplete row so the
+                # author can submit again normally.
+                if submission and not getattr(submission.full_paper_file, "name", ""):
+                    submission.delete()
+
                 print("Paper upload/anonymization error:", e)
                 messages.error(request, f"Paper upload failed: {e}")
 
