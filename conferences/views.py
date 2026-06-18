@@ -130,6 +130,31 @@ def sync_content_review_start_status(submission):
     return next_status == "under_review"
 
 
+def get_dashboard_judge_decision(submission):
+    """Return the explicit judge decision, with safe fallbacks for legacy rows.
+
+    The judge_decision field was added after some papers had already received
+    decisions. For accepted/rejected papers the old status can be mapped safely.
+    For revision_required papers, the old data cannot distinguish minor from
+    major revision, so those rows stay empty until the judge saves a decision.
+    """
+    if submission.judge_decision:
+        decision = submission.judge_decision
+    else:
+        legacy_status_to_decision = {
+            "accepted_for_layout": "accepted_for_layout",
+            "layout_revision_required": "accepted_for_layout",
+            "layout_revision_submitted": "accepted_for_layout",
+            "final_accepted": "accepted_for_layout",
+            "accepted": "accepted_for_layout",
+            "rejected": "rejected",
+        }
+        decision = legacy_status_to_decision.get(submission.status, "")
+
+    decision_labels = dict(Submission.JUDGE_DECISION_CHOICES)
+    return decision, decision_labels.get(decision, "")
+
+
 def mark_content_review_completed_if_ready(submission):
     current_round = submission.revision_round or 0
 
@@ -1130,6 +1155,10 @@ def judge_dashboard(request):
 
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
 
+        judge_decision, judge_decision_display = get_dashboard_judge_decision(
+            submission
+        )
+
         data.append({
             "submission": submission,
             "reviews": reviews,
@@ -1146,9 +1175,8 @@ def judge_dashboard(request):
             "declined_reviewer_count": declined_reviewer_count,
             "required_reviewer_count": REQUIRED_ACCEPTED_CONTENT_REVIEWERS,
             "avg_score": avg_auto_score,
-            "judge_decision": submission.judge_decision,
-            "judge_decision_display": submission.get_judge_decision_display()
-            if submission.judge_decision else "",
+            "judge_decision": judge_decision,
+            "judge_decision_display": judge_decision_display,
         })
 
     return render(request, "conferences/judge_dashboard.html", {
