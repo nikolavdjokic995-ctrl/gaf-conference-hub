@@ -194,6 +194,13 @@ class Submission(models.Model):
         ("review_paper", "Review paper"),
     ]
 
+    JUDGE_DECISION_CHOICES = [
+        ("accepted_for_layout", "Accept in present form"),
+        ("minor_revision", "Accept after minor revision"),
+        ("revision_required", "Reconsider after major revision"),
+        ("rejected", "Reject"),
+    ]
+
     STATUS_CHOICES = [
         ("submitted", "Submitted"),
         ("reviewer_acceptance_pending", "Reviewer acceptance pending"),
@@ -346,6 +353,13 @@ class Submission(models.Model):
         max_length=30,
         choices=STATUS_CHOICES,
         default="submitted",
+    )
+
+    judge_decision = models.CharField(
+        max_length=30,
+        choices=JUDGE_DECISION_CHOICES,
+        blank=True,
+        help_text="Latest judge decision selected on the Judge decision form.",
     )
 
     final_comment = models.TextField(blank=True)

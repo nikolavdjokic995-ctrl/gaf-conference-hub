@@ -513,6 +513,7 @@ def make_decision(request, submission_id):
                 status = selected_status
 
             submission.status = status
+            submission.judge_decision = selected_status
             submission.final_comment = comment
 
             # Keep the review round that the editor is deciding on.
@@ -659,7 +660,11 @@ def make_decision(request, submission_id):
             return redirect("submission_result", submission_id=submission.id)
     else:
         form = JudgeDecisionForm(initial={
-            "status": submission.status if submission.status in ["accepted_for_layout", "revision_required", "rejected"] else "accepted_for_layout",
+            "status": submission.judge_decision or (
+                submission.status
+                if submission.status in ["accepted_for_layout", "revision_required", "rejected"]
+                else "accepted_for_layout"
+            ),
             "comment": submission.final_comment,
             "revision_deadline": submission.author_revision_deadline,
         })
@@ -1141,12 +1146,74 @@ def judge_dashboard(request):
             "declined_reviewer_count": declined_reviewer_count,
             "required_reviewer_count": REQUIRED_ACCEPTED_CONTENT_REVIEWERS,
             "avg_score": avg_auto_score,
+            "judge_decision": submission.judge_decision,
+            "judge_decision_display": submission.get_judge_decision_display()
+            if submission.judge_decision else "",
         })
 
     return render(request, "conferences/judge_dashboard.html", {
         "data": data,
         "selected_status": selected_status,
     })
+
+
+@login_required
+def remove_reviewer_assignment(request, assignment_id):
+    assignment = get_object_or_404(
+        ReviewAssignment.objects.select_related(
+            "submission",
+            "submission__conference",
+            "reviewer",
+            "reviewer__profile",
+        ),
+        id=assignment_id,
+        role="content_reviewer",
+    )
+
+    can_manage = ConferenceRole.objects.filter(
+        conference=assignment.submission.conference,
+        user=request.user,
+        role__in=["judge", "manager"],
+    ).exists()
+
+    if not can_manage:
+        return redirect("/")
+
+    selected_status = request.POST.get("selected_status") or "all"
+    valid_status_filters = {"all", *dict(Submission.STATUS_CHOICES).keys()}
+
+    if selected_status not in valid_status_filters:
+        selected_status = "all"
+
+    redirect_url = f"{reverse('judge_dashboard')}?status={selected_status}"
+
+    if request.method != "POST":
+        return redirect(redirect_url)
+
+    submission = assignment.submission
+    reviewer_name = (
+        getattr(getattr(assignment.reviewer, "profile", None), "full_name_with_title", "")
+        or assignment.reviewer.get_full_name()
+        or assignment.reviewer.username
+    )
+
+    existing_review = Review.objects.filter(
+        submission=submission,
+        reviewer=assignment.reviewer,
+    ).exists()
+
+    assignment.delete()
+
+    sync_content_review_start_status(submission)
+    mark_content_review_completed_if_ready(submission)
+
+    message = f"Reviewer {reviewer_name} was removed from {submission.paper_code or submission.title}."
+
+    if existing_review:
+        message += " The submitted review was kept in the system."
+
+    messages.success(request, message)
+    return redirect(redirect_url)
 
 @login_required
 def edit_conference_overview(request, slug):

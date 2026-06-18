@@ -39,6 +39,7 @@ from conferences.views import (
     manager_dashboard,
     make_decision,
     judge_dashboard,
+    remove_reviewer_assignment,
     my_submissions,
     delete_submission,
     reviewer_dashboard,
@@ -96,6 +97,7 @@ urlpatterns = [
     path("conference/<slug:slug>/settings/emails/run-automation/", run_email_automation_now, name="run_email_automation_now"),
     path("dashboard/", manager_dashboard, name="dashboard"),
     path("judge-dashboard/", judge_dashboard, name="judge_dashboard"),
+    path("review-assignment/<int:assignment_id>/remove/", remove_reviewer_assignment, name="remove_reviewer_assignment"),
     path("reviewer-dashboard/", reviewer_dashboard, name="reviewer_dashboard"),
     path("layout-dashboard/", layout_dashboard, name="layout_dashboard"),
 
