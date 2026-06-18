@@ -3,6 +3,7 @@ OFFICIAL_EMAIL_EVENTS = [
     "paper_submitted",
     "coauthor_submission_confirmation",
     "review_invitation",
+    "review_invitation_cancelled",
     "review_declined_judge",
     "review_declined_author",
     "review_request_accepted",
@@ -39,6 +40,21 @@ DEFAULT_EMAIL_TEMPLATES_2026 = {
     "review_invitation": {
         "subject": "Invitation to Review Manuscript: {{ paper_title }}",
         "body": """Dear Reviewer,\n\nWe are writing to extend an invitation to you as a potential reviewer of the manuscript entitled {{ paper_title }}, which has been submitted to Green Building Conference.\n\nWe kindly invite you to review this paper and evaluate its suitability for publication in the Green Building International Scientific Conference Proceedings. The article abstract is available at the end of this message.\n\nThe proposed review period is {{ review_days }} days, with the proposed deadline {{ review_deadline }}. If you require additional time, you may request a different deadline when accepting the review invitation.\n\nTo respond to this review invitation and access the full manuscript and review report form, please click on the link below:\n{{ review_link }}\n\nThank you for considering our invitation. Your expertise and contributions are highly valued.\n\nKind Regards,\nThe Editorial Board\nGreen Building International Scientific Conference\n\nMANUSCRIPT DETAILS\nManuscript title: {{ paper_title }}\nManuscript ID: {{ paper_code }}\nArticle type: {{ article_type }}\nSubmitted on: {{ submitted_on }}\nAbstract:\n{{ abstract }}\nKeywords: {{ keywords }}\n\nNote: Reviewers are obliged to keep all manuscript files confidential. For technical issues, please contact us at {{ conference_contact_email }}.""",
+        "send_to_author": False, "send_to_coauthors": False, "send_to_reviewer": True,
+    },
+    "review_invitation_cancelled": {
+        "subject": "Review invitation cancelled",
+        "body": """Dear {{ reviewer_name }},
+
+This email is to inform you that your review invitation for the manuscript "{{ paper_title }}" (Identifier: {{ paper_code }}) has been cancelled by the Editorial Office.
+
+No further action is required from you regarding this manuscript.
+
+Thank you for your time and support of {{ conference_name }}.
+
+Kind Regards,
+The Editorial Office
+Green Building International Scientific Conference""",
         "send_to_author": False, "send_to_coauthors": False, "send_to_reviewer": True,
     },
     "review_declined_judge": {

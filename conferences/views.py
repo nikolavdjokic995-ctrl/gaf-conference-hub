@@ -53,7 +53,7 @@ from .forms import (
 )
 
 from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
-from .email_defaults import OFFICIAL_EMAIL_EVENTS
+from .email_defaults import OFFICIAL_EMAIL_EVENTS, DEFAULT_EMAIL_TEMPLATES_2026
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
 
@@ -1230,6 +1230,16 @@ def remove_reviewer_assignment(request, assignment_id):
         reviewer=assignment.reviewer,
     ).exists()
 
+    # Notify the reviewer while the assignment object still exists, so the
+    # template can render reviewer name, manuscript details and deadlines.
+    cancelled_recipients = send_event_email(
+        "review_invitation_cancelled",
+        submission,
+        request=request,
+        reviewer=assignment.reviewer,
+        assignment=assignment,
+    )
+
     assignment.delete()
 
     sync_content_review_start_status(submission)
@@ -1239,6 +1249,11 @@ def remove_reviewer_assignment(request, assignment_id):
 
     if existing_review:
         message += " The submitted review was kept in the system."
+
+    if cancelled_recipients:
+        message += " Cancellation email was sent to the reviewer."
+    else:
+        message += " Cancellation email was not sent; please check the email log/template settings."
 
     messages.success(request, message)
     return redirect(redirect_url)
@@ -1334,6 +1349,29 @@ def email_templates(request, slug):
 
     if not is_manager:
         return redirect("/")
+
+    # Ensure newly added official workflow templates are visible in the
+    # email settings page before the first real workflow action uses them.
+    for event in OFFICIAL_EMAIL_EVENTS:
+        defaults = DEFAULT_EMAIL_TEMPLATES_2026.get(event)
+
+        if not defaults:
+            continue
+
+        EmailTemplate.objects.get_or_create(
+            conference=conference,
+            event=event,
+            defaults={
+                "enabled": defaults.get("enabled", True),
+                "subject": defaults.get("subject", ""),
+                "body": defaults.get("body", ""),
+                "send_to_author": defaults.get("send_to_author", True),
+                "send_to_coauthors": defaults.get("send_to_coauthors", True),
+                "send_to_reviewer": defaults.get("send_to_reviewer", False),
+                "send_to_managers": defaults.get("send_to_managers", False),
+                "send_to_layout_reviewers": defaults.get("send_to_layout_reviewers", False),
+            },
+        )
 
     templates_qs = EmailTemplate.objects.filter(
         conference=conference,
