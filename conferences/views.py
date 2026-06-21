@@ -53,7 +53,7 @@ from .forms import (
 )
 
 from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
-from .email_defaults import OFFICIAL_EMAIL_EVENTS, DEFAULT_EMAIL_TEMPLATES_2026
+from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
 
@@ -128,31 +128,6 @@ def sync_content_review_start_status(submission):
     submission.status = next_status
     submission.save(update_fields=["status", "updated_at"])
     return next_status == "under_review"
-
-
-def get_dashboard_judge_decision(submission):
-    """Return the explicit judge decision, with safe fallbacks for legacy rows.
-
-    The judge_decision field was added after some papers had already received
-    decisions. For accepted/rejected papers the old status can be mapped safely.
-    For revision_required papers, the old data cannot distinguish minor from
-    major revision, so those rows stay empty until the judge saves a decision.
-    """
-    if submission.judge_decision:
-        decision = submission.judge_decision
-    else:
-        legacy_status_to_decision = {
-            "accepted_for_layout": "accepted_for_layout",
-            "layout_revision_required": "accepted_for_layout",
-            "layout_revision_submitted": "accepted_for_layout",
-            "final_accepted": "accepted_for_layout",
-            "accepted": "accepted_for_layout",
-            "rejected": "rejected",
-        }
-        decision = legacy_status_to_decision.get(submission.status, "")
-
-    decision_labels = dict(Submission.JUDGE_DECISION_CHOICES)
-    return decision, decision_labels.get(decision, "")
 
 
 def mark_content_review_completed_if_ready(submission):
@@ -1068,7 +1043,7 @@ def send_revision_to_reviewers(request, submission_id):
 
     messages.success(
         request,
-        f"Revised paper round {submission.revision_round} has been sent back to {reviewer_count} reviewer(s)."
+        f"Revision files for round {submission.revision_round} have been sent back to {reviewer_count} reviewer(s)."
     )
     return redirect("submission_result", submission_id=submission.id)
 
@@ -1155,10 +1130,6 @@ def judge_dashboard(request):
 
         avg_auto_score = reviews.aggregate(Avg("auto_score"))["auto_score__avg"]
 
-        judge_decision, judge_decision_display = get_dashboard_judge_decision(
-            submission
-        )
-
         data.append({
             "submission": submission,
             "reviews": reviews,
@@ -1175,8 +1146,9 @@ def judge_dashboard(request):
             "declined_reviewer_count": declined_reviewer_count,
             "required_reviewer_count": REQUIRED_ACCEPTED_CONTENT_REVIEWERS,
             "avg_score": avg_auto_score,
-            "judge_decision": judge_decision,
-            "judge_decision_display": judge_decision_display,
+            "judge_decision": submission.judge_decision,
+            "judge_decision_display": submission.get_judge_decision_display()
+            if submission.judge_decision else "",
         })
 
     return render(request, "conferences/judge_dashboard.html", {
@@ -1230,16 +1202,6 @@ def remove_reviewer_assignment(request, assignment_id):
         reviewer=assignment.reviewer,
     ).exists()
 
-    # Notify the reviewer while the assignment object still exists, so the
-    # template can render reviewer name, manuscript details and deadlines.
-    cancelled_recipients = send_event_email(
-        "review_invitation_cancelled",
-        submission,
-        request=request,
-        reviewer=assignment.reviewer,
-        assignment=assignment,
-    )
-
     assignment.delete()
 
     sync_content_review_start_status(submission)
@@ -1249,11 +1211,6 @@ def remove_reviewer_assignment(request, assignment_id):
 
     if existing_review:
         message += " The submitted review was kept in the system."
-
-    if cancelled_recipients:
-        message += " Cancellation email was sent to the reviewer."
-    else:
-        message += " Cancellation email was not sent; please check the email log/template settings."
 
     messages.success(request, message)
     return redirect(redirect_url)
@@ -1349,29 +1306,6 @@ def email_templates(request, slug):
 
     if not is_manager:
         return redirect("/")
-
-    # Ensure newly added official workflow templates are visible in the
-    # email settings page before the first real workflow action uses them.
-    for event in OFFICIAL_EMAIL_EVENTS:
-        defaults = DEFAULT_EMAIL_TEMPLATES_2026.get(event)
-
-        if not defaults:
-            continue
-
-        EmailTemplate.objects.get_or_create(
-            conference=conference,
-            event=event,
-            defaults={
-                "enabled": defaults.get("enabled", True),
-                "subject": defaults.get("subject", ""),
-                "body": defaults.get("body", ""),
-                "send_to_author": defaults.get("send_to_author", True),
-                "send_to_coauthors": defaults.get("send_to_coauthors", True),
-                "send_to_reviewer": defaults.get("send_to_reviewer", False),
-                "send_to_managers": defaults.get("send_to_managers", False),
-                "send_to_layout_reviewers": defaults.get("send_to_layout_reviewers", False),
-            },
-        )
 
     templates_qs = EmailTemplate.objects.filter(
         conference=conference,
@@ -2168,6 +2102,28 @@ def conference_submissions(request, slug):
         }
     )
 
+def _replace_submission_file(submission, field_name, uploaded_file, filename):
+    """Replace one FileField on a submission without immediately saving the model."""
+    current_file = getattr(submission, field_name, None)
+
+    if current_file and getattr(current_file, "name", ""):
+        current_file.delete(save=False)
+
+    if uploaded_file:
+        try:
+            uploaded_file.seek(0)
+        except Exception:
+            pass
+
+        getattr(submission, field_name).save(
+            filename,
+            uploaded_file,
+            save=False,
+        )
+    else:
+        setattr(submission, field_name, None)
+
+
 @login_required
 def upload_revision(request, submission_id):
     submission = get_object_or_404(Submission, id=submission_id)
@@ -2197,48 +2153,78 @@ def upload_revision(request, submission_id):
         messages.error(request, "This submission is not currently open for revision upload.")
         return redirect("my_submissions")
 
+    is_content_revision = submission.status == "revision_required"
+
     if request.method == "POST":
-        form = RevisionUploadForm(request.POST, request.FILES)
+        form = RevisionUploadForm(
+            request.POST,
+            request.FILES,
+            content_revision=is_content_revision,
+        )
 
         if form.is_valid():
             uploaded_file = form.cleaned_data["full_paper_file"]
             extension = Path(uploaded_file.name).suffix.lower()
 
             try:
-                if submission.status == "revision_required":
+                if is_content_revision:
                     next_round = submission.revision_round or 1
-                    filename = f"{submission.paper_code}-r{next_round}{extension}"
+                    base_filename = f"{submission.paper_code}-r{next_round}"
+                    clean_filename = f"{base_filename}-clean{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.revised_paper_file.save(filename, uploaded_file, save=False)
+                    _replace_submission_file(
+                        submission,
+                        "revised_paper_file",
+                        uploaded_file,
+                        clean_filename,
+                    )
+                    _replace_submission_file(
+                        submission,
+                        "full_paper_file",
+                        uploaded_file,
+                        clean_filename,
+                    )
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(filename, uploaded_file, save=False)
+                    response_file = form.cleaned_data.get("response_to_reviewers_file")
+                    response_extension = Path(response_file.name).suffix.lower() if response_file else ""
+                    _replace_submission_file(
+                        submission,
+                        "revision_response_file",
+                        response_file,
+                        f"{base_filename}-response-to-reviewers{response_extension}" if response_file else "",
+                    )
+
+                    marked_file = form.cleaned_data.get("marked_up_manuscript_file")
+                    marked_extension = Path(marked_file.name).suffix.lower() if marked_file else ""
+                    _replace_submission_file(
+                        submission,
+                        "revision_marked_file",
+                        marked_file,
+                        f"{base_filename}-marked-up{marked_extension}" if marked_file else "",
+                    )
 
                     submission.status = "paper_revision_completed"
-                    success_message = "Revised paper uploaded successfully. It is now ready for the judge to review."
+                    success_message = (
+                        "Revision files uploaded successfully. "
+                        "They are now ready for the judge to review and send to reviewers."
+                    )
 
                 else:
                     next_round = submission.layout_revision_round or 1
                     filename = f"{submission.paper_code}-layout-r{next_round}{extension}"
 
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.layout_revised_paper_file.save(filename, uploaded_file, save=False)
-
-                    try:
-                        uploaded_file.seek(0)
-                    except Exception:
-                        pass
-                    submission.full_paper_file.save(filename, uploaded_file, save=False)
+                    _replace_submission_file(
+                        submission,
+                        "layout_revised_paper_file",
+                        uploaded_file,
+                        filename,
+                    )
+                    _replace_submission_file(
+                        submission,
+                        "full_paper_file",
+                        uploaded_file,
+                        filename,
+                    )
 
                     submission.status = "accepted_for_layout"
                     success_message = "Corrected layout version uploaded successfully. It is now ready for layout review."
@@ -2251,7 +2237,7 @@ def upload_revision(request, submission_id):
                 return redirect("upload_revision", submission_id=submission.id)
 
             if submission.status == "paper_revision_completed":
-                # Notify judge/manager that the author uploaded a revised paper.
+                # Notify judge/manager that the author uploaded revision files.
                 # Do NOT notify reviewers here. Reviewers receive the re-review
                 # invitation only after the judge clicks the Send button.
                 send_event_email("revision_uploaded", submission, request=request)
@@ -2262,11 +2248,12 @@ def upload_revision(request, submission_id):
             messages.success(request, success_message)
             return redirect("my_submissions")
     else:
-        form = RevisionUploadForm()
+        form = RevisionUploadForm(content_revision=is_content_revision)
 
     return render(request, "conferences/upload_revision.html", {
         "submission": submission,
         "form": form,
+        "is_content_revision": is_content_revision,
     })
 
 @login_required

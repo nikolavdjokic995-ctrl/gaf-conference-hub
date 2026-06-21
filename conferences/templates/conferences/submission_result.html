@@ -94,6 +94,39 @@
                 Download original paper
             </a>
         {% endif %}
+
+
+        {% if submission.revision_file_items %}
+            <div style="
+                margin-top:22px;
+                background:#f0fdf4;
+                border:1px solid #bbf7d0;
+                border-radius:14px;
+                padding:18px;
+            ">
+                <h3 style="margin-top:0; color:#0d5c2f;">Author revision files</h3>
+                <p style="margin-top:0; color:#374151; line-height:1.6;">
+                    These files will be available to reviewers when you use the button below.
+                </p>
+                <ul style="margin:0; padding-left:20px; line-height:2;">
+                    {% for revision_file in submission.revision_file_items %}
+                        <li>
+                            <strong>{{ revision_file.label }}</strong>
+                            {% if revision_file.required %}
+                                <span style="background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:bold;">Required</span>
+                            {% else %}
+                                <span style="background:#dbeafe;color:#1d4ed8;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:bold;">Optional</span>
+                            {% endif %}
+                            <br>
+                            <a href="{{ revision_file.file.url }}" target="_blank" style="color:#2563eb;font-weight:bold;">
+                                Download file
+                            </a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        {% endif %}
+
         {% if can_manage and submission.status == "paper_revision_completed" %}
             <form method="post"
                   action="{% url 'send_revision_to_reviewers' submission.id %}"
@@ -109,7 +142,7 @@
                             font-weight:bold;
                             cursor:pointer;
                         ">
-                    Send revised paper to reviewers
+                    Send revision files to reviewers
                 </button>
             </form>
         {% endif %}

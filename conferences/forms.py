@@ -21,6 +21,7 @@ MAX_ABSTRACT_WORDS = 300
 MAX_PAPER_UPLOAD_MB = 50
 MAX_PAPER_UPLOAD_BYTES = MAX_PAPER_UPLOAD_MB * 1024 * 1024
 ALLOWED_PAPER_EXTENSIONS = [".doc", ".docx"]
+ALLOWED_REVISION_SUPPORT_EXTENSIONS = [".doc", ".docx", ".pdf"]
 
 
 TITLE_CHOICES = [
@@ -920,30 +921,93 @@ class JudgeDecisionForm(forms.Form):
 class RevisionUploadForm(forms.Form):
 
     full_paper_file = forms.FileField(
-        label="Upload revised full paper file",
-        help_text="Accepted formats: DOC/DOCX only. Maximum file size: 50 MB."
+        label="Revised version of the manuscript (clean file)",
+        help_text="Required. Accepted formats: DOC/DOCX only. Maximum file size: 50 MB."
+    )
+
+    response_to_reviewers_file = forms.FileField(
+        required=False,
+        label="Response to the Reviewers",
+        help_text="Optional. Accepted formats: DOC, DOCX or PDF. Maximum file size: 50 MB."
+    )
+
+    marked_up_manuscript_file = forms.FileField(
+        required=False,
+        label="Marked-up version of the revised manuscript showing all changes",
+        help_text="Optional. Accepted formats: DOC, DOCX or PDF. Maximum file size: 50 MB."
     )
 
     def __init__(self, *args, **kwargs):
+        self.content_revision = kwargs.pop("content_revision", True)
         super().__init__(*args, **kwargs)
+
         self.fields["full_paper_file"].widget.attrs.update({
             "accept": ".doc,.docx",
         })
 
+        if self.content_revision:
+            self.fields["response_to_reviewers_file"].widget.attrs.update({
+                "accept": ".doc,.docx,.pdf",
+            })
+            self.fields["marked_up_manuscript_file"].widget.attrs.update({
+                "accept": ".doc,.docx,.pdf",
+            })
+        else:
+            self.fields["full_paper_file"].label = "Upload corrected layout file"
+            self.fields["full_paper_file"].help_text = (
+                "Accepted formats: DOC/DOCX only. Maximum file size: 50 MB."
+            )
+            self.fields.pop("response_to_reviewers_file", None)
+            self.fields.pop("marked_up_manuscript_file", None)
+
+    def _validate_file_size(self, file, label):
+        if file and file.size > MAX_PAPER_UPLOAD_BYTES:
+            raise forms.ValidationError(
+                f"{label} must be smaller than {MAX_PAPER_UPLOAD_MB} MB."
+            )
+
+    def _validate_extension(self, file, allowed_extensions, error_message):
+        if not file:
+            return
+
+        file_name = file.name.lower()
+
+        if not any(file_name.endswith(ext) for ext in allowed_extensions):
+            raise forms.ValidationError(error_message)
+
     def clean_full_paper_file(self):
         file = self.cleaned_data.get("full_paper_file")
 
-        if file:
-            file_name = file.name.lower()
-            if not any(file_name.endswith(ext) for ext in ALLOWED_PAPER_EXTENSIONS):
-                raise forms.ValidationError(
-                    "Please upload the revised paper in Word format only (.doc or .docx). PDF files are not accepted."
-                )
+        self._validate_extension(
+            file,
+            ALLOWED_PAPER_EXTENSIONS,
+            "Please upload the revised manuscript in Word format only (.doc or .docx).",
+        )
+        self._validate_file_size(file, "The revised manuscript file")
 
-            if file.size > MAX_PAPER_UPLOAD_BYTES:
-                raise forms.ValidationError(
-                    f"The revised paper file must be smaller than {MAX_PAPER_UPLOAD_MB} MB."
-                )
+        return file
+
+    def clean_response_to_reviewers_file(self):
+        file = self.cleaned_data.get("response_to_reviewers_file")
+
+        self._validate_extension(
+            file,
+            ALLOWED_REVISION_SUPPORT_EXTENSIONS,
+            "Please upload the response to reviewers as .doc, .docx or .pdf.",
+        )
+        self._validate_file_size(file, "The response to reviewers file")
+
+        return file
+
+    def clean_marked_up_manuscript_file(self):
+        file = self.cleaned_data.get("marked_up_manuscript_file")
+
+        self._validate_extension(
+            file,
+            ALLOWED_REVISION_SUPPORT_EXTENSIONS,
+            "Please upload the marked-up manuscript as .doc, .docx or .pdf.",
+        )
+        self._validate_file_size(file, "The marked-up manuscript file")
 
         return file
 

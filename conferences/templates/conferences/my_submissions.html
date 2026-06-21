@@ -200,6 +200,26 @@
                     </div>
                 {% endif %}
 
+                {% if submission.revision_file_items %}
+                    <div class="info-box">
+                        <h3 style="margin-top:0;">Uploaded revision files</h3>
+                        <ul style="margin-bottom:0; line-height:2;">
+                            {% for revision_file in submission.revision_file_items %}
+                                <li>
+                                    <strong>{{ revision_file.label }}</strong>
+                                    {% if revision_file.required %}
+                                        <span class="status" style="background:#fee2e2;color:#991b1b;">Required</span>
+                                    {% else %}
+                                        <span class="status" style="background:#dbeafe;color:#1d4ed8;">Optional</span>
+                                    {% endif %}
+                                    <br>
+                                    <a class="btn btn-outline" href="{{ revision_file.file.url }}" target="_blank">Download file</a>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+
                 <div>
                     {% if submission.full_paper_file %}
                         <a class="btn btn-blue" href="{{ submission.full_paper_file.url }}" target="_blank">
@@ -213,7 +233,7 @@
 
                     {% if submission.status == "revision_required" %}
                         <a class="btn btn-orange" href="{% url 'upload_revision' submission.id %}">
-                            Upload revised paper
+                            Upload revision files
                         </a>
                     {% endif %}
                 </div>

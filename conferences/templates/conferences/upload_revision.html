@@ -3,13 +3,13 @@
 <head>
     <title>Upload revision</title>
     <style>
-        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}.container{max-width:850px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}h1{color:#14532d;margin-top:0}.notice{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:24px;line-height:1.7}.message{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:16px;margin-top:12px}label{display:block;font-weight:bold;margin:18px 0 8px}input{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:12px}button{margin-top:22px;background:#16a34a;color:white;border:0;border-radius:10px;padding:13px 20px;font-weight:bold;cursor:pointer}.back{display:inline-block;margin-top:18px;color:#2563eb;text-decoration:none;font-weight:bold}
+        body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:white;padding:22px 45px;font-size:28px;font-weight:bold}.container{max-width:900px;margin:45px auto;background:white;padding:38px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.10)}h1{color:#14532d;margin-top:0}.notice{background:#f9fafb;border:1px solid #e5e7eb;border-radius:14px;padding:18px;margin-bottom:24px;line-height:1.7}.message{background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:16px;margin-top:12px}.upload-card{border:1px solid #e5e7eb;background:#f9fafb;border-radius:14px;padding:18px;margin-bottom:18px}.required{display:inline-block;background:#fee2e2;color:#991b1b;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:bold}.optional{display:inline-block;background:#dbeafe;color:#1d4ed8;padding:3px 8px;border-radius:999px;font-size:12px;font-weight:bold}label{display:block;font-weight:bold;margin:0 0 8px;color:#14532d}input{width:100%;box-sizing:border-box;border:1px solid #d1d5db;border-radius:10px;padding:12px;background:white}.help{font-size:13px;color:#6b7280;margin:8px 0 0;line-height:1.5}.errors{color:#b91c1c;font-weight:bold;margin:8px 0}.form-errors{background:#fee2e2;color:#991b1b;border-radius:12px;padding:12px;margin-bottom:16px}button{margin-top:10px;background:#16a34a;color:white;border:0;border-radius:10px;padding:13px 20px;font-weight:bold;cursor:pointer}.back{display:inline-block;margin-top:18px;color:#2563eb;text-decoration:none;font-weight:bold}
     </style>
 </head>
 <body>
 <div class="topbar">GAF Conference Hub</div>
 <div class="container">
-    <h1>Upload revised paper</h1>
+    <h1>{% if is_content_revision %}Upload revision files{% else %}Upload corrected layout file{% endif %}</h1>
 
     <div class="notice">
         <strong>Paper:</strong> {{ submission.title }}<br>
@@ -26,7 +26,43 @@
 
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
-        {{ form.as_p }}
+
+        {% if form.non_field_errors %}
+            <div class="form-errors">{{ form.non_field_errors }}</div>
+        {% endif %}
+
+        <div class="upload-card">
+            <label for="{{ form.full_paper_file.id_for_label }}">
+                {{ form.full_paper_file.label }}
+                <span class="required">Required</span>
+            </label>
+            {{ form.full_paper_file }}
+            {% if form.full_paper_file.errors %}<div class="errors">{{ form.full_paper_file.errors }}</div>{% endif %}
+            <div class="help">{{ form.full_paper_file.help_text }}</div>
+        </div>
+
+        {% if is_content_revision %}
+            <div class="upload-card">
+                <label for="{{ form.response_to_reviewers_file.id_for_label }}">
+                    {{ form.response_to_reviewers_file.label }}
+                    <span class="optional">Optional</span>
+                </label>
+                {{ form.response_to_reviewers_file }}
+                {% if form.response_to_reviewers_file.errors %}<div class="errors">{{ form.response_to_reviewers_file.errors }}</div>{% endif %}
+                <div class="help">{{ form.response_to_reviewers_file.help_text }}</div>
+            </div>
+
+            <div class="upload-card">
+                <label for="{{ form.marked_up_manuscript_file.id_for_label }}">
+                    {{ form.marked_up_manuscript_file.label }}
+                    <span class="optional">Optional</span>
+                </label>
+                {{ form.marked_up_manuscript_file }}
+                {% if form.marked_up_manuscript_file.errors %}<div class="errors">{{ form.marked_up_manuscript_file.errors }}</div>{% endif %}
+                <div class="help">{{ form.marked_up_manuscript_file.help_text }}</div>
+            </div>
+        {% endif %}
+
         <button type="submit">Upload revision</button>
     </form>
 

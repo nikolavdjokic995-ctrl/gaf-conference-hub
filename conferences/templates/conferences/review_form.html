@@ -174,8 +174,32 @@
         </div>
 
         <div class="download">
-            File for review:
-            <a href="{% url 'download_review_paper' submission.id %}" target="_blank">Download anonymized paper</a>
+            <div style="margin-bottom:8px;">Files for review:</div>
+            <a href="{% url 'download_review_paper' submission.id %}" target="_blank">
+                Download manuscript for review
+            </a>
+
+            {% if submission.revision_response_file or submission.revision_marked_file %}
+                <div class="help" style="margin-top:12px;">
+                    Additional files uploaded by the author for this revision:
+                </div>
+                <ul style="margin:8px 0 0; padding-left:20px; line-height:1.9;">
+                    {% if submission.revision_response_file %}
+                        <li>
+                            <a href="{{ submission.revision_response_file.url }}" target="_blank">
+                                Response to the Reviewers
+                            </a>
+                        </li>
+                    {% endif %}
+                    {% if submission.revision_marked_file %}
+                        <li>
+                            <a href="{{ submission.revision_marked_file.url }}" target="_blank">
+                                Marked-up version of the revised manuscript showing all changes
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            {% endif %}
         </div>
     </div>
 

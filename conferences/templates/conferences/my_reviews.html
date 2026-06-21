@@ -56,6 +56,18 @@
                 {% elif assignment.invitation_status == "accepted" %}
                     <a class="btn btn-outline" href="{% url 'download_review_paper' assignment.submission.id %}" target="_blank">Download paper for review</a>
                     <a class="btn" href="{% url 'review_submission' assignment.submission.id %}">Open review</a>
+
+                    {% if assignment.submission.revision_response_file or assignment.submission.revision_marked_file %}
+                        <div class="meta" style="margin-top:12px;">
+                            <strong>Additional revision files:</strong><br>
+                            {% if assignment.submission.revision_response_file %}
+                                <a href="{{ assignment.submission.revision_response_file.url }}" target="_blank">Response to the Reviewers</a><br>
+                            {% endif %}
+                            {% if assignment.submission.revision_marked_file %}
+                                <a href="{{ assignment.submission.revision_marked_file.url }}" target="_blank">Marked-up version of the revised manuscript showing all changes</a><br>
+                            {% endif %}
+                        </div>
+                    {% endif %}
                 {% endif %}
             </div>
         {% endfor %}

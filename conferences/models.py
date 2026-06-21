@@ -379,7 +379,24 @@ class Submission(models.Model):
         upload_to="revised_papers/",
         blank=True,
         null=True,
-        max_length=500
+        max_length=500,
+        help_text="Revised version of the manuscript (clean file)."
+    )
+
+    revision_response_file = models.FileField(
+        upload_to="revision_response_files/",
+        blank=True,
+        null=True,
+        max_length=500,
+        help_text="Author response to the reviewers."
+    )
+
+    revision_marked_file = models.FileField(
+        upload_to="revision_marked_papers/",
+        blank=True,
+        null=True,
+        max_length=500,
+        help_text="Marked-up revised manuscript showing all changes."
     )
 
     layout_revised_paper_file = models.FileField(
@@ -417,6 +434,33 @@ class Submission(models.Model):
             topics.append(self.secondary_topic)
 
         return topics
+
+    def revision_file_items(self):
+        """Return uploaded author revision files in the expected workflow order."""
+        items = []
+
+        if self.revised_paper_file:
+            items.append({
+                "label": "Revised version of the manuscript (clean file)",
+                "file": self.revised_paper_file,
+                "required": True,
+            })
+
+        if self.revision_response_file:
+            items.append({
+                "label": "Response to the Reviewers",
+                "file": self.revision_response_file,
+                "required": False,
+            })
+
+        if self.revision_marked_file:
+            items.append({
+                "label": "Marked-up version of the revised manuscript showing all changes",
+                "file": self.revision_marked_file,
+                "required": False,
+            })
+
+        return items
 
 
     def original_author_file(self):

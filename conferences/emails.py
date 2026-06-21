@@ -158,6 +158,54 @@ def format_date(value):
         return str(value)
 
 
+def file_absolute_url(request, file_field):
+    if not file_field:
+        return ""
+
+    try:
+        url = file_field.url
+    except Exception:
+        return ""
+
+    if request:
+        return request.build_absolute_uri(url)
+
+    return url
+
+
+def revision_file_lines(submission, request=None):
+    if not submission:
+        return ""
+
+    lines = []
+
+    if getattr(submission, "revised_paper_file", None):
+        clean_file_url = absolute_url(request, "download_review_paper", submission.id)
+        if clean_file_url:
+            lines.append(
+                "Revised version of the manuscript (clean file): "
+                f"{clean_file_url}"
+            )
+
+    support_files = [
+        (
+            "Response to the Reviewers",
+            getattr(submission, "revision_response_file", None),
+        ),
+        (
+            "Marked-up version of the revised manuscript showing all changes",
+            getattr(submission, "revision_marked_file", None),
+        ),
+    ]
+
+    for label, file_field in support_files:
+        url = file_absolute_url(request, file_field)
+        if url:
+            lines.append(f"{label}: {url}")
+
+    return "\n".join(lines)
+
+
 def build_email_context(submission=None, reviewer=None, request=None, extra=None, assignment=None, conference=None):
     assignment = find_assignment(submission=submission, reviewer=reviewer, assignment=assignment)
     if assignment and not submission:
@@ -260,6 +308,10 @@ def build_email_context(submission=None, reviewer=None, request=None, extra=None
         "editor_comments": submission.final_comment if submission else "",
         "reviewer_comments": "",
         "revision_deadline": format_date(getattr(submission, "author_revision_deadline", None)) if submission else "",
+        "revision_clean_file_link": absolute_url(request, "download_review_paper", submission.id) if submission and getattr(submission, "revised_paper_file", None) else "",
+        "revision_response_file_link": file_absolute_url(request, getattr(submission, "revision_response_file", None)) if submission else "",
+        "revision_marked_file_link": file_absolute_url(request, getattr(submission, "revision_marked_file", None)) if submission else "",
+        "revision_files_for_review": revision_file_lines(submission, request),
         "layout_deadline": "",
         "temporary_password": "",
         "decline_reason": assignment.decline_reason if assignment else "",
@@ -410,6 +462,12 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
     )
     subject = render_template_text(template.subject, context).strip()
     body = render_template_text(template.body, context).strip()
+
+    if event == "rereview_invitation" and context.get("revision_files_for_review"):
+        revision_files_header = "Revision files uploaded by the author:"
+        if revision_files_header not in body:
+            body = f"{body}\n\n{revision_files_header}\n{context['revision_files_for_review']}"
+
     recipients = recipients_for_template(template, submission=submission, reviewer=reviewer)
 
     if not recipients:
@@ -512,6 +570,10 @@ def preview_template(template, submission=None, reviewer=None, request=None):
             "editor_comments": "There are no comments.",
             "reviewer_comments": "Reviewer comments will appear here.",
             "revision_deadline": "01.05.2026.",
+            "revision_clean_file_link": "https://example.com/download-review-paper/1/",
+            "revision_response_file_link": "https://example.com/response-to-reviewers.pdf",
+            "revision_marked_file_link": "https://example.com/revision-marked.docx",
+            "revision_files_for_review": "Revised version of the manuscript (clean file): https://example.com/download-review-paper/1/\nResponse to the Reviewers: https://example.com/response-to-reviewers.pdf\nMarked-up version of the revised manuscript showing all changes: https://example.com/revision-marked.docx",
             "layout_deadline": "22.03.2026.",
             "temporary_password": "temporary-password",
             "decline_reason": "Reviewer is not available to complete the review within the proposed period.",
