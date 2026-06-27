@@ -14,7 +14,9 @@
         .label { font-size:13px; color:#52616b; font-weight:700; }
         .btn { display:inline-block; margin-top:12px; padding:10px 14px; background:#16a34a; color:white; text-decoration:none; border:0; border-radius:8px; cursor:pointer; font-weight:700; }
         .btn.secondary { background:#64748b; }
-        .section-title { color:#14532d; margin:28px 0 12px; }
+        .section-title { color:#14532d; margin:28px 0 8px; }
+        .section-note { margin:0 0 12px; color:#52616b; font-size:14px; }
+        .table-wrap { width:100%; overflow-x:auto; }
         table { width:100%; border-collapse:collapse; overflow:hidden; }
         th, td { padding:11px; border-bottom:1px solid #e5e7eb; text-align:left; vertical-align:top; font-size:14px; }
         th { background:#e8f8ef; color:#064e3b; }
@@ -84,15 +86,18 @@
         </tbody>
     </table>
 
-    <h2 class="section-title">Recent email logs</h2>
-    <table>
-        <thead><tr><th>Time</th><th>Event</th><th>Paper</th><th>Recipient</th><th>Status</th><th>Message</th></tr></thead>
-        <tbody>
-        {% for log in logs %}
-            <tr><td>{{ log.created_at }}</td><td>{{ log.event }}</td><td>{% if log.submission %}{{ log.submission.paper_code }} — {{ log.submission.title }}{% endif %}</td><td>{{ log.recipient }}</td><td>{{ log.get_status_display }}</td><td>{{ log.message }}</td></tr>
-        {% empty %}<tr><td colspan="6">No logs yet.</td></tr>{% endfor %}
-        </tbody>
-    </table>
+    <h2 class="section-title">Email history</h2>
+    <p class="section-note">Showing all email logs for this conference{% if logs_count %} ({{ logs_count }} total){% endif %}, newest first.</p>
+    <div class="table-wrap">
+        <table>
+            <thead><tr><th>Time</th><th>Event</th><th>Paper</th><th>Recipient</th><th>Status</th><th>Message</th></tr></thead>
+            <tbody>
+            {% for log in logs %}
+                <tr><td>{{ log.created_at }}</td><td>{{ log.event }}</td><td>{% if log.submission %}{{ log.submission.paper_code }} — {{ log.submission.title }}{% endif %}</td><td>{{ log.recipient }}</td><td>{{ log.get_status_display }}</td><td>{{ log.message }}</td></tr>
+            {% empty %}<tr><td colspan="6">No logs yet.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 </body>
 </html>

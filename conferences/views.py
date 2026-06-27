@@ -1316,12 +1316,13 @@ def email_templates(request, slug):
 
     logs = EmailLog.objects.filter(
         conference=conference
-    ).select_related("submission", "template")[:40]
+    ).select_related("submission", "template").order_by("-created_at")
 
     return render(request, "conferences/email_templates.html", {
         "conference": conference,
         "templates": templates,
         "logs": logs,
+        "logs_count": logs.count(),
     })
 
 
@@ -2922,14 +2923,15 @@ def email_health_dashboard(request, slug):
 
     logs = EmailLog.objects.filter(
         conference=conference
-    ).select_related("submission", "template").order_by("-created_at")[:100]
+    ).select_related("submission", "template").order_by("-created_at")
 
-    failed_logs = logs.filter(status="failed")[:20] if hasattr(logs, "filter") else []
+    failed_logs = logs.filter(status="failed")[:20]
 
     return render(request, "conferences/email_health_dashboard.html", {
         "conference": conference,
         "status": status,
         "logs": logs,
+        "logs_count": logs.count(),
         "failed_logs": failed_logs,
     })
 
