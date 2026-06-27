@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils.html import strip_tags
+from django.utils import timezone
 from html import unescape
 
 
@@ -423,6 +424,41 @@ class Submission(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+    status_changed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date and time when the submission entered its current status."
+    )
+
+    def save(self, *args, **kwargs):
+        """Track when the submission status changes.
+
+        This timestamp is used in the manager submissions table to show how
+        long a paper has been in its current status, instead of how long ago
+        it was initially submitted.
+        """
+        now = timezone.now()
+        status_has_changed = False
+
+        if self.pk:
+            previous_status = type(self).objects.filter(pk=self.pk).values_list(
+                "status",
+                flat=True,
+            ).first()
+            status_has_changed = previous_status is not None and previous_status != self.status
+        elif not self.status_changed_at:
+            self.status_changed_at = now
+
+        if status_has_changed:
+            self.status_changed_at = now
+
+            update_fields = kwargs.get("update_fields")
+            if update_fields is not None:
+                update_fields = set(update_fields)
+                update_fields.add("status_changed_at")
+                kwargs["update_fields"] = update_fields
+
+        super().save(*args, **kwargs)
 
     def topic_list(self):
         topics = []
