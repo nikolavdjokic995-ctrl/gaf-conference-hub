@@ -520,6 +520,99 @@ def send_event_email(event, submission, request=None, reviewer=None, extra=None,
     return sent
 
 
+def resend_email_log(log, request=None):
+    """Resend one failed EmailLog to the same recipient only.
+
+    The original EmailLog stores the event, template, submission and recipient,
+    but not the final rendered body. For a resend we therefore render the current
+    email template again using the same submission and, when possible, the same
+    reviewer assignment detected from the failed recipient email.
+    """
+    if log.status != "failed":
+        return False, "Only failed emails can be resent."
+
+    recipient = (log.recipient or "").strip()
+    if not recipient or "@" not in recipient:
+        return False, "This log has no valid recipient email address."
+
+    template = log.template or EmailTemplate.objects.filter(
+        conference=log.conference,
+        event=log.event,
+    ).first()
+
+    if template is None:
+        return False, "No email template was found for this log."
+
+    if not template.enabled:
+        return False, "This email template is disabled. Enable it before resending."
+
+    submission = log.submission
+    assignment = None
+    reviewer = None
+
+    if submission:
+        assignment = ReviewAssignment.objects.filter(
+            submission=submission,
+            reviewer__email__iexact=recipient,
+        ).select_related("reviewer", "submission", "submission__conference").order_by("-assigned_at").first()
+        if assignment:
+            reviewer = assignment.reviewer
+
+    if submission:
+        context = build_email_context(
+            submission=submission,
+            reviewer=reviewer,
+            request=request,
+            assignment=assignment,
+        )
+        subject = render_template_text(template.subject, context).strip()
+        body = render_template_text(template.body, context).strip()
+
+        if log.event == "rereview_invitation" and context.get("revision_files_for_review"):
+            revision_files_header = "Revision files uploaded by the author:"
+            if revision_files_header not in body:
+                body = f"{body}\n\n{revision_files_header}\n{context['revision_files_for_review']}"
+    else:
+        preview = preview_template(template, request=request)
+        subject = preview["subject"]
+        body = preview["body"]
+
+    plain_body, html_body = build_email_bodies(body)
+
+    try:
+        email_message = EmailMultiAlternatives(
+            subject,
+            plain_body,
+            get_platform_from_email(),
+            [recipient],
+        )
+        email_message.attach_alternative(html_body, "text/html")
+        email_message.send()
+        EmailLog.objects.create(
+            conference=log.conference,
+            submission=submission,
+            template=template,
+            event=log.event,
+            recipient=recipient,
+            subject=subject,
+            status="sent",
+            message=f"Resent from failed log #{log.id}.",
+        )
+        return True, f"Email resent to {recipient}."
+    except Exception as exc:
+        EmailLog.objects.create(
+            conference=log.conference,
+            submission=submission,
+            template=template,
+            event=log.event,
+            recipient=recipient,
+            subject=subject,
+            status="failed",
+            message=f"Resend from failed log #{log.id} failed: {exc}",
+        )
+        return False, f"Resend failed: {exc}"
+
+
 def preview_template(template, submission=None, reviewer=None, request=None):
     context = build_email_context(submission=submission, reviewer=reviewer, request=request)
     if not submission:

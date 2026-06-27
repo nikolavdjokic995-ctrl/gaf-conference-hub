@@ -14,6 +14,11 @@
         .label { font-size:13px; color:#52616b; font-weight:700; }
         .btn { display:inline-block; margin-top:12px; padding:10px 14px; background:#16a34a; color:white; text-decoration:none; border:0; border-radius:8px; cursor:pointer; font-weight:700; }
         .btn.secondary { background:#64748b; }
+        .btn.resend { margin-top:0; padding:7px 10px; font-size:12px; background:#2563eb; }
+        .inline-form { margin:0; }
+        .log-sent { color:#166534; font-weight:700; }
+        .log-failed { color:#991b1b; font-weight:700; }
+        .log-skipped { color:#92400e; font-weight:700; }
         .section-title { color:#14532d; margin:28px 0 8px; }
         .section-note { margin:0 0 12px; color:#52616b; font-size:14px; }
         .table-wrap { width:100%; overflow-x:auto; }
@@ -90,11 +95,29 @@
     <p class="section-note">Showing all email logs for this conference{% if logs_count %} ({{ logs_count }} total){% endif %}, newest first.</p>
     <div class="table-wrap">
         <table>
-            <thead><tr><th>Time</th><th>Event</th><th>Paper</th><th>Recipient</th><th>Status</th><th>Message</th></tr></thead>
+            <thead><tr><th>Time</th><th>Event</th><th>Paper</th><th>Recipient</th><th>Status</th><th>Message</th><th>Action</th></tr></thead>
             <tbody>
             {% for log in logs %}
-                <tr><td>{{ log.created_at }}</td><td>{{ log.event }}</td><td>{% if log.submission %}{{ log.submission.paper_code }} — {{ log.submission.title }}{% endif %}</td><td>{{ log.recipient }}</td><td>{{ log.get_status_display }}</td><td>{{ log.message }}</td></tr>
-            {% empty %}<tr><td colspan="6">No logs yet.</td></tr>{% endfor %}
+                <tr>
+                    <td>{{ log.created_at }}</td>
+                    <td>{{ log.event }}</td>
+                    <td>{% if log.submission %}{{ log.submission.paper_code }} — {{ log.submission.title }}{% endif %}</td>
+                    <td>{{ log.recipient }}</td>
+                    <td class="log-{{ log.status }}">{{ log.get_status_display }}</td>
+                    <td>{{ log.message }}</td>
+                    <td>
+                        {% if log.status == "failed" and log.recipient %}
+                            <form class="inline-form" method="post" action="{% url 'resend_failed_email_log' conference.slug log.id %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="next" value="health">
+                                <button class="btn resend" type="submit">Resend</button>
+                            </form>
+                        {% else %}
+                            —
+                        {% endif %}
+                    </td>
+                </tr>
+            {% empty %}<tr><td colspan="7">No logs yet.</td></tr>{% endfor %}
             </tbody>
         </table>
     </div>

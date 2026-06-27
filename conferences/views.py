@@ -52,7 +52,7 @@ from .forms import (
     ConferenceFooterPartnerForm,
 )
 
-from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email
+from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email, resend_email_log
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
@@ -1324,6 +1324,43 @@ def email_templates(request, slug):
         "logs": logs,
         "logs_count": logs.count(),
     })
+
+
+@login_required
+def resend_failed_email_log(request, slug, log_id):
+    conference = get_object_or_404(Conference, slug=slug)
+
+    can_manage = ConferenceRole.objects.filter(
+        conference=conference,
+        user=request.user,
+        role__in=["manager", "judge"]
+    ).exists()
+
+    if not can_manage:
+        return redirect("/")
+
+    redirect_target = request.POST.get("next", "templates")
+
+    if request.method != "POST":
+        if redirect_target == "health":
+            return redirect("email_health_dashboard", slug=conference.slug)
+        return redirect("email_templates", slug=conference.slug)
+
+    log = get_object_or_404(
+        EmailLog.objects.select_related("conference", "submission", "template"),
+        id=log_id,
+        conference=conference,
+    )
+
+    success, message = resend_email_log(log, request=request)
+    if success:
+        messages.success(request, message)
+    else:
+        messages.error(request, message)
+
+    if redirect_target == "health":
+        return redirect("email_health_dashboard", slug=conference.slug)
+    return redirect("email_templates", slug=conference.slug)
 
 
 @login_required
