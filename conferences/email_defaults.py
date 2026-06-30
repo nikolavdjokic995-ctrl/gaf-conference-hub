@@ -15,6 +15,8 @@ OFFICIAL_EMAIL_EVENTS = [
     "reviewer_editor_decision",
     "review_completed_author",
     "accepted_for_layout",
+    "publication_proof_author_approval",
+    "publication_proof_corrections_requested",
     "manuscript_accepted",
     "layout_correction_needed",
     "layout_correction_submitted",
@@ -168,6 +170,59 @@ Green Building International Scientific Conference""",
         "send_to_reviewer": False,
         "send_to_managers": False,
         "send_to_layout_reviewers": False,
+    },
+    "publication_proof_author_approval": {
+        "subject": "Final publication proof approval required – Manuscript: {{ paper_code }}",
+        "body": """Dear Author,
+
+The layout editor has prepared the final publication files for your manuscript:
+
+Manuscript title: {{ paper_title }}
+Manuscript ID: {{ paper_code }}
+
+Please carefully review the final files prepared for publication/printing:
+
+Final Word file: {{ final_publication_word_file_link }}
+Final PDF file: {{ final_publication_pdf_file_link }}
+
+If you agree that the files are suitable for publication, please approve them through the platform. If corrections are required, please submit your comments through the same page.
+
+Author approval page:
+{{ publication_approval_link }}
+
+The manuscript will be placed on the final publication list only after author approval.
+
+Kind Regards,
+The Editorial Office
+Green Building 2026""",
+        "send_to_author": True,
+        "send_to_coauthors": True,
+        "send_to_reviewer": False,
+        "send_to_managers": False,
+        "send_to_layout_reviewers": False,
+    },
+    "publication_proof_corrections_requested": {
+        "subject": "Authors requested layout corrections – Manuscript: {{ paper_code }}",
+        "body": """Dear Layout Editor,
+
+The authors have reviewed the final publication files for the following manuscript and requested corrections before publication:
+
+Manuscript title: {{ paper_title }}
+Manuscript ID: {{ paper_code }}
+
+Author comments:
+{{ author_publication_comment }}
+
+Please open the layout decision page, review the comments, and upload corrected final files when ready:
+{{ layout_decision_link }}
+
+Kind Regards,
+Green Building 2026 Platform""",
+        "send_to_author": False,
+        "send_to_coauthors": False,
+        "send_to_reviewer": False,
+        "send_to_managers": True,
+        "send_to_layout_reviewers": True,
     },
     "manuscript_accepted": {
         "subject": "Manuscript accepted for publication: {{ paper_title }}",

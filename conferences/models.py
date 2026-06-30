@@ -214,7 +214,8 @@ class Submission(models.Model):
         ("accepted_for_layout", "Accepted for layout review"),
         ("layout_revision_required", "Layout corrections requested"),
         ("layout_revision_submitted", "Layout corrected paper submitted"),
-        ("final_accepted", "Final accepted"),
+        ("awaiting_author_publication_approval", "Awaiting author publication approval"),
+        ("final_accepted", "Final approved for publication"),
         ("accepted", "Accepted (legacy)"),
         ("rejected", "Rejected"),
     ]
@@ -351,7 +352,7 @@ class Submission(models.Model):
     )
 
     status = models.CharField(
-        max_length=30,
+        max_length=50,
         choices=STATUS_CHOICES,
         default="submitted",
     )
@@ -411,8 +412,41 @@ class Submission(models.Model):
         upload_to="final_publication_papers/",
         blank=True,
         null=True,
-        help_text="Final print-ready paper uploaded by the layout reviewer.",
+        help_text="Legacy final print-ready paper uploaded by the layout reviewer.",
         max_length=500
+    )
+
+    final_publication_word_file = models.FileField(
+        upload_to="final_publication_word/",
+        blank=True,
+        null=True,
+        help_text="Final Word file prepared by the layout editor for author proof approval.",
+        max_length=500
+    )
+
+    final_publication_pdf_file = models.FileField(
+        upload_to="final_publication_pdf/",
+        blank=True,
+        null=True,
+        help_text="Final PDF file prepared by the layout editor for author proof approval.",
+        max_length=500
+    )
+
+    author_publication_comment = models.TextField(
+        blank=True,
+        help_text="Author comments on final publication proof files."
+    )
+
+    author_publication_decision_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date and time when authors approved or requested corrections to publication proof files."
+    )
+
+    author_publication_approved_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date and time when the author approved final files for publication."
     )
 
     anonymized_paper_file = models.FileField(
@@ -494,6 +528,34 @@ class Submission(models.Model):
                 "label": "Marked-up version of the revised manuscript showing all changes",
                 "file": self.revision_marked_file,
                 "required": False,
+            })
+
+        return items
+
+
+    def final_publication_file_items(self):
+        """Return final publication proof files prepared by the layout editor."""
+        items = []
+
+        if self.final_publication_word_file:
+            items.append({
+                "label": "Final Word file prepared for publication",
+                "file": self.final_publication_word_file,
+                "type": "word",
+            })
+
+        if self.final_publication_pdf_file:
+            items.append({
+                "label": "Final PDF file prepared for publication",
+                "file": self.final_publication_pdf_file,
+                "type": "pdf",
+            })
+
+        if self.final_publication_file and not items:
+            items.append({
+                "label": "Final print-ready file",
+                "file": self.final_publication_file,
+                "type": "legacy",
             })
 
         return items
@@ -954,6 +1016,8 @@ class EmailTemplate(models.Model):
         ("rereview_invitation", "10. Invitation to re-evaluate revised manuscript"),
         ("reviewer_editor_decision", "11. Reviewer notification of editor decision"),
         ("review_completed_author", "12. Review completed – author decision"),
+        ("publication_proof_author_approval", "13a. Author approval required for final publication files"),
+        ("publication_proof_corrections_requested", "13b. Authors requested corrections to final publication files"),
         ("manuscript_accepted", "13. Manuscript accepted for publication"),
         ("layout_correction_needed", "14. Layout correction needed"),
         ("layout_correction_submitted", "15. Author correction submitted"),

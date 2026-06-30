@@ -1,0 +1,27 @@
+<h1>My assigned papers</h1>
+
+<table border="1" cellpadding="10">
+    <tr>
+        <th>Title</th>
+        <th>Conference</th>
+        <th>Role</th>
+        <th>Action</th>
+    </tr>
+
+    {% for assignment in assignments %}
+    <tr>
+        <td>{{ assignment.submission.title }}</td>
+        <td>{{ assignment.submission.conference.title_en }}</td>
+        <td>{{ assignment.role }}</td>
+        <td>
+            <a href="/submission/{{ assignment.submission.id }}/review/">
+                Review
+            </a>
+        </td>
+    </tr>
+    {% empty %}
+    <tr>
+        <td colspan="4">No assigned papers.</td>
+    </tr>
+    {% endfor %}
+</table>

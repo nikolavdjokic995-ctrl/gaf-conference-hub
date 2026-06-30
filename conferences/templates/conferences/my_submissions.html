@@ -117,6 +117,42 @@
         .muted {
             color: #6b7280;
         }
+
+        .proof-box{
+            background:#ecfdf5;
+            border:1px solid #bbf7d0;
+            border-radius:14px;
+            padding:18px;
+            margin:16px 0;
+        }
+
+        .proof-box h3{
+            margin-top:0;
+        }
+
+        .proof-actions{
+            margin-top:12px;
+        }
+
+        .proof-actions label{
+            display:block;
+            margin:8px 0;
+            font-weight:bold;
+        }
+
+        .proof-actions textarea{
+            width:100%;
+            box-sizing:border-box;
+            border:1px solid #d1d5db;
+            border-radius:10px;
+            padding:12px;
+            margin-top:8px;
+        }
+
+        button.btn{
+            border:0;
+            cursor:pointer;
+        }
     </style>
 </head>
 <body>
@@ -185,6 +221,54 @@
                     <p><strong>Content revision round:</strong> {{ submission.revision_round }}</p>
                     <p><strong>Layout revision round:</strong> {{ submission.layout_revision_round }}</p>
                 </div>
+
+
+                {% if submission.status == "awaiting_author_publication_approval" %}
+                    <div class="proof-box">
+                        <h3>Author approval required for final publication files</h3>
+                        <p>
+                            The layout editor has prepared the final publication files. Please review them carefully and confirm whether they are suitable for publication/printing.
+                        </p>
+
+                        {% if submission.final_publication_word_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_word_file.url }}" target="_blank">
+                                Download final Word file
+                            </a>
+                        {% endif %}
+
+                        {% if submission.final_publication_pdf_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_pdf_file.url }}" target="_blank">
+                                Download final PDF file
+                            </a>
+                        {% endif %}
+
+                        {% if submission.final_publication_file and not submission.final_publication_word_file and not submission.final_publication_pdf_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">
+                                Download final print-ready file
+                            </a>
+                        {% endif %}
+
+                        <form method="post" class="proof-actions">
+                            {% csrf_token %}
+                            <input type="hidden" name="publication_action" value="1">
+                            <input type="hidden" name="submission_id" value="{{ submission.id }}">
+
+                            <label>
+                                <input type="radio" name="decision" value="approve" required>
+                                I approve the final files for publication
+                            </label>
+
+                            <label>
+                                <input type="radio" name="decision" value="corrections" required>
+                                I request corrections before publication
+                            </label>
+
+                            <textarea name="comment" rows="5" placeholder="If corrections are needed, please describe them clearly for the layout editors."></textarea>
+
+                            <button type="submit" class="btn btn-green">Submit publication proof decision</button>
+                        </form>
+                    </div>
+                {% endif %}
 
                 {% if submission.final_comment %}
                     <div class="info-box">

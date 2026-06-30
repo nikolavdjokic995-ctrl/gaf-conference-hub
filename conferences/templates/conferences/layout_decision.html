@@ -20,16 +20,30 @@
             </a>
         {% endif %}
 
-        {% if submission.final_publication_file %}
+        {% if submission.final_publication_word_file %}
             <br>
-            <a href="{{ submission.final_publication_file.url }}" target="_blank">
-                Download currently uploaded final print-ready file
+            <a href="{{ submission.final_publication_word_file.url }}" target="_blank">
+                Download currently uploaded final Word file
             </a>
+        {% endif %}
+
+        {% if submission.final_publication_pdf_file %}
+            <br>
+            <a href="{{ submission.final_publication_pdf_file.url }}" target="_blank">
+                Download currently uploaded final PDF file
+            </a>
+        {% endif %}
+
+        {% if submission.author_publication_comment %}
+            <br><br>
+            <strong>Latest author proof comments:</strong><br>
+            {{ submission.author_publication_comment|linebreaksbr }}
         {% endif %}
     </div>
 
     <p style="color:#555;margin-top:-8px;">
-        You can upload a new final print-ready file here. If a final file already exists, the new upload will replace it.
+        You can upload final publication proof files here. If a file already exists, the new upload will replace it.
+        When you select <strong>Final accept</strong>, authors will be asked to approve the final files before the paper enters the final publication list.
     </p>
 
     <form method="post" enctype="multipart/form-data">

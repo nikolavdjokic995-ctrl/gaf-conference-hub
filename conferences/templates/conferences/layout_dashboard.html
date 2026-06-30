@@ -76,6 +76,20 @@
             color:#92400e;
         }
 
+        .badge-waiting{
+            background:#ede9fe;
+            color:#5b21b6;
+        }
+
+        .author-proof-box{
+            background:#fff7ed;
+            border:1px solid #fed7aa;
+            color:#7c2d12;
+            border-radius:12px;
+            padding:14px;
+            margin-top:16px;
+        }
+
         .btn{
             display:inline-block;
             margin-top:14px;
@@ -205,7 +219,9 @@
                     <br>
 
                     <strong>Status:</strong>
-                    {% if submission.status == "final_accepted" %}
+                    {% if submission.status == "awaiting_author_publication_approval" %}
+                        <span class="badge badge-waiting">{{ submission.get_status_display }}</span>
+                    {% elif submission.status == "final_accepted" %}
                         <span class="badge badge-final">{{ submission.get_status_display }}</span>
                     {% elif submission.status == "layout_revision_required" or submission.status == "layout_revision_submitted" %}
                         <span class="badge badge-revision">{{ submission.get_status_display }}</span>
@@ -248,6 +264,17 @@
                     {% endif %}
                 </div>
 
+                {% if submission.status == "awaiting_author_publication_approval" %}
+                    <div class="author-proof-box">
+                        <strong>Author proof:</strong> Waiting for author approval of final publication files.
+                    </div>
+                {% elif submission.author_publication_comment and submission.status == "layout_revision_required" %}
+                    <div class="author-proof-box">
+                        <strong>Author requested corrections before publication:</strong><br>
+                        {{ submission.author_publication_comment|linebreaksbr }}
+                    </div>
+                {% endif %}
+
                 <div class="file-box">
                     <strong>Files</strong><br>
 
@@ -277,9 +304,21 @@
                         </a>
                     {% endif %}
 
+                    {% if submission.final_publication_word_file %}
+                        <a class="btn btn-blue" href="{{ submission.final_publication_word_file.url }}" target="_blank">
+                            Download final Word file
+                        </a>
+                    {% endif %}
+
+                    {% if submission.final_publication_pdf_file %}
+                        <a class="btn btn-blue" href="{{ submission.final_publication_pdf_file.url }}" target="_blank">
+                            Download final PDF file
+                        </a>
+                    {% endif %}
+
                     {% if submission.final_publication_file %}
                         <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">
-                            Download final print-ready paper
+                            Download legacy final print-ready paper
                         </a>
                     {% endif %}
                 </div>
@@ -315,7 +354,8 @@
                 <th>Authors</th>
                 <th>Accepted date</th>
                 <th>Reviewers</th>
-                <th>Final file</th>
+                <th>Author proof</th>
+                <th>Final files</th>
                 <th>Manage</th>
             </tr>
 
@@ -357,15 +397,25 @@
                     </td>
 
                     <td>
-                        {% if submission.final_publication_file %}
-                            <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">
-                                Download final file
-                            </a>
-                        {% elif submission.full_paper_file %}
-                            <a class="btn btn-outline" href="{{ submission.full_paper_file.url }}" target="_blank">
-                                Download current file
-                            </a>
+                        {% if submission.author_publication_approved_at %}
+                            <span class="badge">Approved</span><br>
+                            <span class="small">{{ submission.author_publication_approved_at|date:"d.m.Y. H:i" }}</span>
                         {% else %}
+                            <span class="small">Approved before proof workflow</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        {% if submission.final_publication_word_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_word_file.url }}" target="_blank">Word</a>
+                        {% endif %}
+                        {% if submission.final_publication_pdf_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_pdf_file.url }}" target="_blank">PDF</a>
+                        {% endif %}
+                        {% if submission.final_publication_file and not submission.final_publication_word_file and not submission.final_publication_pdf_file %}
+                            <a class="btn btn-blue" href="{{ submission.final_publication_file.url }}" target="_blank">Legacy file</a>
+                        {% endif %}
+                        {% if not submission.final_publication_word_file and not submission.final_publication_pdf_file and not submission.final_publication_file %}
                             No file
                         {% endif %}
                     </td>

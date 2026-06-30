@@ -46,6 +46,7 @@ from .forms import (
     JudgeDecisionForm,
     RevisionUploadForm,
     LayoutDecisionForm,
+    AuthorPublicationApprovalForm,
     EmailTemplateForm,
     SubmissionSettingsForm,
     ConferenceFooterForm,
@@ -1932,6 +1933,48 @@ def delete_conference_topic(request, topic_id):
 
 @login_required
 def my_submissions(request):
+    if request.method == "POST" and request.POST.get("publication_action"):
+        submission = get_object_or_404(
+            Submission,
+            id=request.POST.get("submission_id"),
+            author=request.user,
+        )
+
+        if submission.status != "awaiting_author_publication_approval":
+            messages.error(request, "This manuscript is not currently waiting for author publication approval.")
+            return redirect("my_submissions")
+
+        form = AuthorPublicationApprovalForm(request.POST)
+
+        if form.is_valid():
+            decision = form.cleaned_data["decision"]
+            comment = (form.cleaned_data.get("comment") or "").strip()
+
+            submission.author_publication_comment = comment
+            submission.author_publication_decision_at = timezone.now()
+
+            if decision == "approve":
+                submission.status = "final_accepted"
+                submission.author_publication_approved_at = timezone.now()
+                submission.save()
+
+                send_event_email("manuscript_accepted", submission, request=request)
+                messages.success(request, "Final publication files have been approved. The paper is now marked as final approved for publication.")
+
+            else:
+                submission.status = "layout_revision_required"
+                submission.layout_revision_message = comment
+                submission.layout_revision_round += 1
+                submission.save()
+
+                send_event_email("publication_proof_corrections_requested", submission, request=request)
+                messages.success(request, "Your correction request has been sent to the layout editors.")
+
+        else:
+            messages.error(request, "Please check the publication approval form and try again.")
+
+        return redirect("my_submissions")
+
     submissions = Submission.objects.filter(
         author=request.user
     ).select_related(
@@ -2312,6 +2355,7 @@ def layout_dashboard(request):
             "accepted_for_layout",
             "layout_revision_required",
             "layout_revision_submitted",
+            "awaiting_author_publication_approval",
         ]
     ).select_related(
         "conference",
@@ -2400,7 +2444,7 @@ def layout_decision(request, submission_id):
     if not can_layout_review:
         return redirect("/")
 
-    if submission.status not in ["accepted_for_layout", "layout_revision_submitted", "layout_revision_required", "final_accepted"]:
+    if submission.status not in ["accepted_for_layout", "layout_revision_submitted", "layout_revision_required", "awaiting_author_publication_approval", "final_accepted"]:
         messages.error(request, "This submission is not currently available for layout review or final file editing.")
         return redirect("layout_dashboard")
 
@@ -2411,27 +2455,52 @@ def layout_decision(request, submission_id):
             status = form.cleaned_data["status"]
             comment = form.cleaned_data["comment"]
             revision_deadline = form.cleaned_data.get("revision_deadline")
-            final_publication_file = form.cleaned_data.get("final_publication_file")
+            final_publication_word_file = form.cleaned_data.get("final_publication_word_file")
+            final_publication_pdf_file = form.cleaned_data.get("final_publication_pdf_file")
 
             previous_status = submission.status
 
-            submission.status = status
             submission.final_comment = comment
 
-            if final_publication_file:
-                extension = Path(final_publication_file.name).suffix.lower()
-                filename = f"{submission.paper_code}-final-publication{extension}"
+            if final_publication_word_file:
+                extension = Path(final_publication_word_file.name).suffix.lower()
+                filename = f"{submission.paper_code}-final-publication-word{extension}"
 
                 try:
-                    final_publication_file.seek(0)
+                    final_publication_word_file.seek(0)
                 except Exception:
                     pass
 
-                submission.final_publication_file.save(
+                submission.final_publication_word_file.save(
                     filename,
-                    final_publication_file,
+                    final_publication_word_file,
                     save=False,
                 )
+
+            if final_publication_pdf_file:
+                filename = f"{submission.paper_code}-final-publication.pdf"
+
+                try:
+                    final_publication_pdf_file.seek(0)
+                except Exception:
+                    pass
+
+                submission.final_publication_pdf_file.save(
+                    filename,
+                    final_publication_pdf_file,
+                    save=False,
+                )
+
+            if status == "final_accepted":
+                # Final accept by the layout editor starts the author proof approval step.
+                # The paper enters the final publication list only after author approval.
+                submission.status = "awaiting_author_publication_approval"
+                submission.author_publication_comment = ""
+                submission.author_publication_decision_at = None
+                submission.author_publication_approved_at = None
+
+            else:
+                submission.status = status
 
             if status == "layout_revision_required":
                 submission.layout_revision_message = comment
@@ -2444,55 +2513,15 @@ def layout_decision(request, submission_id):
 
             if status == "layout_revision_required":
                 send_event_email("layout_correction_needed", submission, request=request)
-            elif status == "final_accepted" and previous_status != "final_accepted":
-
-                decision_reviews_for_email = Review.objects.filter(
-                    submission=submission
-                ).select_related(
-                    "reviewer",
-                    "reviewer__profile"
-                ).order_by(
-                    "review_round",
-                    "reviewer_id"
-                )
-
-                reviewer_author_comment_lines = []
-                visible_reviewer_number = 1
-
-                for review_for_email in decision_reviews_for_email:
-                    comment_for_author = (
-                        review_for_email.comments_for_authors or ""
-                    ).strip()
-
-                    if not comment_for_author:
-                        continue
-
-                    reviewer_author_comment_lines.append(
-                        f"Reviewer {visible_reviewer_number} "
-                        f"(Round {review_for_email.review_round}):\n"
-                        f"{comment_for_author}"
-                    )
-
-                    visible_reviewer_number += 1
-
-                reviewer_comments_for_authors = "\n\n".join(
-                    reviewer_author_comment_lines
-                )
-
-                manuscript_accept_extra = {
-                    "editor_comments": submission.final_comment or "",
-                    "reviewer_comments": reviewer_comments_for_authors,
-                }
-
+            elif status == "final_accepted" and previous_status != "awaiting_author_publication_approval":
                 send_event_email(
-                    "manuscript_accepted",
+                    "publication_proof_author_approval",
                     submission,
                     request=request,
-                    extra=manuscript_accept_extra,
                 )
 
-            if final_publication_file:
-                messages.success(request, "Layout decision saved and final print-ready file uploaded successfully.")
+            if final_publication_word_file or final_publication_pdf_file:
+                messages.success(request, "Layout decision saved and final publication proof files uploaded successfully.")
             else:
                 messages.success(request, "Layout decision saved successfully.")
 

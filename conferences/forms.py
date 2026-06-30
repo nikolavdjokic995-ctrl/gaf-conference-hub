@@ -1033,11 +1033,67 @@ class LayoutDecisionForm(forms.Form):
         required=False,
     )
 
-    final_publication_file = forms.FileField(
-        label="Upload final print-ready paper",
+    final_publication_word_file = forms.FileField(
+        label="Upload final Word file (.doc/.docx)",
         required=False,
-        help_text="Optional. Upload the final version prepared for publication/printing."
+        help_text="Optional. Upload the final Word version prepared for publication/printing.",
+        widget=forms.ClearableFileInput(attrs={"accept": ".doc,.docx"}),
     )
+
+    final_publication_pdf_file = forms.FileField(
+        label="Upload final PDF file (.pdf)",
+        required=False,
+        help_text="Optional. Upload the final PDF version prepared for publication/printing.",
+        widget=forms.ClearableFileInput(attrs={"accept": ".pdf"}),
+    )
+
+    def clean_final_publication_word_file(self):
+        file = self.cleaned_data.get("final_publication_word_file")
+        if file:
+            name = file.name.lower()
+            if not (name.endswith(".doc") or name.endswith(".docx")):
+                raise forms.ValidationError("Please upload the final Word file as .doc or .docx.")
+            if file.size > MAX_PAPER_UPLOAD_BYTES:
+                raise forms.ValidationError(f"The final Word file must be smaller than {MAX_PAPER_UPLOAD_MB} MB.")
+        return file
+
+    def clean_final_publication_pdf_file(self):
+        file = self.cleaned_data.get("final_publication_pdf_file")
+        if file:
+            name = file.name.lower()
+            if not name.endswith(".pdf"):
+                raise forms.ValidationError("Please upload the final PDF file as .pdf.")
+            if file.size > MAX_PAPER_UPLOAD_BYTES:
+                raise forms.ValidationError(f"The final PDF file must be smaller than {MAX_PAPER_UPLOAD_MB} MB.")
+        return file
+
+
+class AuthorPublicationApprovalForm(forms.Form):
+    DECISION_CHOICES = [
+        ("approve", "I approve the final files for publication"),
+        ("corrections", "I request corrections before publication"),
+    ]
+
+    decision = forms.ChoiceField(
+        choices=DECISION_CHOICES,
+        widget=forms.RadioSelect,
+        label="Publication proof decision",
+    )
+
+    comment = forms.CharField(
+        required=False,
+        label="Comments for layout editors",
+        widget=forms.Textarea(attrs={
+            "rows": 5,
+            "placeholder": "If you request corrections, please describe the required changes clearly.",
+        }),
+    )
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("decision") == "corrections" and not (cleaned.get("comment") or "").strip():
+            self.add_error("comment", "Please enter comments if you request corrections.")
+        return cleaned
 class ConferenceFooterForm(forms.ModelForm):
 
     class Meta:
