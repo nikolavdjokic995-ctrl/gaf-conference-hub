@@ -2,7 +2,6 @@
 
 from django.db import migrations, models
 
-
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -10,58 +9,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_background_color',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_background_image',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_background_image_opacity',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_background_image_width',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_card_background',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_card_padding',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_card_radius',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_container_width',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_header_background',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_left_margin',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_logo_width',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_text_color',
-        ),
-        migrations.RemoveField(
-            model_name='conference',
-            name='hub_title_color',
-        ),
         migrations.AddField(
             model_name='submission',
             name='author_publication_approved_at',
