@@ -93,6 +93,39 @@ urlpatterns = [
         ),
         name="password_change_done",
     ),
+
+    path(
+        "password/reset/",
+        auth_views.PasswordResetView.as_view(
+            template_name="conferences/password_reset_form.html",
+            email_template_name="conferences/password_reset_email.html",
+            subject_template_name="conferences/password_reset_subject.txt",
+            success_url="/password/reset/done/",
+        ),
+        name="password_reset",
+    ),
+    path(
+        "password/reset/done/",
+        auth_views.PasswordResetDoneView.as_view(
+            template_name="conferences/password_reset_done.html",
+        ),
+        name="password_reset_done",
+    ),
+    path(
+        "password/reset/<uidb64>/<token>/",
+        auth_views.PasswordResetConfirmView.as_view(
+            template_name="conferences/password_reset_confirm.html",
+            success_url="/password/reset/complete/",
+        ),
+        name="password_reset_confirm",
+    ),
+    path(
+        "password/reset/complete/",
+        auth_views.PasswordResetCompleteView.as_view(
+            template_name="conferences/password_reset_complete.html",
+        ),
+        name="password_reset_complete",
+    ),
     path("register/", register, name="register"),
     path("conference/<slug:slug>/settings/emails/health/", email_health_dashboard, name="email_health_dashboard"),
     path("conference/<slug:slug>/settings/emails/run-automation/", run_email_automation_now, name="run_email_automation_now"),
