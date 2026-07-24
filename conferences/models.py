@@ -562,8 +562,20 @@ class Submission(models.Model):
 
 
     def original_author_file(self):
-        """Return the preserved initial author submission if available."""
-        return self.original_submission_file or self.full_paper_file
+        """Return only the preserved initial author submission.
+
+        Legacy submissions created before ``original_submission_file`` existed
+        may safely fall back to ``full_paper_file`` only while no revision has
+        been uploaded. Once a revision exists, ``full_paper_file`` represents
+        the current working manuscript and must never be labelled as original.
+        """
+        if self.original_submission_file:
+            return self.original_submission_file
+
+        if not self.revised_paper_file and not self.layout_revised_paper_file:
+            return self.full_paper_file
+
+        return None
 
     def __str__(self):
         return self.title

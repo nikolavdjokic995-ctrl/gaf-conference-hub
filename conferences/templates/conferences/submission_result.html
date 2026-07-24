@@ -78,22 +78,25 @@
             <p><strong>Layout revision message:</strong><br>{{ submission.layout_revision_message|linebreaksbr }}</p>
         {% endif %}
 
-        {% if submission.full_paper_file %}
-            <a href="{{ submission.full_paper_file.url }}"
-               target="_blank"
-               style="
-                    display:inline-block;
-                    margin-top:15px;
-                    background:#2563eb;
-                    color:white;
-                    padding:12px 18px;
-                    border-radius:10px;
-                    text-decoration:none;
-                    font-weight:bold;
-               ">
-                Download original paper
-            </a>
-        {% endif %}
+        {# Always use the preserved first author upload here. #}
+        {% with original_paper=submission.original_author_file %}
+            {% if original_paper %}
+                <a href="{{ original_paper.url }}"
+                   target="_blank"
+                   style="
+                        display:inline-block;
+                        margin-top:15px;
+                        background:#2563eb;
+                        color:white;
+                        padding:12px 18px;
+                        border-radius:10px;
+                        text-decoration:none;
+                        font-weight:bold;
+                   ">
+                    Download original paper
+                </a>
+            {% endif %}
+        {% endwith %}
 
 
         {% if submission.revision_file_items %}
