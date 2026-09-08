@@ -21,9 +21,6 @@ th,td{white-space:nowrap}.reviewers-cell{white-space:normal;min-width:260px}
            ← Back to conference overview
         </a>
         {% endif %}
-        <a href="{% url 'participation_dashboard' %}" class="btn btn-decision">
-            Presentation & Attendance Dashboard
-        </a>
     </div>
 
     {% if messages %}{% for message in messages %}<div class="messages">{{ message }}</div>{% endfor %}{% endif %}
