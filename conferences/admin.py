@@ -10,6 +10,9 @@ from .models import (
     Review,
     EmailTemplate,
     EmailLog,
+    ConferenceParticipant,
+    SubmissionParticipation,
+    SubmissionParticipant,
 )
 
 
@@ -603,3 +606,36 @@ class EmailLogAdmin(admin.ModelAdmin):
     list_display = ("created_at", "conference", "event", "recipient", "status")
     list_filter = ("conference", "event", "status")
     search_fields = ("recipient", "subject", "message")
+
+
+@admin.register(ConferenceParticipant)
+class ConferenceParticipantAdmin(admin.ModelAdmin):
+    list_display = ("name", "title", "conference", "email", "affiliation")
+    list_filter = ("conference",)
+    search_fields = ("name", "email", "affiliation")
+
+
+@admin.register(SubmissionParticipation)
+class SubmissionParticipationAdmin(admin.ModelAdmin):
+    list_display = (
+        "submission",
+        "presentation_type",
+        "participation_request_sent_at",
+        "participation_submitted_at",
+        "final_confirmation_request_sent_at",
+        "final_confirmation_submitted_at",
+    )
+    list_filter = ("presentation_type", "submission__conference")
+
+
+@admin.register(SubmissionParticipant)
+class SubmissionParticipantAdmin(admin.ModelAdmin):
+    list_display = (
+        "submission",
+        "participant",
+        "author_order",
+        "planned_attendance",
+        "confirmed_attendance",
+    )
+    list_filter = ("submission__conference", "planned_attendance", "confirmed_attendance")
+    search_fields = ("participant__name", "participant__email", "submission__paper_code", "submission__title")

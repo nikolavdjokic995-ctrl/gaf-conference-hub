@@ -14,10 +14,15 @@ th,td{white-space:nowrap}.reviewers-cell{white-space:normal;min-width:260px}
     <h1>Judge Dashboard</h1>
     <div class="subtitle">Review submissions, reviewer feedback, author revisions and judge decisions.</div>
 
-    <div style="margin-bottom:25px;">
+    <div style="margin-bottom:25px;display:flex;gap:10px;flex-wrap:wrap;">
+        {% if data %}
         <a href="/conference/{{ data.0.submission.conference.slug }}/overview/"
            class="btn btn-view">
            ← Back to conference overview
+        </a>
+        {% endif %}
+        <a href="{% url 'participation_dashboard' %}" class="btn btn-decision">
+            Presentation & Attendance Dashboard
         </a>
     </div>
 

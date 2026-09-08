@@ -322,6 +322,32 @@
                     {% endif %}
                 </div>
 
+                {% if submission.status == "final_accepted" and submission.participation_state %}
+                    {% if submission.participation_state.participation_request_sent_at or submission.participation_state.final_confirmation_request_sent_at %}
+                        <div class="proof-box" style="background:#f0fdf4;border-color:#bbf7d0;">
+                            <h3>Presentation & Attendance</h3>
+                            {% if submission.participation_state.participation_request_sent_at %}
+                                {% if submission.participation_state.participation_response_open %}
+                                    <p>Please provide the presentation type and planned attendance information for all authors of this paper.</p>
+                                    <a class="btn btn-green" href="{% url 'participation_response' submission.id %}">Presentation & Attendance Information</a>
+                                {% elif submission.participation_state.participation_submitted_at %}
+                                    <p><strong>Presentation information submitted.</strong> {{ submission.participation_state.participation_submitted_at|date:"d.m.Y. H:i" }}</p>
+                                {% endif %}
+                            {% endif %}
+
+                            {% if submission.participation_state.final_confirmation_request_sent_at %}
+                                {% if submission.participation_state.participation_request_sent_at %}<hr style="border:0;border-top:1px solid #bbf7d0;margin:18px 0;">{% endif %}
+                                {% if submission.participation_state.final_confirmation_response_open %}
+                                    <p>Please confirm the final conference attendance for every author/co-author.</p>
+                                    <a class="btn btn-blue" href="{% url 'final_attendance_confirmation' submission.id %}">Final Attendance Confirmation</a>
+                                {% elif submission.participation_state.final_confirmation_submitted_at %}
+                                    <p><strong>Final attendance confirmed.</strong> {{ submission.participation_state.final_confirmation_submitted_at|date:"d.m.Y. H:i" }}</p>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                {% endif %}
+
                 {% if submission.status == "revision_required" or submission.status == "accepted_for_layout" or submission.status == "rejected" or submission.status == "final_accepted" or submission.status == "layout_revision_required" %}
 
                     <h3>Reviewer feedback</h3>

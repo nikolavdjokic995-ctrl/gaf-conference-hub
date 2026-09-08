@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Presentation & Attendance Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:#fff;padding:22px 45px;font-size:28px;font-weight:700}.container{max-width:1900px;margin:38px auto;padding:0 24px}.panel{background:#fff;border-radius:18px;padding:30px;box-shadow:0 10px 30px rgba(0,0,0,.08);margin-bottom:30px}h1,h2{color:#14532d;margin-top:0}.subtitle{color:#5b6472;margin-bottom:22px}.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:22px}.btn{display:inline-block;border:0;border-radius:9px;padding:9px 13px;font-weight:700;text-decoration:none;cursor:pointer;font-size:13px}.btn-green{background:#14532d;color:#fff}.btn-blue{background:#2563eb;color:#fff}.btn-gray{background:#374151;color:#fff}.btn-orange{background:#ea580c;color:#fff}.btn-light{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}.btn:disabled{cursor:not-allowed;opacity:.65}.messages{padding:12px 15px;border-radius:10px;background:#ecfdf5;border:1px solid #bbf7d0;color:#166534;margin-bottom:16px}.table-wrap{overflow-x:auto;border:1px solid #e5e7eb;border-radius:14px}table{width:100%;border-collapse:collapse;min-width:1450px}th{background:#14532d;color:#fff;padding:13px;text-align:left;font-size:13px;white-space:nowrap}td{padding:13px;border-bottom:1px solid #e5e7eb;vertical-align:top;font-size:13px}tr:last-child td{border-bottom:0}.paper-title{font-weight:700;color:#14532d;min-width:250px}.small{font-size:12px;color:#6b7280;margin-top:5px}.badge{display:inline-block;padding:6px 9px;border-radius:999px;font-weight:700;font-size:12px}.badge-sent{background:#dcfce7;color:#166534}.badge-pending{background:#fef3c7;color:#92400e}.badge-oral{background:#dbeafe;color:#1d4ed8}.badge-poster{background:#ede9fe;color:#6d28d9}.badge-no{background:#f3f4f6;color:#4b5563}.name-list{margin:0;padding-left:18px;min-width:175px}.name-list li{margin-bottom:5px}.empty{padding:25px;color:#6b7280;text-align:center}.modal{display:none;position:fixed;z-index:1000;left:0;top:0;width:100%;height:100%;overflow:auto;background:rgba(17,24,39,.62);padding:30px}.modal-content{background:#fff;max-width:760px;margin:35px auto;border-radius:16px;padding:26px;box-shadow:0 25px 70px rgba(0,0,0,.28)}.modal-header{display:flex;justify-content:space-between;align-items:center;gap:20px}.close{font-size:28px;cursor:pointer;color:#6b7280;border:0;background:none}.field{margin-top:16px}.field label{display:block;font-weight:700;margin-bottom:7px}.field input,.field textarea{width:100%;border:1px solid #d1d5db;border-radius:9px;padding:11px;font:inherit}.field textarea{resize:vertical;min-height:230px}.modal-note{background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px;padding:11px;color:#4b5563;font-size:13px}.final-table{min-width:760px}.final-table th:nth-child(1){width:70px}.participant-empty{color:#6b7280}.inline-form{display:inline}.reopen{margin-top:7px}.nowrap{white-space:nowrap}@media(max-width:700px){.topbar{padding:18px 20px;font-size:22px}.container{padding:0 12px}.panel{padding:18px}.modal{padding:10px}.modal-content{margin:20px auto;padding:18px}}
+    </style>
+</head>
+<body>
+<div class="topbar">GAF Conference Hub</div>
+<div class="container">
+    <div class="panel">
+        <h1>Presentation & Attendance Dashboard</h1>
+        <div class="subtitle">Final presentation and conference attendance information for papers accepted for publication.</div>
+        <div class="toolbar">
+            <a href="{% url 'judge_dashboard' %}" class="btn btn-gray">← Judge Dashboard</a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}<div class="messages">{{ message }}</div>{% endfor %}
+        {% endif %}
+
+        <div class="table-wrap">
+            {% if rows %}
+            <table>
+                <thead>
+                    <tr>
+                        <th>Paper ID</th>
+                        <th>Paper Title</th>
+                        <th>Participation Request</th>
+                        <th>Present</th>
+                        <th>Presentation / Poster</th>
+                        <th>Planned Attendance</th>
+                        <th>Comments</th>
+                        <th>Final Confirmation</th>
+                        <th>Confirmed Attendance</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for row in rows %}
+                    <tr>
+                        <td class="nowrap"><strong>{{ row.submission.paper_code }}</strong></td>
+                        <td>
+                            <div class="paper-title">{{ row.submission.title }}</div>
+                            <div class="small">{{ row.submission.conference.title_en }}</div>
+                        </td>
+                        <td>
+                            {% if row.participation.participation_request_sent_at %}
+                                <span class="badge badge-sent">Sent</span>
+                                <div class="small">{{ row.participation.participation_request_sent_at|date:"d.m.Y. H:i" }}</div>
+                                {% if row.participation.participation_submitted_at and not row.participation.participation_response_open %}
+                                    <form method="post" action="{% url 'reopen_participation_response' row.submission.id %}" class="reopen">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-light">Reopen response</button>
+                                    </form>
+                                {% elif row.participation.participation_response_open and row.participation.participation_submitted_at %}
+                                    <div class="small">Response reopened</div>
+                                {% endif %}
+                            {% else %}
+                                <button type="button" class="btn btn-green" onclick="openModal('participation-{{ row.submission.id }}')">Send</button>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.participation.presentation_type == 'oral' %}
+                                <span class="badge badge-oral">Oral</span>
+                            {% elif row.participation.presentation_type == 'poster' %}
+                                <span class="badge badge-poster">Poster</span>
+                            {% elif row.participation.presentation_type == 'not_presenting' %}
+                                <span class="badge badge-no">Not presenting</span>
+                            {% elif row.participation.participation_request_sent_at %}
+                                <span class="badge badge-pending">Pending</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if row.participation.presentation_file %}
+                                <a class="btn btn-blue" href="{{ row.participation.presentation_file.url }}" target="_blank">Download</a>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if row.participation.participation_submitted_at %}
+                                {% if row.planned_names %}
+                                    <ul class="name-list">{% for name in row.planned_names %}<li>{{ name }}</li>{% endfor %}</ul>
+                                {% else %}<span class="small">No authors marked Yes</span>{% endif %}
+                            {% elif row.participation.participation_request_sent_at %}
+                                <span class="badge badge-pending">Pending</span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if row.participation.comments %}{{ row.participation.comments|linebreaksbr }}{% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if row.participation.final_confirmation_request_sent_at %}
+                                <span class="badge badge-sent">Sent</span>
+                                <div class="small">{{ row.participation.final_confirmation_request_sent_at|date:"d.m.Y. H:i" }}</div>
+                                {% if row.participation.final_confirmation_submitted_at and not row.participation.final_confirmation_response_open %}
+                                    <form method="post" action="{% url 'reopen_final_attendance_confirmation' row.submission.id %}" class="reopen">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-light">Reopen response</button>
+                                    </form>
+                                {% elif row.participation.final_confirmation_response_open and row.participation.final_confirmation_submitted_at %}
+                                    <div class="small">Response reopened</div>
+                                {% endif %}
+                            {% else %}
+                                <button type="button" class="btn btn-green" onclick="openModal('final-{{ row.submission.id }}')">Send</button>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if row.participation.final_confirmation_submitted_at %}
+                                {% if row.confirmed_names %}
+                                    <ul class="name-list">{% for name in row.confirmed_names %}<li>{{ name }}</li>{% endfor %}</ul>
+                                {% else %}<span class="small">No confirmed attendees</span>{% endif %}
+                            {% elif row.participation.final_confirmation_request_sent_at %}
+                                <span class="badge badge-pending">Pending</span>
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+
+                {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+                <div class="empty">There are currently no papers with status Accepted for publication.</div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% for row in rows %}
+    {% if not row.participation.participation_request_sent_at %}
+    <div id="participation-{{ row.submission.id }}" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Participation Request — {{ row.submission.paper_code }}</h2><button class="close" type="button" onclick="closeModal('participation-{{ row.submission.id }}')">×</button></div>
+            <div class="modal-note">This email will be sent to all available author and co-author email addresses. After successful sending, the Presentation & Attendance form will be activated for the submitting author in My submissions.</div>
+            <form method="post" action="{% url 'send_participation_request' row.submission.id %}" onsubmit="disableSubmit(this)">
+                {% csrf_token %}
+                <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" required></div>
+                <div class="field"><label>Message</label><textarea name="body" required></textarea></div>
+                <div class="toolbar" style="margin-top:18px;margin-bottom:0"><button type="submit" class="btn btn-green submit-button">Send email</button><button type="button" class="btn btn-light" onclick="closeModal('participation-{{ row.submission.id }}')">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if not row.participation.final_confirmation_request_sent_at %}
+    <div id="final-{{ row.submission.id }}" class="modal">
+        <div class="modal-content">
+            <div class="modal-header"><h2>Final Confirmation — {{ row.submission.paper_code }}</h2><button class="close" type="button" onclick="closeModal('final-{{ row.submission.id }}')">×</button></div>
+            <div class="modal-note">This email is sent only to the user who submitted the paper. The default text contains a direct link to the final attendance form and can be edited before sending.</div>
+            <form method="post" action="{% url 'send_final_confirmation' row.submission.id %}" onsubmit="disableSubmit(this)">
+                {% csrf_token %}
+                <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" value="{{ row.final_email_default_subject }}" required></div>
+                <div class="field"><label>Message</label><textarea name="body" required>{{ row.final_email_default_body }}</textarea></div>
+                <div class="toolbar" style="margin-top:18px;margin-bottom:0"><button type="submit" class="btn btn-green submit-button">Send email</button><button type="button" class="btn btn-light" onclick="closeModal('final-{{ row.submission.id }}')">Cancel</button></div>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+    {% endfor %}
+
+    <div class="panel">
+        <div style="display:flex;justify-content:space-between;gap:15px;align-items:center;flex-wrap:wrap">
+            <div><h2 style="margin-bottom:6px">Confirmed Conference Participants</h2><div class="subtitle" style="margin-bottom:0">Each confirmed person is shown only once. Email address is used as the primary deduplication key.</div></div>
+            <a href="{% url 'export_confirmed_participants' %}" class="btn btn-blue">Export to Excel</a>
+        </div>
+        <div class="table-wrap" style="margin-top:20px">
+            <table class="final-table">
+                <thead><tr><th>No.</th><th>Name and Title</th><th>Affiliation</th><th>Email</th></tr></thead>
+                <tbody>
+                {% for participant in confirmed_participants %}
+                    <tr><td>{{ forloop.counter }}</td><td><strong>{{ participant.display_name }}</strong></td><td>{{ participant.affiliation|default:"—" }}</td><td>{{ participant.email|default:"—" }}</td></tr>
+                {% empty %}
+                    <tr><td colspan="4" class="participant-empty">No authors have confirmed attendance yet.</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<script>
+function openModal(id){document.getElementById(id).style.display='block';}
+function closeModal(id){document.getElementById(id).style.display='none';}
+function disableSubmit(form){var button=form.querySelector('.submit-button');if(button){button.disabled=true;button.textContent='Sending...';}}
+window.addEventListener('click',function(event){if(event.target.classList.contains('modal')){event.target.style.display='none';}});
+</script>
+</body>
+</html>

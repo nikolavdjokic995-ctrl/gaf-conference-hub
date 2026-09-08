@@ -14,6 +14,7 @@ from .models import (
     EmailTemplate,
     ConferenceFooterPartner,
     UserProfile,
+    SubmissionParticipation,
 )
 
 
@@ -22,6 +23,7 @@ MAX_PAPER_UPLOAD_MB = 50
 MAX_PAPER_UPLOAD_BYTES = MAX_PAPER_UPLOAD_MB * 1024 * 1024
 ALLOWED_PAPER_EXTENSIONS = [".doc", ".docx"]
 ALLOWED_REVISION_SUPPORT_EXTENSIONS = [".doc", ".docx", ".pdf"]
+ALLOWED_PRESENTATION_EXTENSIONS = [".ppt", ".pptx", ".pdf", ".jpg", ".jpeg", ".png"]
 
 
 TITLE_CHOICES = [
@@ -1094,6 +1096,94 @@ class AuthorPublicationApprovalForm(forms.Form):
         if cleaned.get("decision") == "corrections" and not (cleaned.get("comment") or "").strip():
             self.add_error("comment", "Please enter comments if you request corrections.")
         return cleaned
+class ParticipationEmailForm(forms.Form):
+    subject = forms.CharField(
+        max_length=255,
+        label="Subject",
+        widget=forms.TextInput(attrs={"placeholder": "Email subject"}),
+    )
+    body = forms.CharField(
+        label="Message",
+        widget=forms.Textarea(attrs={"rows": 14, "placeholder": "Write the email message."}),
+    )
+
+
+class ParticipationResponseForm(forms.Form):
+    presentation_type = forms.ChoiceField(
+        choices=SubmissionParticipation.PRESENTATION_CHOICES,
+        widget=forms.RadioSelect,
+        label="Presentation",
+    )
+    presentation_file = forms.FileField(
+        required=False,
+        label="Upload presentation / poster file",
+        help_text=(
+            "Optional. Accepted formats: PPT, PPTX, PDF, JPG, JPEG or PNG. "
+            f"Maximum file size: {MAX_PAPER_UPLOAD_MB} MB."
+        ),
+        widget=forms.ClearableFileInput(attrs={"accept": ".ppt,.pptx,.pdf,.jpg,.jpeg,.png"}),
+    )
+    comments = forms.CharField(
+        required=False,
+        label="Comments",
+        widget=forms.Textarea(attrs={
+            "rows": 5,
+            "placeholder": "Optional comments regarding the presentation or attendance.",
+        }),
+    )
+
+    def __init__(self, *args, participant_links=None, participation=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.participant_links = list(participant_links or [])
+
+        if participation and not self.is_bound:
+            self.fields["presentation_type"].initial = participation.presentation_type
+            self.fields["comments"].initial = participation.comments
+
+        for link in self.participant_links:
+            field_name = f"planned_{link.id}"
+            self.fields[field_name] = forms.ChoiceField(
+                choices=(("yes", "Yes"), ("no", "No")),
+                widget=forms.RadioSelect,
+                label=link.participant.display_name,
+                required=True,
+            )
+            if not self.is_bound and link.planned_attendance is not None:
+                self.fields[field_name].initial = "yes" if link.planned_attendance else "no"
+
+    def clean_presentation_file(self):
+        file = self.cleaned_data.get("presentation_file")
+        if not file:
+            return file
+        file_name = file.name.lower()
+        if not any(file_name.endswith(ext) for ext in ALLOWED_PRESENTATION_EXTENSIONS):
+            raise forms.ValidationError(
+                "Please upload a PPT, PPTX, PDF, JPG, JPEG or PNG file."
+            )
+        if file.size > MAX_PAPER_UPLOAD_BYTES:
+            raise forms.ValidationError(
+                f"The presentation/poster file must be smaller than {MAX_PAPER_UPLOAD_MB} MB."
+            )
+        return file
+
+
+class FinalAttendanceConfirmationForm(forms.Form):
+    def __init__(self, *args, participant_links=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.participant_links = list(participant_links or [])
+
+        for link in self.participant_links:
+            field_name = f"confirmed_{link.id}"
+            self.fields[field_name] = forms.ChoiceField(
+                choices=(("yes", "Yes"), ("no", "No")),
+                widget=forms.RadioSelect,
+                label=link.participant.display_name,
+                required=True,
+            )
+            if not self.is_bound and link.confirmed_attendance is not None:
+                self.fields[field_name].initial = "yes" if link.confirmed_attendance else "no"
+
+
 class ConferenceFooterForm(forms.ModelForm):
 
     class Meta:

@@ -581,6 +581,120 @@ class Submission(models.Model):
         return self.title
 
 
+class ConferenceParticipant(models.Model):
+    """One conference participant identity shared across all of their papers."""
+
+    conference = models.ForeignKey(
+        Conference,
+        on_delete=models.CASCADE,
+        related_name="participants",
+    )
+    name = models.CharField(max_length=255)
+    title = models.CharField(max_length=80, blank=True)
+    affiliation = models.CharField(max_length=255, blank=True)
+    email = models.EmailField(blank=True)
+    normalized_email = models.CharField(max_length=254, blank=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name", "email"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["conference", "normalized_email"],
+                condition=~models.Q(normalized_email=""),
+                name="unique_conference_participant_email",
+            )
+        ]
+
+    def save(self, *args, **kwargs):
+        self.normalized_email = (self.email or "").strip().lower()
+        super().save(*args, **kwargs)
+
+    @property
+    def display_name(self):
+        return f"{self.title} {self.name}".strip()
+
+    def __str__(self):
+        return self.display_name or self.email or f"Participant {self.pk}"
+
+
+class SubmissionParticipation(models.Model):
+    PRESENTATION_CHOICES = [
+        ("not_presenting", "I will not present this paper"),
+        ("oral", "Oral presentation"),
+        ("poster", "Poster presentation"),
+    ]
+
+    submission = models.OneToOneField(
+        Submission,
+        on_delete=models.CASCADE,
+        related_name="participation",
+    )
+
+    participation_request_sent_at = models.DateTimeField(null=True, blank=True)
+    participation_request_subject = models.CharField(max_length=255, blank=True)
+    participation_request_body = models.TextField(blank=True)
+    participation_response_open = models.BooleanField(default=False)
+
+    presentation_type = models.CharField(
+        max_length=30,
+        choices=PRESENTATION_CHOICES,
+        blank=True,
+    )
+    presentation_file = models.FileField(
+        upload_to="conference_presentations/",
+        blank=True,
+        null=True,
+        max_length=500,
+    )
+    comments = models.TextField(blank=True)
+    participation_submitted_at = models.DateTimeField(null=True, blank=True)
+
+    final_confirmation_request_sent_at = models.DateTimeField(null=True, blank=True)
+    final_confirmation_subject = models.CharField(max_length=255, blank=True)
+    final_confirmation_body = models.TextField(blank=True)
+    final_confirmation_response_open = models.BooleanField(default=False)
+    final_confirmation_submitted_at = models.DateTimeField(null=True, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Participation — {self.submission.paper_code or self.submission.title}"
+
+
+class SubmissionParticipant(models.Model):
+    """One ordered paper author with planned and final attendance choices."""
+
+    submission = models.ForeignKey(
+        Submission,
+        on_delete=models.CASCADE,
+        related_name="participation_authors",
+    )
+    participant = models.ForeignKey(
+        ConferenceParticipant,
+        on_delete=models.CASCADE,
+        related_name="submission_links",
+    )
+    author_order = models.PositiveSmallIntegerField(default=1)
+    is_first_author = models.BooleanField(default=False)
+    planned_attendance = models.BooleanField(null=True, blank=True)
+    confirmed_attendance = models.BooleanField(null=True, blank=True)
+
+    class Meta:
+        ordering = ["author_order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["submission", "author_order"],
+                name="unique_submission_author_order",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.submission.paper_code or self.submission_id} — {self.participant}"
+
+
 class ConferenceRole(models.Model):
     ROLE_CHOICES = [
         ("manager", "Paper manager"),

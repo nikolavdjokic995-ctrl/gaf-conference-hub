@@ -58,6 +58,14 @@ from conferences.views import (
     reviewer_topics,
     email_health_dashboard,
     run_email_automation_now,
+    participation_dashboard,
+    send_participation_request,
+    participation_response,
+    reopen_participation_response,
+    send_final_confirmation,
+    final_attendance_confirmation,
+    reopen_final_attendance_confirmation,
+    export_confirmed_participants,
 )
 
 urlpatterns = [
@@ -134,6 +142,8 @@ urlpatterns = [
     path("review-assignment/<int:assignment_id>/remove/", remove_reviewer_assignment, name="remove_reviewer_assignment"),
     path("reviewer-dashboard/", reviewer_dashboard, name="reviewer_dashboard"),
     path("layout-dashboard/", layout_dashboard, name="layout_dashboard"),
+    path("participation-dashboard/", participation_dashboard, name="participation_dashboard"),
+    path("participation-dashboard/export/", export_confirmed_participants, name="export_confirmed_participants"),
 
     path("my-reviews/", my_reviews, name="my_reviews"),
     path("my-submissions/", my_submissions, name="my_submissions"),
@@ -147,6 +157,12 @@ urlpatterns = [
     path("submission/<int:submission_id>/upload-revision/", upload_revision, name="upload_revision"),
     path("submission/<int:submission_id>/send-revision-to-reviewers/", send_revision_to_reviewers, name="send_revision_to_reviewers"),
     path("submission/<int:submission_id>/layout-decision/", layout_decision, name="layout_decision"),
+    path("submission/<int:submission_id>/participation-request/send/", send_participation_request, name="send_participation_request"),
+    path("submission/<int:submission_id>/participation/", participation_response, name="participation_response"),
+    path("submission/<int:submission_id>/participation/reopen/", reopen_participation_response, name="reopen_participation_response"),
+    path("submission/<int:submission_id>/final-confirmation/send/", send_final_confirmation, name="send_final_confirmation"),
+    path("submission/<int:submission_id>/final-attendance/", final_attendance_confirmation, name="final_attendance_confirmation"),
+    path("submission/<int:submission_id>/final-attendance/reopen/", reopen_final_attendance_confirmation, name="reopen_final_attendance_confirmation"),
 
     path("conference/<slug:slug>/overview/", conference_overview, name="conference_overview"),
     path("conference/<slug:slug>/edit-overview/", edit_conference_overview, name="edit_conference_overview"),

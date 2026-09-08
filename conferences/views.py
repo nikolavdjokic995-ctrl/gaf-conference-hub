@@ -3,13 +3,14 @@ import os
 import tempfile
 import urllib.request
 from django.http import HttpResponse
+from django.conf import settings
 from django.core.files import File
 from django.core.files.base import ContentFile
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.db.models import Avg, Count
 from django.db import transaction
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMessage
 from django.contrib.auth import login
 from django.contrib.auth.models import User
 from django.db.models import Q
@@ -32,6 +33,9 @@ from .models import (
     ConferenceTopic,
     ConferenceFooterPartner,
     UserProfile,
+    ConferenceParticipant,
+    SubmissionParticipation,
+    SubmissionParticipant,
 )
 
 from .forms import (
@@ -51,12 +55,16 @@ from .forms import (
     SubmissionSettingsForm,
     ConferenceFooterForm,
     ConferenceFooterPartnerForm,
+    ParticipationEmailForm,
+    ParticipationResponseForm,
+    FinalAttendanceConfirmationForm,
 )
 
-from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email, resend_email_log
+from .emails import send_event_email, preview_template, send_test_template_email, send_conference_role_email, resend_email_log, get_author_emails
 from .email_defaults import OFFICIAL_EMAIL_EVENTS
 from .email_automation import process_scheduled_review_emails, get_email_workflow_status
 from .utils import anonymize_docx
+from .participation import sync_submission_participants, deduplicated_confirmed_participants
 
 
 REQUIRED_ACCEPTED_CONTENT_REVIEWERS = 2
@@ -1984,6 +1992,9 @@ def my_submissions(request):
     ).order_by("-created_at")
 
     for submission in submissions:
+        submission.participation_state = SubmissionParticipation.objects.filter(
+            submission=submission
+        ).first()
         submission.coauthor_rows = []
 
         names = [x.strip() for x in (submission.coauthors or "").replace("\n", ";").split(";") if x.strip()]
@@ -2028,6 +2039,426 @@ def my_submissions(request):
     return render(request, "conferences/my_submissions.html", {
         "submissions": submissions
     })
+
+
+def _participation_judge_conferences(user):
+    return list(
+        Conference.objects.filter(
+            roles__user=user,
+            roles__role__in=["judge", "manager"],
+        ).distinct()
+    )
+
+
+def _can_manage_participation(user, submission):
+    return ConferenceRole.objects.filter(
+        conference=submission.conference,
+        user=user,
+        role__in=["judge", "manager"],
+    ).exists()
+
+
+def _log_custom_email(submission, event, recipients, subject, status, message=""):
+    for recipient in recipients:
+        EmailLog.objects.create(
+            conference=submission.conference,
+            submission=submission,
+            event=event,
+            recipient=recipient,
+            subject=subject,
+            status=status,
+            message=message,
+        )
+
+
+def _send_custom_message(submission, recipients, subject, body, event):
+    recipients = [email.strip() for email in recipients if email and "@" in email]
+    if not recipients:
+        raise ValueError("No valid recipient email address is available for this paper.")
+
+    message = EmailMessage(
+        subject=subject,
+        body=body,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        to=[recipients[0]],
+        bcc=recipients[1:],
+    )
+    try:
+        sent_count = message.send(fail_silently=False)
+        if sent_count < 1:
+            raise RuntimeError("The email backend did not confirm that the message was sent.")
+    except Exception as exc:
+        _log_custom_email(submission, event, recipients, subject, "failed", str(exc))
+        raise
+
+    _log_custom_email(submission, event, recipients, subject, "sent", body)
+
+
+@login_required
+def participation_dashboard(request):
+    conferences = _participation_judge_conferences(request.user)
+    if not conferences:
+        return redirect("/")
+
+    submissions = (
+        Submission.objects.filter(
+            conference__in=conferences,
+            status="final_accepted",
+        )
+        .select_related("conference", "author")
+        .order_by("conference__start_date", "paper_code", "title")
+    )
+
+    rows = []
+    for submission in submissions:
+        participation, _ = SubmissionParticipation.objects.get_or_create(submission=submission)
+        author_links = sync_submission_participants(submission)
+        planned_names = [
+            link.participant.display_name
+            for link in author_links
+            if link.planned_attendance is True
+        ]
+        confirmed_names = [
+            link.participant.display_name
+            for link in author_links
+            if link.confirmed_attendance is True
+        ]
+
+        confirmation_link = request.build_absolute_uri(
+            reverse("final_attendance_confirmation", args=[submission.id])
+        )
+        conference_name = submission.conference.title_en or submission.conference.title_sr
+        final_subject = f"Final attendance confirmation – {submission.paper_code or submission.title}"
+        final_body = (
+            "Dear Author,\n\n"
+            f"As we are finalizing the organization of {conference_name}, we kindly ask you to confirm "
+            "the final attendance of the authors of your accepted paper.\n\n"
+            f"Paper ID: {submission.paper_code}\n"
+            f"Paper title: {submission.title}\n\n"
+            "As the author who submitted the paper through the conference platform, you are responsible "
+            "for providing the final attendance information on behalf of all authors and co-authors of this paper.\n\n"
+            "Please coordinate with your co-authors before submitting the confirmation and indicate which "
+            "authors will attend the conference and which will not.\n\n"
+            "You can complete the final attendance confirmation using the following link:\n"
+            f"{confirmation_link}\n\n"
+            "The page will display the complete list of authors of your paper. Please select Yes or No for each author.\n\n"
+            "Please note that this confirmation should be submitted only once and should reflect the final "
+            "attendance plans of all authors of the paper.\n\n"
+            "Kind regards,\n"
+            f"{conference_name} Organizing Committee"
+        )
+
+        rows.append({
+            "submission": submission,
+            "participation": participation,
+            "author_links": author_links,
+            "planned_names": planned_names,
+            "confirmed_names": confirmed_names,
+            "final_email_default_subject": final_subject,
+            "final_email_default_body": final_body,
+        })
+
+    confirmed_participants = deduplicated_confirmed_participants(conferences)
+
+    return render(request, "conferences/participation_dashboard.html", {
+        "rows": rows,
+        "confirmed_participants": confirmed_participants,
+    })
+
+
+@login_required
+def send_participation_request(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id, status="final_accepted")
+    if not _can_manage_participation(request.user, submission):
+        return redirect("/")
+    if request.method != "POST":
+        return redirect("participation_dashboard")
+
+    participation, _ = SubmissionParticipation.objects.get_or_create(submission=submission)
+    if participation.participation_request_sent_at:
+        messages.info(request, "The participation request has already been sent for this paper.")
+        return redirect("participation_dashboard")
+
+    form = ParticipationEmailForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Please enter both the email subject and message.")
+        return redirect("participation_dashboard")
+
+    recipients = get_author_emails(submission, include_first_author=True, include_coauthors=True)
+    try:
+        _send_custom_message(
+            submission,
+            recipients,
+            form.cleaned_data["subject"],
+            form.cleaned_data["body"],
+            "participation_request",
+        )
+    except Exception as exc:
+        messages.error(request, f"Participation request could not be sent: {exc}")
+        return redirect("participation_dashboard")
+
+    sync_submission_participants(submission)
+    participation.participation_request_subject = form.cleaned_data["subject"]
+    participation.participation_request_body = form.cleaned_data["body"]
+    participation.participation_request_sent_at = timezone.now()
+    participation.participation_response_open = True
+    participation.save()
+    messages.success(request, "Participation request sent successfully.")
+    return redirect("participation_dashboard")
+
+
+@login_required
+def participation_response(request, submission_id):
+    submission = get_object_or_404(
+        Submission.objects.select_related("conference"),
+        id=submission_id,
+        author=request.user,
+        status="final_accepted",
+    )
+    participation = SubmissionParticipation.objects.filter(submission=submission).first()
+    if not participation or not participation.participation_request_sent_at:
+        messages.error(request, "Presentation and attendance information is not available for this paper yet.")
+        return redirect("my_submissions")
+
+    author_links = sync_submission_participants(submission)
+
+    if request.method == "POST":
+        with transaction.atomic():
+            participation = SubmissionParticipation.objects.select_for_update().get(pk=participation.pk)
+            if not participation.participation_response_open:
+                messages.info(request, "Presentation and attendance information has already been submitted.")
+                return redirect("my_submissions")
+
+            form = ParticipationResponseForm(
+                request.POST,
+                request.FILES,
+                participant_links=author_links,
+                participation=participation,
+            )
+            if form.is_valid():
+                presentation_type = form.cleaned_data["presentation_type"]
+                uploaded_file = form.cleaned_data.get("presentation_file")
+
+                if presentation_type == "not_presenting" and participation.presentation_file:
+                    participation.presentation_file.delete(save=False)
+                    participation.presentation_file = None
+                elif uploaded_file:
+                    if participation.presentation_file:
+                        participation.presentation_file.delete(save=False)
+                    participation.presentation_file = uploaded_file
+
+                participation.presentation_type = presentation_type
+                participation.comments = (form.cleaned_data.get("comments") or "").strip()
+                participation.participation_submitted_at = timezone.now()
+                participation.participation_response_open = False
+                participation.save()
+
+                for link in author_links:
+                    choice = form.cleaned_data[f"planned_{link.id}"]
+                    link.planned_attendance = choice == "yes"
+                    link.save(update_fields=["planned_attendance"])
+
+                messages.success(request, "Presentation and planned attendance information submitted successfully.")
+                return redirect("my_submissions")
+    else:
+        if not participation.participation_response_open:
+            messages.info(request, "Presentation and attendance information has already been submitted.")
+            return redirect("my_submissions")
+        form = ParticipationResponseForm(
+            participant_links=author_links,
+            participation=participation,
+        )
+
+    return render(request, "conferences/participation_response.html", {
+        "submission": submission,
+        "participation": participation,
+        "author_links": author_links,
+        "form": form,
+    })
+
+
+@login_required
+def reopen_participation_response(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id, status="final_accepted")
+    if not _can_manage_participation(request.user, submission):
+        return redirect("/")
+    if request.method != "POST":
+        return redirect("participation_dashboard")
+
+    participation = get_object_or_404(SubmissionParticipation, submission=submission)
+    if not participation.participation_request_sent_at:
+        messages.error(request, "Send the participation request before opening the author response.")
+    else:
+        participation.participation_response_open = True
+        participation.save(update_fields=["participation_response_open", "updated_at"])
+        messages.success(request, "The presentation and attendance form has been reopened for the submitting author.")
+    return redirect("participation_dashboard")
+
+
+@login_required
+def send_final_confirmation(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id, status="final_accepted")
+    if not _can_manage_participation(request.user, submission):
+        return redirect("/")
+    if request.method != "POST":
+        return redirect("participation_dashboard")
+
+    participation, _ = SubmissionParticipation.objects.get_or_create(submission=submission)
+    if participation.final_confirmation_request_sent_at:
+        messages.info(request, "The final attendance confirmation request has already been sent for this paper.")
+        return redirect("participation_dashboard")
+
+    form = ParticipationEmailForm(request.POST)
+    if not form.is_valid():
+        messages.error(request, "Please enter both the email subject and message.")
+        return redirect("participation_dashboard")
+
+    recipient = (submission.author.email or "").strip() if submission.author else ""
+    if not recipient:
+        messages.error(request, "The submitting author does not have an email address in the user account.")
+        return redirect("participation_dashboard")
+
+    try:
+        _send_custom_message(
+            submission,
+            [recipient],
+            form.cleaned_data["subject"],
+            form.cleaned_data["body"],
+            "final_attendance_confirmation",
+        )
+    except Exception as exc:
+        messages.error(request, f"Final confirmation request could not be sent: {exc}")
+        return redirect("participation_dashboard")
+
+    sync_submission_participants(submission)
+    participation.final_confirmation_subject = form.cleaned_data["subject"]
+    participation.final_confirmation_body = form.cleaned_data["body"]
+    participation.final_confirmation_request_sent_at = timezone.now()
+    participation.final_confirmation_response_open = True
+    participation.save()
+    messages.success(request, "Final attendance confirmation request sent successfully.")
+    return redirect("participation_dashboard")
+
+
+@login_required
+def final_attendance_confirmation(request, submission_id):
+    submission = get_object_or_404(
+        Submission.objects.select_related("conference"),
+        id=submission_id,
+        author=request.user,
+        status="final_accepted",
+    )
+    participation = SubmissionParticipation.objects.filter(submission=submission).first()
+    if not participation or not participation.final_confirmation_request_sent_at:
+        messages.error(request, "Final attendance confirmation is not available for this paper yet.")
+        return redirect("my_submissions")
+
+    author_links = sync_submission_participants(submission)
+
+    if request.method == "POST":
+        with transaction.atomic():
+            participation = SubmissionParticipation.objects.select_for_update().get(pk=participation.pk)
+            if not participation.final_confirmation_response_open:
+                messages.info(request, "Final attendance has already been confirmed for this paper.")
+                return redirect("my_submissions")
+
+            form = FinalAttendanceConfirmationForm(request.POST, participant_links=author_links)
+            if form.is_valid():
+                for link in author_links:
+                    choice = form.cleaned_data[f"confirmed_{link.id}"]
+                    link.confirmed_attendance = choice == "yes"
+                    link.save(update_fields=["confirmed_attendance"])
+
+                participation.final_confirmation_submitted_at = timezone.now()
+                participation.final_confirmation_response_open = False
+                participation.save(update_fields=[
+                    "final_confirmation_submitted_at",
+                    "final_confirmation_response_open",
+                    "updated_at",
+                ])
+                messages.success(request, "Final attendance confirmation submitted successfully.")
+                return redirect("my_submissions")
+    else:
+        if not participation.final_confirmation_response_open:
+            messages.info(request, "Final attendance has already been confirmed for this paper.")
+            return redirect("my_submissions")
+        form = FinalAttendanceConfirmationForm(participant_links=author_links)
+
+    return render(request, "conferences/final_attendance_confirmation.html", {
+        "submission": submission,
+        "participation": participation,
+        "author_links": author_links,
+        "form": form,
+    })
+
+
+@login_required
+def reopen_final_attendance_confirmation(request, submission_id):
+    submission = get_object_or_404(Submission, id=submission_id, status="final_accepted")
+    if not _can_manage_participation(request.user, submission):
+        return redirect("/")
+    if request.method != "POST":
+        return redirect("participation_dashboard")
+
+    participation = get_object_or_404(SubmissionParticipation, submission=submission)
+    if not participation.final_confirmation_request_sent_at:
+        messages.error(request, "Send the final confirmation request before reopening the author response.")
+    else:
+        participation.final_confirmation_response_open = True
+        participation.save(update_fields=["final_confirmation_response_open", "updated_at"])
+        messages.success(request, "The final attendance confirmation form has been reopened for the submitting author.")
+    return redirect("participation_dashboard")
+
+
+@login_required
+def export_confirmed_participants(request):
+    conferences = _participation_judge_conferences(request.user)
+    if not conferences:
+        return redirect("/")
+
+    from io import BytesIO
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, Alignment
+
+    participants = deduplicated_confirmed_participants(conferences)
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Confirmed Participants"
+    headers = ["No.", "Name and Title", "Affiliation", "Email"]
+    sheet.append(headers)
+
+    for index, participant in enumerate(participants, start=1):
+        sheet.append([
+            index,
+            participant.display_name,
+            participant.affiliation,
+            participant.email,
+        ])
+
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+        cell.alignment = Alignment(horizontal="center")
+
+    sheet.freeze_panes = "A2"
+    sheet.auto_filter.ref = sheet.dimensions
+    sheet.column_dimensions["A"].width = 8
+    sheet.column_dimensions["B"].width = 34
+    sheet.column_dimensions["C"].width = 48
+    sheet.column_dimensions["D"].width = 34
+
+    buffer = BytesIO()
+    workbook.save(buffer)
+    buffer.seek(0)
+
+    response = HttpResponse(
+        buffer.getvalue(),
+        content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    )
+    date_stamp = timezone.localdate().isoformat()
+    response["Content-Disposition"] = (
+        f'attachment; filename="confirmed_conference_participants_{date_stamp}.xlsx"'
+    )
+    return response
 
 
 @login_required

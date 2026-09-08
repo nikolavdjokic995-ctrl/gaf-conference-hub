@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Final Attendance Confirmation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:#fff;padding:22px 40px;font-size:27px;font-weight:700}.container{max-width:900px;margin:38px auto;background:#fff;padding:32px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.09)}h1,h2{color:#14532d}.paper{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:20px}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;border-radius:12px;padding:15px;line-height:1.5;margin-bottom:24px}.author-row{border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:20px;align-items:center}.radio-inline ul{display:flex;list-style:none;gap:18px;padding:0;margin:0}.btn{display:inline-block;border:0;border-radius:9px;padding:11px 16px;font-weight:700;text-decoration:none;cursor:pointer}.btn-green{background:#14532d;color:#fff}.btn-light{background:#f3f4f6;color:#374151}.actions{border-top:1px solid #e5e7eb;margin-top:24px;padding-top:20px}@media(max-width:650px){.container{margin:15px;padding:20px}.author-row{display:block}.radio-inline{margin-top:10px}}
+    </style>
+</head>
+<body>
+<div class="topbar">GAF Conference Hub</div>
+<div class="container">
+    <h1>Final Attendance Confirmation</h1>
+    <div class="paper"><strong>{{ submission.paper_code }}</strong><br>{{ submission.title }}</div>
+    <div class="notice"><strong>Important:</strong> You are confirming conference attendance on behalf of all authors of this paper. Please coordinate with your co-authors and select Yes or No for every author before submitting the final confirmation.</div>
+
+    <form method="post" id="confirmationForm">
+        {% csrf_token %}
+        <h2>Confirmed Attendance</h2>
+        {% for field in form %}
+            <div class="author-row"><div><strong>{{ field.label }}</strong></div><div class="radio-inline">{{ field.errors }}{{ field }}</div></div>
+        {% endfor %}
+        <div class="actions"><button type="submit" class="btn btn-green" id="submitButton">Submit final confirmation</button> <a href="{% url 'my_submissions' %}" class="btn btn-light">Cancel</a></div>
+    </form>
+</div>
+<script>document.getElementById('confirmationForm').addEventListener('submit',function(){var btn=document.getElementById('submitButton');btn.disabled=true;btn.textContent='Submitting...';});</script>
+</body>
+</html>

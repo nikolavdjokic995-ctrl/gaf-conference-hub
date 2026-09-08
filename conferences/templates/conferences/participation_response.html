@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Presentation & Attendance Information</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        *{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#111827}.topbar{background:#14532d;color:#fff;padding:22px 40px;font-size:27px;font-weight:700}.container{max-width:900px;margin:38px auto;background:#fff;padding:32px;border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.09)}h1,h2{color:#14532d}.paper{background:#f8fafc;border:1px solid #e5e7eb;border-radius:12px;padding:16px;margin-bottom:20px}.notice{background:#fff7ed;border:1px solid #fed7aa;color:#7c2d12;border-radius:12px;padding:15px;line-height:1.5;margin-bottom:24px}.section{border-top:1px solid #e5e7eb;padding-top:22px;margin-top:22px}.field label{font-weight:700;display:block;margin-bottom:8px}.field textarea,.field input[type=file]{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:9px}.field ul{list-style:none;padding:0}.field li{margin:8px 0}.author-row{border:1px solid #e5e7eb;border-radius:10px;padding:14px;margin-bottom:10px;display:flex;justify-content:space-between;gap:20px;align-items:center}.author-meta{color:#6b7280;font-size:13px;margin-top:4px}.radio-inline ul{display:flex;list-style:none;gap:18px;padding:0;margin:0}.btn{display:inline-block;border:0;border-radius:9px;padding:11px 16px;font-weight:700;text-decoration:none;cursor:pointer}.btn-green{background:#14532d;color:#fff}.btn-light{background:#f3f4f6;color:#374151}.errors{color:#b91c1c;margin:7px 0}.help{color:#6b7280;font-size:13px;margin-top:6px}.existing{background:#ecfdf5;border:1px solid #bbf7d0;padding:12px;border-radius:10px;margin-top:10px}@media(max-width:650px){.container{margin:15px;padding:20px}.author-row{display:block}.radio-inline{margin-top:10px}}
+    </style>
+</head>
+<body>
+<div class="topbar">GAF Conference Hub</div>
+<div class="container">
+    <h1>Presentation & Attendance Information</h1>
+    <div class="paper"><strong>{{ submission.paper_code }}</strong><br>{{ submission.title }}</div>
+    <div class="notice"><strong>Important:</strong> You are submitting this information on behalf of all authors of this paper. Please coordinate with your co-authors before submitting the form. The form can be submitted only once unless a Judge reopens it.</div>
+
+    <form method="post" enctype="multipart/form-data" id="participationForm">
+        {% csrf_token %}
+        <div class="field">
+            <h2>Presentation</h2>
+            {{ form.presentation_type.errors }}
+            {{ form.presentation_type }}
+        </div>
+
+        <div class="field section" id="fileSection">
+            <label>{{ form.presentation_file.label }}</label>
+            {{ form.presentation_file.errors }}
+            {{ form.presentation_file }}
+            <div class="help">{{ form.presentation_file.help_text }}</div>
+            {% if participation.presentation_file %}<div class="existing">Current uploaded file: <a href="{{ participation.presentation_file.url }}" target="_blank">Download</a></div>{% endif %}
+        </div>
+
+        <div class="section">
+            <h2>Planned Attendance</h2>
+            <p>Please select Yes or No for every author/co-author.</p>
+            {% for field in form %}
+                {% if field.name|slice:":8" == "planned_" %}
+                    <div class="author-row">
+                        <div><strong>{{ field.label }}</strong></div>
+                        <div class="radio-inline">{{ field.errors }}{{ field }}</div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div class="field section">
+            <h2>Comments</h2>
+            <label>{{ form.comments.label }}</label>
+            {{ form.comments.errors }}
+            {{ form.comments }}
+        </div>
+
+        <div class="section">
+            <button type="submit" class="btn btn-green" id="submitButton">Submit information</button>
+            <a href="{% url 'my_submissions' %}" class="btn btn-light">Cancel</a>
+        </div>
+    </form>
+</div>
+<script>
+function updateFileSection(){var selected=document.querySelector('input[name="presentation_type"]:checked');var section=document.getElementById('fileSection');if(selected && selected.value==='not_presenting'){section.style.display='none';}else{section.style.display='block';}}
+document.querySelectorAll('input[name="presentation_type"]').forEach(function(el){el.addEventListener('change',updateFileSection);});updateFileSection();
+document.getElementById('participationForm').addEventListener('submit',function(){var btn=document.getElementById('submitButton');btn.disabled=true;btn.textContent='Submitting...';});
+</script>
+</body>
+</html>
