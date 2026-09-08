@@ -2160,9 +2160,36 @@ def participation_dashboard(request):
 
     confirmed_participants = deduplicated_confirmed_participants(conferences)
 
+    # The dashboard can technically aggregate more than one conference, but the
+    # current UI/navigation needs one conference context for the common header.
+    # Use the first conference managed by this judge/manager, which is also the
+    # conference shown by the current single-conference deployment.
+    conference = conferences[0] if conferences else None
+    is_manager = False
+    is_reviewer = False
+    is_judge = False
+    is_layout_reviewer = False
+
+    if conference:
+        role_names = set(
+            ConferenceRole.objects.filter(
+                conference=conference,
+                user=request.user,
+            ).values_list("role", flat=True)
+        )
+        is_manager = "manager" in role_names
+        is_reviewer = bool({"content_reviewer", "layout_reviewer"} & role_names)
+        is_judge = "judge" in role_names or is_manager
+        is_layout_reviewer = "layout_reviewer" in role_names
+
     return render(request, "conferences/participation_dashboard.html", {
         "rows": rows,
         "confirmed_participants": confirmed_participants,
+        "conference": conference,
+        "is_manager": is_manager,
+        "is_reviewer": is_reviewer,
+        "is_judge": is_judge,
+        "is_layout_reviewer": is_layout_reviewer,
     })
 
 

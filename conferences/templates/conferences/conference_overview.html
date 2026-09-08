@@ -974,9 +974,13 @@ body{
                     </a>
                 {% endif %}
 
-                {% if is_judge %}
+                {% if is_judge or is_manager %}
                     <a href="{% url 'judge_dashboard' %}">
                         Judge Dashboard
+                    </a>
+
+                    <a href="{% url 'participation_dashboard' %}">
+                        Presentation &amp; Attendance
                     </a>
                 {% endif %}
 
