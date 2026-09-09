@@ -157,10 +157,20 @@ class Conference(models.Model):
 
     @property
     def plain_title(self):
-        title = strip_tags(self.title_en or "")
-        title = unescape(title)
-        title = title.replace("\xa0", " ")
-        return " ".join(title.split())
+        def clean(value):
+            text = strip_tags(value or "")
+            text = unescape(text)
+            text = text.replace("\xa0", " ")
+            return " ".join(text.split())
+
+        title = clean(self.title_en) or clean(self.title_sr)
+        if title:
+            return title
+
+        # Some older conference records contain only empty rich-text HTML
+        # (for example <div><br></div>). In that case use the slug as a
+        # human-readable fallback instead of exposing HTML or an empty title.
+        return (self.slug or "Conference").replace("-", " ").replace("_", " ").title()
 
     def __str__(self):
         return self.plain_title or self.title_en
@@ -621,9 +631,9 @@ class ConferenceParticipant(models.Model):
 
 class SubmissionParticipation(models.Model):
     PRESENTATION_CHOICES = [
-        ("not_presenting", "I will not present this paper"),
         ("oral", "Oral presentation"),
         ("poster", "Poster presentation"),
+        ("other", "Other"),
     ]
 
     submission = models.OneToOneField(
@@ -648,6 +658,7 @@ class SubmissionParticipation(models.Model):
         null=True,
         max_length=500,
     )
+    other_presentation_details = models.TextField(blank=True)
     comments = models.TextField(blank=True)
     participation_submitted_at = models.DateTimeField(null=True, blank=True)
 
@@ -679,7 +690,18 @@ class SubmissionParticipant(models.Model):
     )
     author_order = models.PositiveSmallIntegerField(default=1)
     is_first_author = models.BooleanField(default=False)
-    planned_attendance = models.BooleanField(null=True, blank=True)
+    PLANNED_ATTENDANCE_CHOICES = [
+        ("yes", "Yes"),
+        ("maybe", "Maybe"),
+        ("no", "No"),
+    ]
+
+    planned_attendance = models.CharField(
+        max_length=10,
+        choices=PLANNED_ATTENDANCE_CHOICES,
+        null=True,
+        blank=True,
+    )
     confirmed_attendance = models.BooleanField(null=True, blank=True)
 
     class Meta:
