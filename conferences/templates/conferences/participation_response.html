@@ -22,6 +22,13 @@
             {{ form.presentation_type }}
         </div>
 
+        <div class="field section" id="otherDetailsSection">
+            <label>{{ form.other_presentation_details.label }}</label>
+            {{ form.other_presentation_details.errors }}
+            {{ form.other_presentation_details }}
+            <div class="help">Required only when you select Other.</div>
+        </div>
+
         <div class="field section" id="fileSection">
             <label>{{ form.presentation_file.label }}</label>
             {{ form.presentation_file.errors }}
@@ -32,7 +39,7 @@
 
         <div class="section">
             <h2>Planned Attendance</h2>
-            <p>Please select Yes or No for every author/co-author.</p>
+            <p>Please select Yes, Maybe or No for every author/co-author.</p>
             {% for field in form %}
                 {% if field.name|slice:":8" == "planned_" %}
                     <div class="author-row">
@@ -57,8 +64,13 @@
     </form>
 </div>
 <script>
-function updateFileSection(){var selected=document.querySelector('input[name="presentation_type"]:checked');var section=document.getElementById('fileSection');if(selected && selected.value==='not_presenting'){section.style.display='none';}else{section.style.display='block';}}
-document.querySelectorAll('input[name="presentation_type"]').forEach(function(el){el.addEventListener('change',updateFileSection);});updateFileSection();
+function updatePresentationFields(){
+    var selected=document.querySelector('input[name="presentation_type"]:checked');
+    var otherSection=document.getElementById('otherDetailsSection');
+    if(otherSection){otherSection.style.display=(selected && selected.value==='other')?'block':'none';}
+}
+document.querySelectorAll('input[name="presentation_type"]').forEach(function(el){el.addEventListener('change',updatePresentationFields);});
+updatePresentationFields();
 document.getElementById('participationForm').addEventListener('submit',function(){var btn=document.getElementById('submitButton');btn.disabled=true;btn.textContent='Submitting...';});
 </script>
 </body>
