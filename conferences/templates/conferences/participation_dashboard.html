@@ -189,7 +189,7 @@
                 <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" value="Presentation and participation information – {{ row.submission.paper_code|default:row.submission.title }}" required></div>
                 <div class="field"><label>Message</label><textarea name="body" required>Dear Authors,
 
-As your paper has been accepted for publication at {{ row.submission.conference.title_en|default:row.submission.conference.title_sr }}, we kindly ask you to provide the final information regarding the presentation of the paper and the planned attendance of all authors and co-authors.
+As your paper has been accepted for publication at {{ row.submission.conference.plain_title }}, we kindly ask you to provide the final information regarding the presentation of the paper and the planned attendance of all authors and co-authors.
 
 Paper ID: {{ row.submission.paper_code }}
 Paper title: {{ row.submission.title }}
@@ -211,7 +211,7 @@ The presentation/poster template and other relevant materials can be found on th
 Please submit the form only once. If a correction is later required, the conference organizers can reopen it.
 
 Kind regards,
-{{ row.submission.conference.title_en|default:row.submission.conference.title_sr }} Organizing Committee</textarea></div>
+{{ row.submission.conference.plain_title }} Organizing Committee</textarea></div>
                 <div class="toolbar" style="margin-top:18px;margin-bottom:0"><button type="submit" class="btn btn-green submit-button">Send email</button><button type="button" class="btn btn-light" onclick="closeModal('participation-{{ row.submission.id }}')">Cancel</button></div>
             </form>
         </div>

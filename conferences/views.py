@@ -2113,10 +2113,15 @@ def participation_dashboard(request):
     for submission in submissions:
         participation, _ = SubmissionParticipation.objects.get_or_create(submission=submission)
         author_links = sync_submission_participants(submission)
-        planned_names = [
+        planned_yes_names = [
             link.participant.display_name
             for link in author_links
-            if link.planned_attendance is True
+            if link.planned_attendance == "yes"
+        ]
+        planned_maybe_names = [
+            link.participant.display_name
+            for link in author_links
+            if link.planned_attendance == "maybe"
         ]
         confirmed_names = [
             link.participant.display_name
@@ -2124,10 +2129,41 @@ def participation_dashboard(request):
             if link.confirmed_attendance is True
         ]
 
+        participation_link = request.build_absolute_uri(
+            reverse("participation_response", args=[submission.id])
+        )
+        important_information_link = request.build_absolute_uri(
+            reverse("important_information", args=[submission.conference.slug])
+        )
         confirmation_link = request.build_absolute_uri(
             reverse("final_attendance_confirmation", args=[submission.id])
         )
-        conference_name = submission.conference.title_en or submission.conference.title_sr
+        conference_name = submission.conference.plain_title
+
+        participation_subject = f"Presentation and participation information – {submission.paper_code or submission.title}"
+        participation_body = (
+            "Dear Authors,\n\n"
+            f"As your paper has been accepted for publication at {conference_name}, we kindly ask you to provide "
+            "the final information regarding the presentation of the paper and the planned attendance of all authors/co-authors.\n\n"
+            f"Paper ID: {submission.paper_code}\n"
+            f"Paper title: {submission.title}\n\n"
+            "Please use the following link to complete the Presentation & Attendance form:\n"
+            f"{participation_link}\n\n"
+            "Important: the form can be completed only by the user who submitted the paper through the conference platform. "
+            "That person should provide the requested information on behalf of all authors and co-authors after coordinating with them.\n\n"
+            "In the form, please:\n"
+            "- select the presentation type: Oral, Poster or Other; if Other is selected, briefly explain the proposed format;\n"
+            "- indicate Planned Attendance as Yes, Maybe or No for every author/co-author;\n"
+            "- upload the oral presentation or poster file if applicable; and\n"
+            "- add any additional comments if needed.\n\n"
+            "The presentation/poster template and other relevant materials can be found on the conference platform "
+            "in the Important Information section:\n"
+            f"{important_information_link}\n\n"
+            "Please submit the form only once. If a correction is later required, the conference organizers can reopen it.\n\n"
+            "Kind regards,\n"
+            f"{conference_name} Organizing Committee"
+        )
+
         final_subject = f"Final attendance confirmation – {submission.paper_code or submission.title}"
         final_body = (
             "Dear Author,\n\n"
@@ -2152,8 +2188,11 @@ def participation_dashboard(request):
             "submission": submission,
             "participation": participation,
             "author_links": author_links,
-            "planned_names": planned_names,
+            "planned_yes_names": planned_yes_names,
+            "planned_maybe_names": planned_maybe_names,
             "confirmed_names": confirmed_names,
+            "participation_email_default_subject": participation_subject,
+            "participation_email_default_body": participation_body,
             "final_email_default_subject": final_subject,
             "final_email_default_body": final_body,
         })
@@ -2266,15 +2305,15 @@ def participation_response(request, submission_id):
                 presentation_type = form.cleaned_data["presentation_type"]
                 uploaded_file = form.cleaned_data.get("presentation_file")
 
-                if presentation_type == "not_presenting" and participation.presentation_file:
-                    participation.presentation_file.delete(save=False)
-                    participation.presentation_file = None
-                elif uploaded_file:
+                if uploaded_file:
                     if participation.presentation_file:
                         participation.presentation_file.delete(save=False)
                     participation.presentation_file = uploaded_file
 
                 participation.presentation_type = presentation_type
+                participation.other_presentation_details = (
+                    form.cleaned_data.get("other_presentation_details") or ""
+                ).strip() if presentation_type == "other" else ""
                 participation.comments = (form.cleaned_data.get("comments") or "").strip()
                 participation.participation_submitted_at = timezone.now()
                 participation.participation_response_open = False
@@ -2282,7 +2321,7 @@ def participation_response(request, submission_id):
 
                 for link in author_links:
                     choice = form.cleaned_data[f"planned_{link.id}"]
-                    link.planned_attendance = choice == "yes"
+                    link.planned_attendance = choice
                     link.save(update_fields=["planned_attendance"])
 
                 messages.success(request, "Presentation and planned attendance information submitted successfully.")
