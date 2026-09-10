@@ -15,6 +15,7 @@ from .models import (
     ConferenceFooterPartner,
     UserProfile,
     SubmissionParticipation,
+    SubmissionParticipant,
 )
 
 
@@ -1114,9 +1115,17 @@ class ParticipationResponseForm(forms.Form):
         widget=forms.RadioSelect,
         label="Presentation",
     )
+    other_presentation_details = forms.CharField(
+        required=False,
+        label="Please specify Other",
+        widget=forms.Textarea(attrs={
+            "rows": 4,
+            "placeholder": "Please explain what you mean by Other.",
+        }),
+    )
     presentation_file = forms.FileField(
         required=False,
-        label="Upload presentation / poster file",
+        label="Upload oral presentation / poster file",
         help_text=(
             "Optional. Accepted formats: PPT, PPTX, PDF, JPG, JPEG or PNG. "
             f"Maximum file size: {MAX_PAPER_UPLOAD_MB} MB."
@@ -1138,18 +1147,28 @@ class ParticipationResponseForm(forms.Form):
 
         if participation and not self.is_bound:
             self.fields["presentation_type"].initial = participation.presentation_type
+            self.fields["other_presentation_details"].initial = participation.other_presentation_details
             self.fields["comments"].initial = participation.comments
 
         for link in self.participant_links:
             field_name = f"planned_{link.id}"
             self.fields[field_name] = forms.ChoiceField(
-                choices=(("yes", "Yes"), ("no", "No")),
+                choices=SubmissionParticipant.PLANNED_ATTENDANCE_CHOICES,
                 widget=forms.RadioSelect,
                 label=link.participant.display_name,
                 required=True,
             )
-            if not self.is_bound and link.planned_attendance is not None:
-                self.fields[field_name].initial = "yes" if link.planned_attendance else "no"
+            if not self.is_bound and link.planned_attendance in {"yes", "maybe", "no"}:
+                self.fields[field_name].initial = link.planned_attendance
+
+    def clean(self):
+        cleaned = super().clean()
+        if cleaned.get("presentation_type") == "other" and not (cleaned.get("other_presentation_details") or "").strip():
+            self.add_error(
+                "other_presentation_details",
+                "Please explain what you mean by Other.",
+            )
+        return cleaned
 
     def clean_presentation_file(self):
         file = self.cleaned_data.get("presentation_file")
