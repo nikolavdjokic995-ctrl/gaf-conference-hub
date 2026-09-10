@@ -8,7 +8,7 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import strip_tags
 
-from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment
+from .models import ConferenceRole, EmailLog, EmailTemplate, ReviewAssignment, SubmissionParticipation
 from .email_defaults import DEFAULT_EMAIL_TEMPLATES_2026
 
 
@@ -545,13 +545,64 @@ def resend_email_log(log, request=None):
         event=log.event,
     ).first()
 
+    submission = log.submission
+
+    # Presentation/attendance emails are Judge-edited custom messages and do not
+    # have an EmailTemplate record. Their exact text is stored on SubmissionParticipation.
+    if template is None and log.event in {"participation_request", "final_attendance_confirmation"}:
+        if not submission:
+            return False, "This failed custom email is not linked to a submission."
+        participation = SubmissionParticipation.objects.filter(submission=submission).first()
+        if not participation:
+            return False, "No saved presentation/attendance email text was found for this log."
+
+        if log.event == "participation_request":
+            subject = (participation.participation_request_subject or log.subject or "").strip()
+            body = (participation.participation_request_body or "").strip()
+        else:
+            subject = (participation.final_confirmation_subject or log.subject or "").strip()
+            body = (participation.final_confirmation_body or "").strip()
+
+        if not subject or not body:
+            return False, "The original custom email text is not available for this failed log."
+
+        try:
+            email_message = EmailMultiAlternatives(
+                subject,
+                body,
+                get_platform_from_email(),
+                [recipient],
+            )
+            sent_count = email_message.send(fail_silently=False)
+            if sent_count < 1:
+                raise RuntimeError("The email backend did not confirm that the message was sent.")
+            EmailLog.objects.create(
+                conference=log.conference,
+                submission=submission,
+                event=log.event,
+                recipient=recipient,
+                subject=subject,
+                status="sent",
+            )
+            return True, f"Email resent to {recipient}."
+        except Exception as exc:
+            EmailLog.objects.create(
+                conference=log.conference,
+                submission=submission,
+                event=log.event,
+                recipient=recipient,
+                subject=subject,
+                status="failed",
+                message=f"Resend from failed log #{log.id} failed: {exc}",
+            )
+            return False, f"Resend failed: {exc}"
+
     if template is None:
         return False, "No email template was found for this log."
 
     if not template.enabled:
         return False, "This email template is disabled. Enable it before resending."
 
-    submission = log.submission
     assignment = None
     reviewer = None
 

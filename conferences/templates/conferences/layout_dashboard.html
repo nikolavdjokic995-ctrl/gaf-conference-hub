@@ -353,7 +353,6 @@
                 <th>Student paper</th>
                 <th>Authors</th>
                 <th>Accepted date</th>
-                <th>Reviewers</th>
                 <th>Author proof</th>
                 <th>Final files</th>
                 <th>Manage</th>
@@ -386,14 +385,6 @@
                     <td>
                         {{ submission.updated_at|date:"d.m.Y." }}<br>
                         <span class="small">{{ submission.updated_at|date:"H:i" }}</span>
-                    </td>
-
-                    <td>
-                        {% for review in submission.reviews.all %}
-                            {{ review.reviewer.profile.full_name_with_title }}{% if not forloop.last %}, {% endif %}
-                        {% empty %}
-                            -
-                        {% endfor %}
                     </td>
 
                     <td>

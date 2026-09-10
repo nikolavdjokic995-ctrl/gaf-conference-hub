@@ -2091,7 +2091,8 @@ def _send_custom_message(submission, recipients, subject, body, event):
         _log_custom_email(submission, event, recipients, subject, "failed", str(exc))
         raise
 
-    _log_custom_email(submission, event, recipients, subject, "sent", body)
+    # Email history Message is reserved for delivery errors.
+    _log_custom_email(submission, event, recipients, subject, "sent", "")
 
 
 @login_required
@@ -2250,6 +2251,12 @@ def send_participation_request(request, submission_id):
         messages.error(request, "Please enter both the email subject and message.")
         return redirect("participation_dashboard")
 
+    # Store the exact Judge-edited message before sending, so a failed delivery
+    # can be retried later from Email history without losing the original text.
+    participation.participation_request_subject = form.cleaned_data["subject"]
+    participation.participation_request_body = form.cleaned_data["body"]
+    participation.save(update_fields=["participation_request_subject", "participation_request_body", "updated_at"])
+
     recipients = get_author_emails(submission, include_first_author=True, include_coauthors=True)
     try:
         _send_custom_message(
@@ -2264,8 +2271,6 @@ def send_participation_request(request, submission_id):
         return redirect("participation_dashboard")
 
     sync_submission_participants(submission)
-    participation.participation_request_subject = form.cleaned_data["subject"]
-    participation.participation_request_body = form.cleaned_data["body"]
     participation.participation_request_sent_at = timezone.now()
     participation.participation_response_open = True
     participation.save()
@@ -2379,6 +2384,12 @@ def send_final_confirmation(request, submission_id):
         messages.error(request, "Please enter both the email subject and message.")
         return redirect("participation_dashboard")
 
+    # Store the exact Judge-edited final-confirmation message before sending,
+    # so a failed delivery can be retried later from Email history.
+    participation.final_confirmation_subject = form.cleaned_data["subject"]
+    participation.final_confirmation_body = form.cleaned_data["body"]
+    participation.save(update_fields=["final_confirmation_subject", "final_confirmation_body", "updated_at"])
+
     recipient = (submission.author.email or "").strip() if submission.author else ""
     if not recipient:
         messages.error(request, "The submitting author does not have an email address in the user account.")
@@ -2397,8 +2408,6 @@ def send_final_confirmation(request, submission_id):
         return redirect("participation_dashboard")
 
     sync_submission_participants(submission)
-    participation.final_confirmation_subject = form.cleaned_data["subject"]
-    participation.final_confirmation_body = form.cleaned_data["body"]
     participation.final_confirmation_request_sent_at = timezone.now()
     participation.final_confirmation_response_open = True
     participation.save()
