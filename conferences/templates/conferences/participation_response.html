@@ -44,7 +44,14 @@
                 {% if field.name|slice:":8" == "planned_" %}
                     <div class="author-row">
                         <div><strong>{{ field.label }}</strong></div>
-                        <div class="radio-inline">{{ field.errors }}{{ field }}</div>
+                        <div class="radio-inline">
+                            {{ field.errors }}
+                            <ul id="{{ field.auto_id }}">
+                                <li><label><input type="radio" name="{{ field.html_name }}" value="yes"{% if field.value == "yes" %} checked{% endif %}> Yes</label></li>
+                                <li><label><input type="radio" name="{{ field.html_name }}" value="maybe"{% if field.value == "maybe" %} checked{% endif %}> Maybe</label></li>
+                                <li><label><input type="radio" name="{{ field.html_name }}" value="no"{% if field.value == "no" %} checked{% endif %}> No</label></li>
+                            </ul>
+                        </div>
                     </div>
                 {% endif %}
             {% endfor %}
