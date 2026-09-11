@@ -186,7 +186,7 @@
             <div class="modal-note">This email will be sent to all available author and co-author email addresses. After successful sending, the Presentation & Attendance form will be activated for the submitting author in My submissions.</div>
             <form method="post" action="{% url 'send_participation_request' row.submission.id %}" onsubmit="disableSubmit(this)">
                 {% csrf_token %}
-                <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" value="Presentation and participation information – {{ row.submission.paper_code|default:row.submission.title }}" required></div>
+                <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" value="Presentation and participation information – {{ row.submission.paper_code|default:row.submission.title }} - please fill the form in 3 days" required></div>
                 <div class="field"><label>Message</label><textarea name="body" required>Dear Submitting Author,
 
 Paper ID: {{ row.submission.paper_code }}
