@@ -186,32 +186,34 @@
             <div class="modal-note">This email will be sent to all available author and co-author email addresses. After successful sending, the Presentation & Attendance form will be activated for the submitting author in My submissions.</div>
             <form method="post" action="{% url 'send_participation_request' row.submission.id %}" onsubmit="disableSubmit(this)">
                 {% csrf_token %}
-                <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" value="Presentation and participation information – {{ row.submission.paper_code|default:row.submission.title }}" required></div>
-                <div class="field"><label>Message</label><textarea name="body" required>Dear Authors,
+                <div class="field"><label>Subject</label><input type="text" name="subject" maxlength="255" value="Presentation and attendance information – {{ row.submission.paper_code|default:row.submission.title }} - please fill the form in 3 days" required></div>
+                <div class="field"><label>Message</label><textarea name="body" required>
 
-As your paper has been accepted for publication at {{ row.submission.conference.plain_title }}, we kindly ask you to provide the final information regarding the presentation of the paper and the planned attendance of all authors and co-authors.
+Dear Submitting Author,
 
 Paper ID: {{ row.submission.paper_code }}
 Paper title: {{ row.submission.title }}
 
-Please use the following link to complete the Presentation &amp; Attendance form:
+Please use the following link to complete the Presentation & Attendance form on behalf of all co-authors:
 {{ request.scheme }}://{{ request.get_host }}{% url 'participation_response' row.submission.id %}
 
-Important: the form can be completed only by the user who submitted the paper through the conference platform. That person should provide the requested information on behalf of all authors and co-authors after coordinating with them.
-
 In the form, please:
-- select the presentation type: Oral, Poster or Other; if Other is selected, briefly explain the proposed format;
-- indicate Planned Attendance as Yes, Maybe or No for every author/co-author;
-- upload the oral presentation or poster file if applicable; and
-- add any additional comments if needed.
+- select the presentation type: Oral, Poster or Other; if Other is selected, briefly explain its meaning;
+- indicate Planned Attendance as Yes, Maybe or No for each author/co-author;
 
 The presentation/poster template and other relevant materials can be found on the conference platform in the Important Information section:
 {{ request.scheme }}://{{ request.get_host }}{% url 'important_information' row.submission.conference.slug %}
 
-Please submit the form only once. If a correction is later required, the conference organizers can reopen it.
+- upload the oral presentation file or poster file by 05.10.; and
+- add any additional comments if needed.
+
+Before the conference start, we will send you one more mail asking you to confirm your attendance at the conference.
 
 Kind regards,
-{{ row.submission.conference.plain_title }} Organizing Committee</textarea></div>
+
+Organizing Committee
+Green Building 2026
+International Scientific Conference
                 <div class="toolbar" style="margin-top:18px;margin-bottom:0"><button type="submit" class="btn btn-green submit-button">Send email</button><button type="button" class="btn btn-light" onclick="closeModal('participation-{{ row.submission.id }}')">Cancel</button></div>
             </form>
         </div>
